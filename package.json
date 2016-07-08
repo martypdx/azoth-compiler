@@ -1,0 +1,34 @@
+{
+  "name": "diamond-compiler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/compile.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
+    "watch": "mocha -w --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
+    "build": "gobble build -f dist"
+  },
+  "author": "Marty Nelson <marty@martypdx.com> (@martypdx)",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.10.4",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.10.3",
+    "gobble": "^0.11.3",
+    "gobble-babel": "^6.0.0",
+    "gobble-cli": "^0.7.0",
+    "mocha": "^2.5.3",
+    "mocha-better-spec-reporter": "^3.0.2",
+    "rollup": "^0.33.0",
+    "rollup-plugin-commonjs": "^3.1.0",
+    "rollup-plugin-node-resolve": "^1.7.1"
+  },
+  "dependencies": {
+    "acorn": "^3.2.0",
+    "astring": "^0.6.1",
+    "htmlparser2": "^3.9.1",
+    "undeclared": "^1.0.6"
+  }
+}
