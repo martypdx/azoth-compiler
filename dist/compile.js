@@ -47,13 +47,22 @@ function compileAll(source) {
 }
 
 const bindingCode = {
-	'orphan-text': 'tb',
-	'child-text': 'tb'
+	'orphan-text': 'otb',
+	'child-text': 'ctb'
 };
 
 function declareBinding(b, i) {
 	return `	const __${ bindingCode[b.type] }${ i } = __${ bindingCode[b.type] }(${ b.index });`;
 }
+
+function bind(b, i) {
+	return b.ref ? bindReference(b, i) : bindExpression(b, i);
+}
+
+function bindReference(b, i) {
+	return b.observable ? bindObservable(b, i) : bindStatic(b, i);
+}
+
 function bindObservable(b, i) {
 	return `		const __s${ i } = ${ b.ref }.subscribe(__${ bindingCode[b.type] }${ i }(nodes[${ b.elIndex }]));`;
 }
@@ -62,16 +71,20 @@ function bindStatic(b, i) {
 	return `		__${ bindingCode[b.type] }${ i }(nodes[${ b.elIndex }])(${ b.ref }.value);`;
 }
 
+function bindExpression(b, i) {
+	b.ref = `__e${ i }`;
+	const expr = `		const ${ b.ref } = combineLatest(${ b.params },(${ b.params })=>(${ b.expr }));`;
+	return expr + '\n' + bindObservable(b, i);
+}
+
 function unsubscribe(b, i, arr) {
 	if (!b.observable) return;
 	return `			__s${ i }.unsubscribe();${ i === arr.length - 1 ? '' : '\n' }`;
 }
 
-function compiler(magicString, codes) {
+function compiler(s, codes) {
 
-	const s = magicString;
-
-	function compile({ html, bindings, scope, node }) {
+	return function compile({ html, bindings, scope, node }) {
 		bindings.forEach(b => codes.add(bindingCode[b.type]));
 
 		let code = `(() => {
@@ -79,7 +92,7 @@ function compiler(magicString, codes) {
 ${ bindings.map(declareBinding).join('\n') }
 	return (${ scope.params.map(_astring2.default) }) => {
 		const nodes = render();
-${ bindings.map((b, i) => b.observable ? bindObservable(b, i) : bindStatic(b, i)).join('\n') }
+${ bindings.map(bind).join('\n') }
 		const __fragment = nodes[nodes.length];
 		__fragment.unsubscribe = () => {
 ${ bindings.map(unsubscribe).join('') }
@@ -89,8 +102,6 @@ ${ bindings.map(unsubscribe).join('') }
 })()`;
 
 		s.overwrite(scope.start, scope.end, code);
-	}
-
-	return compile;
+	};
 }
 //# sourceMappingURL=compile.js.map

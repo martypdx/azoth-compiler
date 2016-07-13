@@ -35,17 +35,18 @@ const template = (() => {
 	});
 
 
-	it( 'compiles hello world template', () => {
+	it( 'compiles expression', () => {
 		
-		const code = compile(`place => $\`<span>hello *\${place}</span>\``);
+		const code = compile(`(x, y) => $\`<span>*\${x + y}</span>\``);
 		
 		assert.equal( code, 
 `(() => {
-	const render = renderer(makeFragment(\`<span data-bind>hello <text-node></text-node></span>\`));
-	const __ctb0 = __ctb(1);
-	return (place) => {
+	const render = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
+	const __ctb0 = __ctb(0);
+	return (x,y) => {
 		const nodes = render();
-		const __s0 = place.subscribe(__ctb0(nodes[0]));
+		const __e0 = combineLatest(x,y,(x,y)=>(x + y));
+		const __s0 = __e0.subscribe(__ctb0(nodes[0]));
 		const __fragment = nodes[nodes.length];
 		__fragment.unsubscribe = () => {
 			__s0.unsubscribe();
