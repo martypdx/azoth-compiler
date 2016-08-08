@@ -57,4 +57,47 @@ const template = (() => {
 	
 	});
 
+	it( 'compiles expression with outside ref', () => {
+		
+		const code = compile(`x => $\`*\${upper(x)}\``);
+		
+		assert.equal( code, 
+`(() => {
+	const render = renderer(makeFragment(\`<text-node></text-node>\`));
+	const __otb0 = __otb(0);
+	return (x) => {
+		const nodes = render();
+		const __e0 = combineLatest(x,(x)=>(upper(x)));
+		const __s0 = __e0.subscribe(__otb0(nodes[0]));
+		const __fragment = nodes[nodes.length];
+		__fragment.unsubscribe = () => {
+			__s0.unsubscribe();
+		};
+		return __fragment;
+	};
+})()`);
+	});
+
+	it( 'plucks destructured params', () => {
+		
+		const code = compile(`({foo}) => $\`*\${foo}\``);
+		
+		assert.equal( code, 
+`(() => {
+	const render = renderer(makeFragment(\`<text-node></text-node>\`));
+	const __otb0 = __otb(0);
+	return (__ref0) => {
+		const nodes = render();
+		const foo = __ref0.pluck('foo').distinctUntilChanged();
+		const __s0 = foo.subscribe(__otb0(nodes[0]));
+		const __fragment = nodes[nodes.length];
+		__fragment.unsubscribe = () => {
+			__s0.unsubscribe();
+		};
+		return __fragment;
+	};
+})()`);
+	
+	});
+
 });

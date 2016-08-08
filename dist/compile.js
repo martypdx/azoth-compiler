@@ -82,6 +82,10 @@ function unsubscribe(b, i, arr) {
 	return `			__s${ i }.unsubscribe();${ i === arr.length - 1 ? '' : '\n' }`;
 }
 
+function pluck(pluck) {
+	return `		const ${ pluck.key } = __ref${ pluck.index }.pluck('${ pluck.key }');`;
+}
+
 function compiler(s, codes) {
 
 	return function compile({ html, bindings, scope, node }) {
@@ -90,8 +94,8 @@ function compiler(s, codes) {
 		let code = `(() => {
 	const render = renderer(makeFragment(\`${ html }\`));
 ${ bindings.map(declareBinding).join('\n') }
-	return (${ scope.params.map(_astring2.default) }) => {
-		const nodes = render();
+	return (${ Object.keys(scope.params) }) => {
+		const nodes = render();${ scope.plucks.length ? '\n' + scope.plucks.map(pluck).join('\n') : '' }
 ${ bindings.map(bind).join('\n') }
 		const __fragment = nodes[nodes.length];
 		__fragment.unsubscribe = () => {

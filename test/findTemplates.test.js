@@ -4,7 +4,7 @@ import parse from '../src/ast';
 import chai from 'chai';
 const assert = chai.assert;
 
-describe( 'parse templates', () => {
+describe( 'find templates', () => {
 
 	function getTemplates( source, tag = '$' ) {
 		return findTemplates( parse( source ), tag );
@@ -68,7 +68,6 @@ describe( 'parse templates', () => {
 
 			const { html, bindings, scope, node } = templates[0];
 			assert.equal( html, '<text-node></text-node>' );
-			assert.equal( scope.type, 'ArrowFunctionExpression' );
 			assert.equal( node.type, 'TaggedTemplateExpression' );
 			
 			assert.deepEqual( bindings, [{
@@ -87,8 +86,26 @@ describe( 'parse templates', () => {
 
 			const { html, bindings, scope, node } = templates[0];
 			assert.equal( html, '<span data-bind>hello <text-node></text-node></span>' );
-			assert.equal( scope.type, 'ArrowFunctionExpression' );
 			assert.equal( node.type, 'TaggedTemplateExpression' );
+			
+			assert.deepEqual( bindings, [{
+				elIndex: 0,
+				index: 1,
+				observable: true,
+				ref: 'place',
+				type: 'child-text'
+			}]);
+		});
+
+		it.only( 'block value', () => {
+			const templates = getTemplates(`
+				const template = place => $\`<span>#\${$\`<span>*\${foo}</span>\`}</span>\`;
+			`)
+
+
+			const { html, bindings, scope, node } = templates[0];
+			console.log( bindings );
+			assert.equal( html, '<span data-bind><section-node></section-node></span>' );
 			
 			assert.deepEqual( bindings, [{
 				elIndex: 0,

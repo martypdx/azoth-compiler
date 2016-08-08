@@ -25,7 +25,7 @@ const specials = {
 	class: 'class'
 };
 
-function parse({ expressions, quasis }) {
+function parse({ expressions, quasis }, scopeParams = {}) {
 
 	const getEl = (name = 'root') => ({
 		name,
@@ -93,7 +93,7 @@ function parse({ expressions, quasis }) {
 
 			if (expr.type === 'Identifier') binding.ref = expr.name;else {
 				binding.expr = (0, _astring2.default)(expr);
-				const params = Array.from((0, _undeclared2.default)(expr).values()).join();
+				const params = Array.from((0, _undeclared2.default)(expr).values()).filter(v => scopeParams[v]);
 				binding.params = params;
 			}
 

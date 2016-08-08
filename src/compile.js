@@ -28,6 +28,34 @@ const bindingCode = {
 	'child-text': 'ctb'
 }
 
+
+
+function compiler( s, codes ) {
+
+
+	return function compile( { html, bindings, scope, node } ) {
+		bindings.forEach( b => codes.add(bindingCode[b.type]) );
+
+		let code = 
+`(() => {
+	const render = renderer(makeFragment(\`${html}\`));
+${bindings.map( declareBinding ).join('\n')}
+	return (${Object.keys(scope.params)}) => {
+		const nodes = render();${scope.plucks.length ? '\n' + scope.plucks.map( pluck ).join( '\n' ) : ''}
+${bindings.map( bind ).join( '\n' )}
+		const __fragment = nodes[nodes.length];
+		__fragment.unsubscribe = () => {
+${bindings.map( unsubscribe ).join('')}
+		};
+		return __fragment;
+	};
+})()`;
+
+		s.overwrite( scope.start, scope.end, code );
+	}
+
+}
+
 function declareBinding( b, i ) {
 	return `	const __${bindingCode[b.type]}${i} = __${bindingCode[b.type]}(${b.index});`;
 }
@@ -59,28 +87,6 @@ function unsubscribe( b, i, arr ) {
 	return `			__s${i}.unsubscribe();${ i === arr.length - 1 ? '' : '\n' }`;
 }
 
-function compiler( s, codes ) {
-
-
-	return function compile( { html, bindings, scope, node } ) {
-		bindings.forEach( b => codes.add(bindingCode[b.type]) );
-
-		let code = 
-`(() => {
-	const render = renderer(makeFragment(\`${html}\`));
-${bindings.map( declareBinding ).join('\n')}
-	return (${scope.params.map(astring)}) => {
-		const nodes = render();
-${bindings.map( bind ).join('\n')}
-		const __fragment = nodes[nodes.length];
-		__fragment.unsubscribe = () => {
-${bindings.map( unsubscribe ).join('')}
-		};
-		return __fragment;
-	};
-})()`;
-
-		s.overwrite( scope.start, scope.end, code );
-	}
-
+function pluck( pluck ) {
+	return `		const ${pluck.key} = __ref${pluck.index}.pluck('${pluck.key}').distinctUntilChanged();`;
 }

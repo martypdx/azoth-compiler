@@ -8,7 +8,7 @@ const specials = {
 	class: 'class'
 };
 
-export default function parse( { expressions, quasis } ){
+export default function parse( { expressions, quasis }, scopeParams = {} ){
 
 	const getEl = ( name = 'root' ) => ({
 		name, 
@@ -81,7 +81,9 @@ export default function parse( { expressions, quasis } ){
 			if ( expr.type === 'Identifier' ) binding.ref = expr.name
 			else {
 				binding.expr = astring( expr );
-				const params = Array.from( undeclared( expr ).values() ).join();
+				const params = Array
+					.from( undeclared( expr ).values() )
+					.filter( v => scopeParams[v] );
 				binding.params = params;
 			}
 
@@ -96,6 +98,8 @@ export default function parse( { expressions, quasis } ){
 		bindSection( expr ){
 			const el = currentEl;
 			el.bound = true;
+
+			if ( expr.type !== 'TaggedTemplateExpression' ) throw new Error( 'expected TTE' );
 
 			el.bindings.push({  
 				el, 
@@ -145,17 +149,17 @@ export default function parse( { expressions, quasis } ){
 			handler.bindAttr( expressions[i], binding );
 		}
 		else if ( i < expressions.length && !inElTag ) {
-			// if( raw[ raw.length - 1 ] === '#' ) {
-			// 	handler.unwrite();
-			// 	parser.write( '<section-node></section-node>' );
-			// 	handler.bindSection( expressions[i] );
-			// }
-			// else {
+			if( raw[ raw.length - 1 ] === '#' ) {
+				handler.unwrite();
+				parser.write( '<section-node></section-node>' );
+				handler.bindSection( expressions[i] );
+			}
+			else {
 				parser.write( '<text-node></text-node>' );
 				binding.type = 'child-text';
 				binding.index = -1 // auto-fill
 				handler.bind( expressions[i], binding );
-			//}
+			}
 		}
 	});
 
