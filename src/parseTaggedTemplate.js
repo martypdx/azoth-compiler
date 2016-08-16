@@ -8,7 +8,7 @@ const specials = {
 	class: 'class'
 };
 
-export default function parse( { expressions, quasis }, scopeParams = {} ){
+export default function parse( { expressions, quasis }, scopeParams = {}, recurse ){
 
 	const getEl = ( name = 'root' ) => ({
 		name, 
@@ -104,7 +104,8 @@ export default function parse( { expressions, quasis }, scopeParams = {} ){
 			el.bindings.push({  
 				el, 
 				type: 'section',
-				expr: expr,
+				// TODO [0] seems like big assumption
+				template: recurse( expr )[0],
 				index: el.childCurrentIndex
 			});
 		},
@@ -133,13 +134,19 @@ export default function parse( { expressions, quasis }, scopeParams = {} ){
 	quasis.forEach( ( quasi, i ) => {
 		const raw =  quasi.value.raw;
 		parser.write( raw );
-		// TDOO extract to strategy for attr, text, etc. mov behavior in handler into those
+		// TDOO extract to strategy for attr, text, etc. 
+		// move behavior in handler into those
 		const binding = {};
-		const observable = raw[ raw.length - 1 ] === '*';
-		if ( observable ) {
-			handler.unwrite(1);
-			binding.observable = observable;
+
+		function testObservable( at = 1 ) {
+			const observable = raw[ raw.length - at ] === '*';
+			if ( observable ) {
+				handler.unwrite(1);
+				binding.observable = observable;
+			}
 		}
+
+		testObservable();
 
 		if( currentAttr ) {
 			if ( !attrPattern.test( raw ) ) throw 'unexpected ${...} in attributes';
@@ -151,6 +158,7 @@ export default function parse( { expressions, quasis }, scopeParams = {} ){
 		else if ( i < expressions.length && !inElTag ) {
 			if( raw[ raw.length - 1 ] === '#' ) {
 				handler.unwrite();
+				// testObservable(2);
 				parser.write( '<section-node></section-node>' );
 				handler.bindSection( expressions[i] );
 			}

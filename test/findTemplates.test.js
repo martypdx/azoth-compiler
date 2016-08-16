@@ -98,21 +98,33 @@ describe( 'find templates', () => {
 		});
 
 		it.only( 'block value', () => {
+			
 			const templates = getTemplates(`
-				const template = place => $\`<span>#\${$\`<span>*\${foo}</span>\`}</span>\`;
+				const template = place => $\`<div>#\${$\`<span>*\${foo}</span>\`}</div>\`;
 			`)
 
 
 			const { html, bindings, scope, node } = templates[0];
-			console.log( bindings );
-			assert.equal( html, '<span data-bind><section-node></section-node></span>' );
 			
+			assert.equal( html, '<div data-bind><section-node></section-node></div>' );
+			
+			delete bindings[0].template.node;
+
 			assert.deepEqual( bindings, [{
 				elIndex: 0,
-				index: 1,
-				observable: true,
-				ref: 'place',
-				type: 'child-text'
+				index: 0,
+				type: 'section',
+				template: {
+					html: '<span data-bind><text-node></text-node></span>',
+					bindings: [{
+						elIndex: 0,
+						index: 0,
+						observable: true,
+						ref: 'foo',
+						type: 'child-text'
+					}],
+					scope: void 0
+				}
 			}]);
 		});
 	})
