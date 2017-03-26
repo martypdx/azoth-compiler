@@ -6,6 +6,6 @@ const options = {
 	sourceType: 'module'
 };
 
-export default function ast( source ) {
-	return parse( source, options );
+export default function ast(source) {
+	return parse(source, options);
 }

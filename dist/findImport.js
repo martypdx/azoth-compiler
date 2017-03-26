@@ -15,7 +15,7 @@ function findImport(ast) {
 	(0, _walk.recursive)(ast, {}, {
 		ImportDeclaration(node, state, c) {
 			// TODO: expose as config so we don't have this weakish test
-			// if( node.source.value !== MODULE_NAME ) return;
+			// if(node.source.value !== MODULE_NAME) return;
 			if (!node.source.value.endsWith(MODULE_NAME)) return;
 			specifier = node.specifiers.find(s => s.imported.name === SPECIFIER_NAME);
 		}

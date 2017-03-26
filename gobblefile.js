@@ -1,3 +1,3 @@
 /* globals require, module */
-const gobble = require( 'gobble' );
-module.exports = gobble( 'src' ).transform( 'babel' );
+const gobble = require('gobble');
+module.exports = gobble('src').transform('babel');

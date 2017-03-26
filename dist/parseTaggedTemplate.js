@@ -156,10 +156,10 @@ function parse({ expressions, quasis }, scopeParams = {}) {
 			binding.type = 'attr';
 			handler.bindAttr(expressions[i], binding);
 		} else if (i < expressions.length && !inElTag) {
-			// if( raw[ raw.length - 1 ] === '#' ) {
+			// if(raw[ raw.length - 1 ] === '#') {
 			// 	handler.unwrite();
-			// 	parser.write( '<section-node></section-node>' );
-			// 	handler.bindSection( expressions[i] );
+			// 	parser.write('<section-node></section-node>');
+			// 	handler.bindSection(expressions[i]);
 			// }
 			// else {
 			parser.write('<text-node></text-node>');

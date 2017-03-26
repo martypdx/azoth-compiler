@@ -3,15 +3,15 @@ import compile from '../src/compile';
 import chai from 'chai';
 const assert = chai.assert;
 
-describe( 'compiler', () => {
+describe('compiler', () => {
 
-	it( 'compiles template with various text nodes', () => {
+	it('compiles template with various text nodes', () => {
 		console.time('compile');
 		const code = compile(
 `import { html as $ } from 'diamond';
 const template = (foo, place) => $\`*\${foo}<span>hello *\${place}</span>\${place}\``);
 		console.timeEnd('compile');
-		assert.equal( code, 
+		assert.equal(code, 
 `import { renderer,makeFragment,__otb,__ctb } from 'diamond';
 const template = (() => {
 	const render = renderer(makeFragment(\`<text-node></text-node><span data-bind>hello <text-node></text-node></span><text-node></text-node>\`));
@@ -35,11 +35,11 @@ const template = (() => {
 	});
 
 
-	it( 'compiles expression', () => {
+	it('compiles expression', () => {
 		
 		const code = compile(`(x, y) => $\`<span>*\${x + y}</span>\``);
 		
-		assert.equal( code, 
+		assert.equal(code, 
 `(() => {
 	const render = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
 	const __ctb0 = __ctb(0);
@@ -57,11 +57,11 @@ const template = (() => {
 	
 	});
 
-	it( 'compiles expression with outside ref', () => {
+	it('compiles expression with outside ref', () => {
 		
 		const code = compile(`x => $\`*\${upper(x)}\``);
 		
-		assert.equal( code, 
+		assert.equal(code, 
 `(() => {
 	const render = renderer(makeFragment(\`<text-node></text-node>\`));
 	const __otb0 = __otb(0);
@@ -78,11 +78,11 @@ const template = (() => {
 })()`);
 	});
 
-	it( 'plucks destructured params', () => {
+	it('plucks destructured params', () => {
 		
 		const code = compile(`({foo}) => $\`*\${foo}\``);
 		
-		assert.equal( code, 
+		assert.equal(code, 
 `(() => {
 	const render = renderer(makeFragment(\`<text-node></text-node>\`));
 	const __otb0 = __otb(0);

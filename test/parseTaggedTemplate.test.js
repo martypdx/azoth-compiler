@@ -3,9 +3,9 @@ import chai from 'chai';
 import parseTaggedTemplate from '../src/parseTaggedTemplate';
 const assert = chai.assert;
 
-describe.skip( 'makes', () => {
+describe.skip('makes', () => {
 
-	it( 'element attributes', () => {
+	it('element attributes', () => {
 		const { html, bindings } = parseTaggedTemplate(`
 			done => $\`<span 
 				class="hello" 
@@ -13,11 +13,11 @@ describe.skip( 'makes', () => {
 				data-custom="custom"></span>\`
 		`);
 		
-		assert.deepEqual( html, 
+		assert.deepEqual(html, 
 			`<span class="hello" data-custom="custom" data-bind></span>` 
 		);
 
-		assert.deepEqual( bindings, 
+		assert.deepEqual(bindings, 
 			[{ 
 				elIndex: 0,
 				type: 'class',
@@ -28,7 +28,7 @@ describe.skip( 'makes', () => {
 	});
 
 
-	// it( 'element text nodes', () => {
+	// it('element text nodes', () => {
 	// 	const { html, bindings } = parseTaggedTemplate(`
 	// 		place => $\`
 	// 			<span>\${place}</span>
@@ -37,14 +37,14 @@ describe.skip( 'makes', () => {
 	// 		\`
 	// 	`);
 			
-	// 	assert.equal( html, `
+	// 	assert.equal(html, `
 	// 			<span data-bind><text-node></text-node></span>
 	// 			<span data-bind>hello <text-node></text-node></span>
 	// 			<span data-bind>hello <text-node></text-node>!</span>
 	// 		` 
 	// 	);
 
-	// 	assert.deepEqual( bindings, 
+	// 	assert.deepEqual(bindings, 
 	// 		[{ 
 	// 			elIndex: 0,
 	// 			type: 'text',
@@ -69,32 +69,32 @@ describe.skip( 'makes', () => {
 	// 	// const render = $$(
 	// 	// 	'<span data-bind>hello <text-node></text-node></span>',
 	// 	// 	(() => { 
-	// 	// 		const b0 = bound.text( { ref: 'place', index: 1 } );
+	// 	// 		const b0 = bound.text({ ref: 'place', index: 1 });
 	// 	// 		return nodes => {
-	// 	// 			b0( nodes[0] );
+	// 	// 			b0(nodes[0]);
 	// 	// 		};
 	// 	// 	})()
-	// 	// );
+	// 	//);
 
-	// 	// const render2 = function $$( fragment, bind ) {
+	// 	// const render2 = function $$(fragment, bind) {
 	// 	// 	return () => {
 
 	// 	// 	}
 	// 	// }
 
-	// 	// fb.on( 'value', render );
+	// 	// fb.on('value', render);
 
 		
 	// });
 
-	// it( 'simple nested element with text node', () => {
+	// it('simple nested element with text node', () => {
 	// 	const { html, bindings } = parseTaggedTemplate(`
 	// 		foo => $\`<div><span>\${foo}</span></div>\`
 	// 	`);
 			
-	// 	assert.equal( html, `<div><span data-bind><text-node></text-node></span></div>` );
+	// 	assert.equal(html, `<div><span data-bind><text-node></text-node></span></div>`);
 
-	// 	assert.deepEqual( bindings, 
+	// 	assert.deepEqual(bindings, 
 	// 		[{ 
 	// 			elIndex: 0,
 	// 			type: 'text',
@@ -105,14 +105,14 @@ describe.skip( 'makes', () => {
 		
 	// });
 
-	// it( 'element with mixed child nodes', () => {
+	// it('element with mixed child nodes', () => {
 	// 	const { html, bindings } = parseTaggedTemplate(`
 	// 		foo => $\`<div><span>hello</span> \${foo}</div>\`
 	// 	`);
 			
-	// 	assert.equal( html, `<div data-bind><span>hello</span> <text-node></text-node></div>` );
+	// 	assert.equal(html, `<div data-bind><span>hello</span> <text-node></text-node></div>`);
 
-	// 	assert.deepEqual( bindings, 
+	// 	assert.deepEqual(bindings, 
 	// 		[{ 
 	// 			elIndex: 0,
 	// 			type: 'text',
@@ -122,14 +122,14 @@ describe.skip( 'makes', () => {
 	// 	);	
 	// });
 
-	// it( 'multiple bound element in mixed child nodes', () => {
+	// it('multiple bound element in mixed child nodes', () => {
 	// 	const { html, bindings } = parseTaggedTemplate(`
-	// 		( greeting, place ) => $\`<div><span>\${greeting}</span> \${place}</div>\`
+	// 		(greeting, place) => $\`<div><span>\${greeting}</span> \${place}</div>\`
 	// 	`);
 			
-	// 	assert.equal( html, `<div data-bind><span data-bind><text-node></text-node></span> <text-node></text-node></div>` );
+	// 	assert.equal(html, `<div data-bind><span data-bind><text-node></text-node></span> <text-node></text-node></div>`);
 
-	// 	assert.deepEqual( bindings, 
+	// 	assert.deepEqual(bindings, 
 	// 		[{ 
 	// 			elIndex: 0,
 	// 			type: 'text',
@@ -144,14 +144,14 @@ describe.skip( 'makes', () => {
 	// 	);	
 	// });
 
-	// it( 'expression', () => {
+	// it('expression', () => {
 
-	// 	// ( x, y ) => $`*${x} + *${y} = *${x + y}`;
+	// 	// (x, y) => $`*${x} + *${y} = *${x + y}`;
 	// 	const compiled = parseTaggedTemplate(`
-	// 		( x, y ) => $\`*\${x} + *\${y} = *\${x + y}\`
+	// 		(x, y) => $\`*\${x} + *\${y} = *\${x + y}\`
 	// 	`);
 
-	// 	assert.deepEqual( compiled, {
+	// 	assert.deepEqual(compiled, {
 	// 		html: '<text-node></text-node> + <text-node></text-node> = <text-node></text-node>',
 	// 		bindings: [{ 
 	// 			type: 'text',
@@ -180,18 +180,18 @@ describe.skip( 'makes', () => {
 
 });
 
-describe.skip( 'block compiles', () => {
+describe.skip('block compiles', () => {
 
-	it.skip( 'basic section', () => {
+	it('basic section', () => {
 		const compiled = parseTaggedTemplate(`
 			items => $\`<ul>
-				#\${ items.map( item => $\`
+				#\${ items.map(item => $\`
 					<li>\${ item }</li>
 				\`)}
 			</ul>\`
 		`);
 
-		assert.deepEqual( compiled, {
+		assert.deepEqual(compiled, {
 			html: `<ul data-bind>
 				<section-node></section-node>
 			</ul>`,
