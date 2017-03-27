@@ -49,7 +49,7 @@ function makeScope(scope) {
 	scope.params.reduce((hash, param, i) => {
 		if (param.type === 'Identifier') hash[param.name] = true;else if (param.type === 'ObjectPattern') {
 			param.properties.forEach(p => {
-				console.log(p);
+				//console.log(p);
 				const pluck = { key: p.key.name, index: i };
 				result.plucks.push(pluck);
 				hash[`__ref${ i }`] = true;
