@@ -47,18 +47,17 @@ function compiler(s, codes) {
 
 		const code = writeCode(template); 
 		
-		const renders = fragments.map((html, i) => `	const render_${i} = renderer(makeFragment(\`${html}\`));`)
-		.join('\n');
+		const renders = fragments.map((html, i) => 
+			`const render_${i} = renderer(makeFragment(\`${html}\`));`
+		);
 
-		const declareBindings = initBindings.map(bindings => {
-			return bindings.map(declareBinding).join('\n')
-		}).join('\n');
-		const codeGen = 
-`(() => {
-${renders}
-${declareBindings}
-	return ${code};
-})()`;
+		const declareBindings = initBindings.map(bindings => bindings.map(declareBinding).join('\n'));
+
+		const codeGen = `(() => {
+			${renders.join('\n')}
+			${declareBindings.join('\n')}
+			return ${code};
+		})()`;
 
 		const { scope } = template;
 		s.overwrite(scope.start, scope.end, codeGen);
@@ -68,30 +67,27 @@ ${declareBindings}
 			const { plucks, params } = scope;
 
 			//TODO: should expressions unsubscribe? (think so)
-			return (
-	`(${Object.keys(params)}) => {
-		const nodes = render_${i}();${plucks.length ? '\n' + plucks.map(pluck).join('\n') : ''}
-${bindings.map(bind).join('\n')}
-		const __fragment = nodes[nodes.length];
-		__fragment.unsubscribe = () => {
-${bindings.map(unsubscribe).join('')}
-		};
-		return __fragment;
-	}`);
+			return `(${Object.keys(params)}) => {
+				const nodes = render_${i}();${plucks.length ? '\n' + plucks.map(pluck).join('\n') : ''}
+				${bindings.map(bind).join('\n')}
+				const __fragment = nodes[nodes.length];
+				__fragment.unsubscribe = () => {
+					${bindings.map(unsubscribe).join('')}
+				};
+				return __fragment;
+			}`;
 
 		}
 
 		function bind(b, i) {
 			let binding = '';
 			if(b.type === 'section') {
-				binding = `		const __section_${i} = __${bindingCode[b.type]}${i}(nodes[${b.elIndex}], ${writeCode(b.template)});${'\n'}`;
-				binding += `		__section_${i}();`;
+				binding = `const __section_${i} = __${bindingCode[b.type]}${i}(nodes[${b.elIndex}], ${writeCode(b.template)});${'\n'}`;
+				binding += `__section_${i}();`;
 			}
 			else if (b.ref) binding = bindReference(b, i);
 			else if (b.expr) binding = bindExpression(b, i);
 			else throw new Error('Unexpected binding type');
-
-
 			return binding;
 		}
 
@@ -99,7 +95,7 @@ ${bindings.map(unsubscribe).join('')}
 }
 
 function declareBinding(b, i) {
-	return `	const __${bindingCode[b.type]}${i} = __${bindingCode[b.type]}(${b.index});`;
+	return `const __${bindingCode[b.type]}${i} = __${bindingCode[b.type]}(${b.index});`;
 }
 
 
@@ -108,31 +104,31 @@ function bindReference(b, i) {
 }
 
 function bindObservable(b, i) {
-	return `		const __s${i} = ${b.ref}.subscribe(__${bindingCode[b.type]}${i}(nodes[${b.elIndex}]));`
+	return `const __s${i} = ${b.ref}.subscribe(__${bindingCode[b.type]}${i}(nodes[${b.elIndex}]));`
 }
 
 function bindStatic(b, i) {
-	return `		__${bindingCode[b.type]}${i}(nodes[${b.elIndex}])(${b.ref}.value);`
+	return `__${bindingCode[b.type]}${i}(nodes[${b.elIndex}])(${b.ref}.value);`
 }
 
 function bindNone(b, i) {
-	return `		__${bindingCode[b.type]}${i}(nodes[${b.elIndex}])();`
+	return `__${bindingCode[b.type]}${i}(nodes[${b.elIndex}])();`
 }
 
 function bindExpression(b, i) {
 	b.ref = `__e${i}`;
-	const expr = `		const ${b.ref} = combineLatest(${b.params},(${b.params})=>(${b.expr}));`
+	const expr = `const ${b.ref} = combineLatest(${b.params},(${b.params})=>(${b.expr}));`
 	return expr + '\n' + bindObservable(b, i);
 }
 
 function unsubscribe(b, i, arr) {
 	let unsub = ''
-	if (b.observable) unsub += `		__s${i}.unsubscribe();`;
-	if (b.type === 'section') unsub += `${unsub ? '\n' : ''}		__section_${i}.unsubscribe();`;
+	if (b.observable) unsub += `__s${i}.unsubscribe();`;
+	if (b.type === 'section') unsub += `${unsub ? '\n' : ''}__section_${i}.unsubscribe();`;
 	if (unsub && i !== arr.length - 1) unsub += '\n';
 	return unsub
 }
 
 function pluck(pluck) {
-	return `		const ${pluck.key} = __ref${pluck.index}.pluck('${pluck.key}').distinctUntilChanged();`;
+	return `const ${pluck.key} = __ref${pluck.index}.pluck('${pluck.key}').distinctUntilChanged();`;
 }
