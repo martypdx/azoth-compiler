@@ -25,44 +25,83 @@ export default function compileAll(source) {
 
 const bindingCode = {
 	'orphan-text': 'otb',
-	'child-text': 'ctb'
+	'child-text': 'ctb',
+	'section': 'sb'
 }
 
 
 
 function compiler(s, codes) {
 
+	return function compile(template) {
+		const fragments = [];
+		const initBindings = [];
+		const addTemplate = (html, bindings) => {
+			const index = fragments.push(html) - 1;
+			initBindings.push(bindings);
+			// for top-level import:
+			bindings.forEach(b => codes.add(bindingCode[b.type]));
+			return index;
+		}
 
-	return function compile({ html, bindings, scope, node }) {
-		bindings.forEach(b => codes.add(bindingCode[b.type]));
 
-		let code = 
+		const code = writeCode(template); 
+		
+		const renders = fragments.map((html, i) => `	const render_${i} = renderer(makeFragment(\`${html}\`));`)
+		.join('\n');
+
+		const declareBindings = initBindings.map(bindings => {
+			return bindings.map(declareBinding).join('\n')
+		}).join('\n');
+		const codeGen = 
 `(() => {
-	const render = renderer(makeFragment(\`${html}\`));
-${bindings.map(declareBinding).join('\n')}
-	return (${Object.keys(scope.params)}) => {
-		const nodes = render();${scope.plucks.length ? '\n' + scope.plucks.map(pluck).join('\n') : ''}
+${renders}
+${declareBindings}
+	return ${code};
+})()`;
+
+		const { scope } = template;
+		s.overwrite(scope.start, scope.end, codeGen);
+
+		function writeCode({ html, bindings, scope = { plucks: [], params: [] }, node }) {
+			const i = addTemplate(html, bindings);
+			const { plucks, params } = scope;
+
+			//TODO: should expressions unsubscribe? (think so)
+			return (
+	`(${Object.keys(params)}) => {
+		const nodes = render_${i}();${plucks.length ? '\n' + plucks.map(pluck).join('\n') : ''}
 ${bindings.map(bind).join('\n')}
 		const __fragment = nodes[nodes.length];
 		__fragment.unsubscribe = () => {
 ${bindings.map(unsubscribe).join('')}
 		};
 		return __fragment;
-	};
-})()`;
+	}`);
 
-		s.overwrite(scope.start, scope.end, code);
+		}
+
+		function bind(b, i) {
+			let binding = '';
+			if(b.type === 'section') {
+				binding = `		const __section_${i} = __${bindingCode[b.type]}${i}(nodes[${b.elIndex}], ${writeCode(b.template)});${'\n'}`;
+				binding += `		__section_${i}();`;
+			}
+			else if (b.ref) binding = bindReference(b, i);
+			else if (b.expr) binding = bindExpression(b, i);
+			else throw new Error('Unexpected binding type');
+
+
+			return binding;
+		}
+
 	}
-
 }
 
 function declareBinding(b, i) {
 	return `	const __${bindingCode[b.type]}${i} = __${bindingCode[b.type]}(${b.index});`;
 }
 
-function bind(b, i) {
-	return b.ref ? bindReference(b, i) : bindExpression(b, i);
-}
 
 function bindReference(b, i) {
 	return b.observable ? bindObservable(b, i) : bindStatic(b, i);
@@ -76,6 +115,10 @@ function bindStatic(b, i) {
 	return `		__${bindingCode[b.type]}${i}(nodes[${b.elIndex}])(${b.ref}.value);`
 }
 
+function bindNone(b, i) {
+	return `		__${bindingCode[b.type]}${i}(nodes[${b.elIndex}])();`
+}
+
 function bindExpression(b, i) {
 	b.ref = `__e${i}`;
 	const expr = `		const ${b.ref} = combineLatest(${b.params},(${b.params})=>(${b.expr}));`
@@ -83,8 +126,11 @@ function bindExpression(b, i) {
 }
 
 function unsubscribe(b, i, arr) {
-	if (!b.observable) return;
-	return `			__s${i}.unsubscribe();${ i === arr.length - 1 ? '' : '\n' }`;
+	let unsub = ''
+	if (b.observable) unsub += `		__s${i}.unsubscribe();`;
+	if (b.type === 'section') unsub += `${unsub ? '\n' : ''}		__section_${i}.unsubscribe();`;
+	if (unsub && i !== arr.length - 1) unsub += '\n';
+	return unsub
 }
 
 function pluck(pluck) {

@@ -25,6 +25,15 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
 	let inElTag = false;
 	let currentAttr = null;
 
+	const makeExpressionBinding = expr => {
+		return {
+			expr: astring(expr),
+			params: Array
+				.from(undeclared(expr).values())
+				.filter(v => scopeParams[v])
+		};
+	}
+
 	const handler = {
 		onopentagname(name) {
 			currentEl.childCurrentIndex++;
@@ -80,11 +89,7 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
 			
 			if (expr.type === 'Identifier') binding.ref = expr.name
 			else {
-				binding.expr = astring(expr);
-				const params = Array
-					.from(undeclared(expr).values())
-					.filter(v => scopeParams[v]);
-				binding.params = params;
+				binding = Object.assign(binding, makeExpressionBinding(expr));
 			}
 
 			el.bindings.push(binding);
@@ -99,15 +104,22 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
 			const el = currentEl;
 			el.bound = true;
 
-			if (expr.type !== 'TaggedTemplateExpression') throw new Error('expected TTE');
-
-			el.bindings.push({  
+			let binding = {  
 				el, 
 				type: 'section',
 				// TODO [0] seems like big assumption
 				template: recurse(expr)[0],
 				index: el.childCurrentIndex
-			});
+			}
+
+			// Anything other than a straight TTE is an expression
+			if (expr.type !== 'TaggedTemplateExpression') {
+				binding = Object.assign(binding, makeExpressionBinding(expr));
+			};
+
+			// console.log("bindSection EXPR>>", binding);
+
+			el.bindings.push(binding);
 		},
 		onclosetag(name) {
 			html.push(`</${name}>`);
