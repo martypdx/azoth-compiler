@@ -10,7 +10,7 @@ export default function findImport(ast) {
 			// TODO: expose as config so we don't have this weakish test
 			// if(node.source.value !== MODULE_NAME) return;
 			if(!node.source.value.endsWith(MODULE_NAME)) return;
-			specifier = node.specifiers.find(s => s.imported.name === SPECIFIER_NAME);
+			specifier = node.specifiers.find(({ imported }) => imported.name === SPECIFIER_NAME);
 		}
 	});
 	return specifier;
