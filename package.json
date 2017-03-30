@@ -29,8 +29,9 @@
   },
   "dependencies": {
     "acorn": "^3.2.0",
-    "astring": "^0.6.1",
+    "astring": "^0.8.0",
     "htmlparser2": "^3.9.1",
+    "magic-string": "^0.19.0",
     "undeclared": "^1.0.6"
   }
 }

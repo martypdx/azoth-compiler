@@ -1,8 +1,7 @@
 import { parse } from 'acorn';
 
 const options = {
-	ecmaVersion: 7,
-	preserveParens: true,
+	ecmaVersion: 8,
 	sourceType: 'module'
 };
 
