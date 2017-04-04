@@ -7,9 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
+    "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
     "debug": "npm run test -- --debug-brk",
-    "watch": "npm run test -- -w",
+    "start": "npm run test -- -w",
     "build": "gobble build -f dist"
   },
   "author": "Marty Nelson <marty@martypdx.com> (@martypdx)",

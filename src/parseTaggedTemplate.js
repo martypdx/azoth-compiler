@@ -25,14 +25,11 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
     let inElTag = false;
     let currentAttr = null;
 
-    const makeExpressionBinding = expr => {
-        return {
-            expr: astring(expr),
-            params: Array
-                .from(undeclared(expr).values())
-                .filter(v => scopeParams[v])
-        };
-    }
+    const getParams = (expr) => {
+        return Array
+            .from(undeclared(expr).values())
+            .filter(v => scopeParams[v]);
+    };
 
     const handler = {
         onopentagname(name) {
@@ -82,14 +79,15 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
             const el = binding.el = currentEl;
             el.bound = true;
 
-            if (el === fragment) {
-                binding.type = 'orphan-text';
-            }
+            // if (el === fragment) {
+            //     binding.type = 'orphan-text';
+            // }
             if (binding.index === -1) binding.index = el.childCurrentIndex;
             
-            if (expr.type === 'Identifier') binding.ref = expr.name
+            if (expr.type === 'Identifier') binding.ref = expr.name;
             else {
-                binding = Object.assign(binding, makeExpressionBinding(expr));
+                binding.params = getParams(expr);
+                binding.expr = astring(expr);
             }
 
             el.bindings.push(binding);
@@ -100,24 +98,27 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
             html[ index ] = current.slice(0, -count);
             if (!html[ index ]) currentEl.childCurrentIndex--;
         },
-        bindSection(expr){
+        bindBlock(expr, binding){
             const el = currentEl;
             el.bound = true;
 
-            let binding = {  
-                el, 
-                type: 'section',
-                // TODO [0] seems like big assumption
-                template: recurse(expr)[0],
-                index: el.childCurrentIndex
-            };
-
             // Anything other than a straight TTE is an expression
-            if (expr.type !== 'TaggedTemplateExpression') {
-                binding = Object.assign(binding, makeExpressionBinding(expr));
-            }
+            // TODO: probably should combine to look for identifiers
+            const isExpression = expr.type !== 'TaggedTemplateExpression'; 
 
-            // console.log("bindSection EXPR>>", binding);
+            // "recurse" mutates the expr node (template substitution), 
+            // so we need to get params first
+            const params = isExpression ? getParams(expr) : null;
+            
+            binding.el = el;
+            binding.type = 'block';
+            binding.templates = recurse(expr);
+            binding.index = el.childCurrentIndex;
+
+            if (isExpression) {
+                binding.params = params;
+                binding.expr = astring(expr);
+            }
 
             el.bindings.push(binding);
         },
@@ -170,14 +171,15 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
         else if (i < expressions.length && !inElTag) {
             if(raw[ raw.length - 1 ] === '#') {
                 handler.unwrite();
-                // testObservable(2);
-                parser.write('<section-node></section-node>');
-                handler.bindSection(expressions[i]);
+                testObservable(2);
+                parser.write('<block-node></block-node>');
+                // parser.write('<!-- block -->');
+                handler.bindBlock(expressions[i], binding);
             }
             else {
                 parser.write('<text-node></text-node>');
-                binding.type = 'child-text';
-                binding.index = -1 // auto-fill
+                binding.type = 'text-node';
+                binding.index = -1; // auto-fill
                 handler.bind(expressions[i], binding);
             }
         }

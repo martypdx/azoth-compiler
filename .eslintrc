@@ -15,6 +15,7 @@
     "extends": "eslint:recommended",
     "rules": {
         "no-console": "off",
+        "no-cond-assign": "off",
         "indent": [
             "error",
             4
@@ -25,7 +26,8 @@
         ],
         "quotes": [
             "error",
-            "single"
+            "single", 
+            { "allowTemplateLiterals": true }
         ],
         "semi": [
             "error",
