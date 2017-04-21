@@ -39,7 +39,7 @@ describe('compiler', () => {
         `);
 
         codequal(code, `
-            const render_0 = renderer(makeFragment('<text-node></text-node>'));
+            const render_0 = renderer(makeFragment(\`<text-node></text-node>\`));
             const __bind0 = __tb(0);
             import { renderer, makeFragment, __tb } from 'diamond';
             const template = (() => {
@@ -69,7 +69,7 @@ describe('compiler', () => {
         codequal(code, expected.toCode());
 
         function expected() {
-            const render_0 = renderer(makeFragment('<text-node></text-node><span data-bind>hello <text-node></text-node></span><text-node></text-node>'));
+            const render_0 = renderer(makeFragment(`<text-node></text-node><span data-bind>hello <text-node></text-node></span><text-node></text-node>`));
             const __bind0 = __tb(0);
             const __bind1 = __tb(2);
             const __bind2 = __tb(1);
@@ -102,7 +102,7 @@ describe('compiler', () => {
         codequal(code, expected.toCode());
         
         function expected() {
-            const render_0 = renderer(makeFragment('<span data-bind><text-node></text-node></span>'));
+            const render_0 = renderer(makeFragment(`<span data-bind><text-node></text-node></span>`));
             const __bind0 = __tb(0);
 
             (() => {
@@ -113,7 +113,6 @@ describe('compiler', () => {
                     const __fragment = __nodes[__nodes.length];
                     __fragment.unsubscribe = () => {
                         __s0.unsubscribe();
-                        __e0.unsubscribe();
                     };
                     return __fragment;
                 };
@@ -133,7 +132,7 @@ describe('compiler', () => {
         codequal(code, expected.toCode());
         
         function expected() {
-            const render_0 = renderer(makeFragment('<text-node></text-node>'));
+            const render_0 = renderer(makeFragment(`<text-node></text-node>`));
             const __bind0 = __tb(0);
             (() => {
                 return (x) => {
@@ -143,7 +142,6 @@ describe('compiler', () => {
                     const __fragment = __nodes[__nodes.length];
                     __fragment.unsubscribe = () => {
                         __s0.unsubscribe();
-                        __e0.unsubscribe();
                     };
                     return __fragment;
                 };
@@ -162,7 +160,7 @@ describe('compiler', () => {
         codequal(code, expected.toCode());
         
         function expected() {
-            const render_0 = renderer(makeFragment('<text-node></text-node>'));
+            const render_0 = renderer(makeFragment(`<text-node></text-node>`));
             const __bind0 = __tb(0);
             (() => {
                 return (__ref0) => {
@@ -194,8 +192,8 @@ describe('compiler', () => {
             codequal(code, expected.toCode());
             
             function expected() {
-                const render_0 = renderer(makeFragment('<div data-bind><block-node></block-node></div>'));
-                const render_1 = renderer(makeFragment('<span data-bind><text-node></text-node></span>'));
+                const render_0 = renderer(makeFragment(`<div data-bind><block-node></block-node></div>`));
+                const render_1 = renderer(makeFragment(`<span data-bind><text-node></text-node></span>`));
                 const __bind0 = __bb(0);
                 const __bind1 = __tb(0);
                 (() => {
@@ -231,9 +229,9 @@ describe('compiler', () => {
             codequal(code, expected.toCode());
             
             function expected() {
-                const render_0 = renderer(makeFragment('<block-node></block-node>'));
-                const render_1 = renderer(makeFragment('<span>Yes</span>'));
-                const render_2 = renderer(makeFragment('<span>No</span>'));
+                const render_0 = renderer(makeFragment(`<block-node></block-node>`));
+                const render_1 = renderer(makeFragment(`<span>Yes</span>`));
+                const render_2 = renderer(makeFragment(`<span>No</span>`));
                 const __bind0 = __bb(0);
                 (() => {
                     return (choice) => {
@@ -276,9 +274,9 @@ describe('compiler', () => {
             codequal(code, expected.toCode());
             
             function expected() {
-                const render_0 = renderer(makeFragment('<block-node></block-node>'));
-                const render_1 = renderer(makeFragment('<span>Yes</span>'));
-                const render_2 = renderer(makeFragment('<span>No</span>'));
+                const render_0 = renderer(makeFragment(`<block-node></block-node>`));
+                const render_1 = renderer(makeFragment(`<span>Yes</span>`));
+                const render_2 = renderer(makeFragment(`<span>No</span>`));
                 const __bind0 = __bb(0);
                 (() => {
                     return (choice) => {
@@ -301,7 +299,6 @@ describe('compiler', () => {
                         const __fragment = __nodes[__nodes.length];
                         __fragment.unsubscribe = () => {
                             __s0.unsubscribe();
-                            __e0.unsubscribe();
                         };
                         return __fragment;
                     };

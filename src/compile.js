@@ -45,7 +45,7 @@ class Module {
         }
         
         const renderers = fragments.map((html, i) => 
-            `const render_${i} = renderer(makeFragment('${html}'));`
+            `const render_${i} = renderer(makeFragment(\`${html}\`));`
         );
         const bindingDeclarations =  binders.map((b, i) =>
             `const __bind${i} = __${bindingImport[b.type]}(${b.index});`
@@ -162,7 +162,7 @@ function unsubscribe(b, i) {
     const unsub = [];
     if (b.observable) {
         unsub.push(`__s${i}.unsubscribe();`);
-        if (b.expr) unsub.push(`__e${i}.unsubscribe();`);
+        // if (b.expr) unsub.push(`__e${i}.unsubscribe();`);
     }
     return unsub.length ? unsub.join('\n') : '';
 }

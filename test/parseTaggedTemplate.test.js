@@ -178,7 +178,7 @@ describe.skip('makes', () => {
 
 });
 
-describe.skip('block compiles', () => {
+describe.only('block compiles', () => {
 
     it('basic section', () => {
         const compiled = parseTaggedTemplate(`

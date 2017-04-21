@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
+    "test:callstack": "mocha --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
+    "test:debug": "mocha --debug-brk --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
     "debug": "npm run test -- --debug-brk",
     "start": "npm run test -- -w",
     "build": "gobble build -f dist"
@@ -18,6 +20,7 @@
     "babel-core": "^6.10.4",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.10.3",
     "chai": "^3.5.0",
+    "eslint": "^3.19.0",
     "gobble": "^0.11.3",
     "gobble-babel": "^6.0.0",
     "gobble-cli": "^0.7.0",
