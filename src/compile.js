@@ -70,7 +70,7 @@ class Module {
         const bind = this.bind.bind(this);
         const { plucks, params } = scope;
 
-        //TODO: unsubscribe plucks...
+        //TODO: unsubscribe plucks?...
         return `(${Object.keys(params)}) => {
             const __nodes = render_${i}();
             ${plucks.length ? '\n' + plucks.map(pluck).join('\n') : ''}
@@ -146,8 +146,12 @@ function bindExpression(b, i) {
         return expr + '\n' + bindObservable(b, i);
     }
     else {
-        return bindToNodeWithValue(b, b.expr);
+        return bindToNodeWithValue(b, exprFn(b));
     }
+}
+
+function exprFn(b) {
+    return `((${b.params.join()}) => (${b.expr}))(${b.params.map(p => `${p}.value`).join()})`;
 }
 
 function singleParam(b) {

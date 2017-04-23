@@ -8,8 +8,8 @@ const specials = {
     class: 'class'
 };
 
-export default function parse({ expressions, quasis }, scopeParams = {}, recurse){
-
+export default function parse({ expressions, quasis }, scopeParams = {}, recurse) {
+    
     const getEl = (name = 'root') => ({
         name, 
         attributes: {}, 

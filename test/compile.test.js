@@ -248,7 +248,7 @@ describe('compiler', () => {
                             __fragment.unsubscribe = () => {};
                             return __fragment;
                         };
-                        __bind0(__nodes[0])(choice ? t0 : t1);
+                        __bind0(__nodes[0])((choice => choice ? t0 : t1)(choice.value));
 
                         const __fragment = __nodes[__nodes.length];
                         __fragment.unsubscribe = () => {};

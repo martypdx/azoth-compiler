@@ -6,7 +6,7 @@ const $ = () => {};
 describe('toCode', () => {
 
     const code = `
-        (x, y) => $\`<span>*\${x + y}</span>\`;
+        (x, y) => $\`<span>*\${ x + y }</span>\`;
     `.trim();
 
     it('named function', () => {
