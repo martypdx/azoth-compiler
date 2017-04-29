@@ -3,17 +3,23 @@ import { ancestor, base } from 'acorn/dist/walk';
 
 const noNestedTTE = Object.assign(base, { TaggedTemplateExpression(){} });
 
-export default function findTemplates(ast, tag) {
+export default function findTemplates(ast, tag, parentScope = { params: {} }) {
     const templates = [];
-    const recurse = ast => findTemplates(ast, tag);
 
     ancestor(ast, {
         TaggedTemplateExpression(node, ancestors) {
-            if(node.tag.name !== tag) return;
+            if (node.tag.name !== tag) return;
+            console.log('ANCESTORS', ancestors);
             const scope = getFnScope(ancestors);
-            const params = scope ? scope.params : null;
+            if (scope) scope.params = Object.assign(parentScope.params, scope.params);
+            const params = scope ? scope.params : undefined;
+
+            const recurse = ast => findTemplates(ast, tag, scope);
+            
             const { html, bindings } = parseTaggedTemplate(node.quasi, params, recurse);
+            
             const index = templates.push({ html, bindings, scope, node }) - 1;
+            
             node.type = 'Identifier',
             node.name = `t${index}`;
             delete node.tag;
@@ -26,25 +32,26 @@ export default function findTemplates(ast, tag) {
 const isFn = /function/i;
 
 function getFnScope(ancestors) {
-    // current child node is in stack, so -2
+    // current child node is at end of array, so -2
     let i = ancestors.length - 2;
     let node = null;
+    // TODO: I think we need to look for parent scope's function
+    // and stop there, because params already accounted for.
     while(node = ancestors[i--]) {
         if (isFn.test(node.type)) return makeScope(node);
     }
 }
 
-function makeScope(scope) {
-
+function makeScope(node) {
     const result = {
         params: Object.create(null),
         plucks: [],
-        start: scope.start,
-        end: scope.end
+        start: node.start,
+        end: node.end
     };
 
-    scope.params.reduce((hash, param, i) => {
-        if (param.type === 'Identifier') hash[ param.name ] = true;
+    node.params.reduce((hash, param, i) => {
+        if (param.type === 'Identifier') hash[param.name] = true;
         else if (param.type === 'ObjectPattern') {
             // TODO: add rest of destructuring
             // currently only handles ObjectPattern 1 level deep

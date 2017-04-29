@@ -1,164 +1,144 @@
+/*eslint no-unused-vars: off */
+/* globals $ */
+
 import findTemplates from '../src/findTemplates';
 import parse from '../src/ast';
 import chai from 'chai';
 const assert = chai.assert;
 
+const getTemplatesByTag = tag => source => findTemplates(parse(source), tag);
+const get$Templates = getTemplatesByTag('$');
+const getTemplates = source => get$Templates(source.toCode());
+
+const removeProp = prop => obj => (delete obj[prop], obj);
+const removeEnd = removeProp('end');
+const removeStart = removeProp('start');
+const removePos = obj => removeEnd(removeStart(obj));
+const deepEqual = (actual, expected) => {
+    assert.ok(actual, 'actual was undefined');
+    assert.deepEqual(removePos(actual), expected);
+};
+
 describe('find templates', () => {
 
-    function getTemplates(source, tag = '$') {
-        return findTemplates(parse(source), tag);
-    }
+    it('single template', () => {
+    
+        function source() {
+            const template = (foo, bar) => $`
+                <span class-foo=${foo}>hello ${bar}</span>
+            `;
+        }
 
-    describe('find', () => {
+        const templates = getTemplates(source);
 
-        it('tagged templates', () => {
-            
-            const templates = getTemplates(`
-                import { html as $ } from 'diamond';
-                const template = (foo, bar) => $\`<span class-foo=\${foo}>hello \${place}</span>\`;
-            `);
+        assert.equal(templates.length, 1);
 
-            assert.equal(templates.length, 1);
-            const [{ html, bindings, scope, node }] = templates;
-            assert.ok(html);
-            assert.ok(scope);
-            assert.ok(bindings);
-            assert.ok(node);
+        const [{ scope, node }] = templates;
 
+        deepEqual(node, {
+            name: 't0',
+            type: 'Identifier'
         });
 
-        it('ignores nested templates', () => {
-            
-            const templates = getTemplates`
-                import { html as $ } from 'diamond';
-                const template = items => $\`
-                    <ul>
-                        \${ items.map(item => $\`
-                            <li>\${ item }</li>
-                        \`)}
-                    </ul>
-                \`;
-                export default template;
-            `;
+        deepEqual(scope, {
+            params: { foo: true, bar: true },
+            plucks: []
+        });
+    });
 
-            assert.equal(templates.length, 1);
+    it('sibling templates', () => {
+        function source() {
+            const template1 = foo => $`${foo}`;
+            const template2 = foo => $`${foo}`;
+        }
+
+        const templates = getTemplates(source);
+
+        assert.equal(templates.length, 2);
+
+        let [{ scope, node }] = templates;
+        deepEqual(node, {
+            name: 't0',
+            type: 'Identifier'
+        });
+        deepEqual(scope, {
+            params: { foo: true },
+            plucks: []
         });
 
-        it('sibling templates', () => {
-            
-            const templates = getTemplates`
-                import { html as $ } from 'diamond';
-                const template1 = foo => $\`\${foo}\`;
-                const template2 = foo => $\`\${foo}\`;
+        [, { scope, node }] = templates;
+        deepEqual(node, {
+            name: 't1',
+            type: 'Identifier'
+        });
+        deepEqual(scope, {
+            params: { foo: true },
+            plucks: []
+        });
+    });
+    
+    // TODO: nest template in non-block should warn
+    
+    it('nested template', () => {
+        function source() {
+            const template = items => $`
+                <ul>
+                    #${items.map(item => $`
+                        <li>${item}</li>
+                    `)}
+                </ul>
             `;
+        }
 
-            assert.equal(templates.length, 2);
+        const templates = getTemplates(source);
+        assert.equal(templates.length, 1);
+        const [{ bindings }] = templates;
+        
+        const [binding] = bindings;
+        const { templates: nested, params } = binding;
+
+        assert.equal(nested.length, 1);
+
+        const [{ scope, node }] = nested;
+
+        deepEqual(node, {
+            name: 't0', type: 'Identifier'
+        });
+
+        deepEqual(scope, {
+            params: { item: true, items: true },
+            plucks: []
         });
 
     });
 
-    describe('parse', () => {
+    it('nested template with outer scope', () => {
+        function source() {
+            const template = items => $`
+                <ul>
+                    #${items.map(item => $`
+                        <li>${item} of ${items}</li>
+                    `)}
+                </ul>
+            `;
+        }
 
-        it('orphan text value', () => {
-            const templates = getTemplates(`
-                const template = foo => $\`\*\${foo}\`;
-            `);
+        const templates = getTemplates(source);
+        const [{ bindings }] = templates;
+        const nested = bindings[0].templates;
+        assert.equal(nested.length, 1);
 
-            const [{ html, bindings, node }] = templates;
-            assert.equal(html, '<text-node></text-node>');
-            // TTE's are mutated into Identifier
-            assert.equal(node.type, 'Identifier');
-            
-            assert.deepEqual(bindings, [{
-                elIndex: 0,
-                index: 0,
-                observable: true,
-                ref: 'foo',
-                type: 'text-node'
-            }]);
+        const [{ scope, node }] = nested;
+
+        deepEqual(node, {
+            name: 't0', type: 'Identifier'
         });
 
-        it('child text value', () => {
-            const templates = getTemplates(`
-                const template = place => $\`<span>hello *\${place}</span>\`;
-            `);
-
-            const { html, bindings, /*scope,*/ node } = templates[0];
-            assert.equal(html, '<span data-bind>hello <text-node></text-node></span>');
-            assert.equal(node.type, 'Identifier');
-            
-            assert.deepEqual(bindings, [{
-                elIndex: 0,
-                index: 1,
-                observable: true,
-                ref: 'place',
-                type: 'text-node'
-            }]);
+        deepEqual(scope, {
+            params: { item: true, items: true },
+            plucks: []
         });
 
-        describe('blocks', () => {
-
-            it('block value', () => {
-                
-                const templates = getTemplates(`
-                    const template = place => $\`<div>#\${$\`<span>*\${place}</span>\`}</div>\`;
-                `);
-
-                const [{ html, bindings }] = templates;
-                
-                assert.equal(html, '<div data-bind><block-node></block-node></div>');
-                
-                // remove node prop for easier deepEqual test 
-                delete bindings[0].templates[0].node;
-
-                assert.deepEqual(bindings, [{
-                    elIndex: 0,
-                    index: 0,
-                    type: 'block',
-                    templates: [{
-                        html: '<span data-bind><text-node></text-node></span>',
-                        bindings: [{
-                            elIndex: 0,
-                            index: 0,
-                            observable: true,
-                            ref: 'place',
-                            type: 'text-node'
-                        }],
-                        scope: void 0
-                    }]
-                }]);
-            });
-
-            it.skip('multiple block values in expression', () => {
-                
-                const templates = getTemplates(`
-                    choice => $\`#\${choice ? $\`<span>Yes</span>\` : $\`<span>No</span>\`}\`;
-                `);
-
-                const [{ html, bindings }] = templates;
-                
-                assert.equal(html, '<block-node></block-node>');
-                
-                // remove node prop for easier deepEqual test 
-                delete bindings[0].templates[0].node;
-
-                assert.deepEqual(bindings, [{
-                    elIndex: 0,
-                    expr: (t0, t1) => `choice ? ${t0} : ${t1}`,
-                    index: 0,
-                    params: ['choice'],
-                    type: 'block',
-                    templates: [{
-                        html: '<span>Yes</span>',
-                        bindings: [],
-                        scope: void 0
-                    }, {
-                        html: '<span>No</span>',
-                        bindings: [],
-                        scope: void 0
-                    }]
-                }]);
-            });
-        });
     });
+
 });

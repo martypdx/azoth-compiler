@@ -8,15 +8,15 @@ const specials = {
     class: 'class'
 };
 
+const getEl = (name = 'root') => ({
+    name, 
+    attributes: {}, 
+    bindings: [],
+    childBindings: [],
+    childCurrentIndex: -1
+});
+
 export default function parse({ expressions, quasis }, scopeParams = {}, recurse) {
-    
-    const getEl = (name = 'root') => ({
-        name, 
-        attributes: {}, 
-        bindings: [],
-        childBindings: [],
-        childCurrentIndex: -1
-    });
 
     const fragment = getEl();
     const html = [];

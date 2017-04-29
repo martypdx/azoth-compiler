@@ -6,9 +6,7 @@ const assert = chai.assert;
 
 describe('find import specifier', () => {
 
-    function getSpecifier(source) {
-        return findImport(parse(source));
-    }
+    const getSpecifier = source => findImport(parse(source));
 
     function testSpecifier(specifier, expected = 'html') {
         assert.ok(specifier);

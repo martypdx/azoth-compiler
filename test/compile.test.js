@@ -1,5 +1,4 @@
 /*globals $, makeFragment, renderer, __tb, __bb, combineLatest */
-
 /*eslint semi: off */
 
 import compile from '../src/compile';

@@ -1,5 +1,6 @@
+import parse from '../src/ast';
 
-export default Function.prototype.toCode = function(){
+Function.prototype.toCode = function() {
     const trimmed = this.toString().trim();
     const length = trimmed.length;
 
@@ -20,5 +21,9 @@ export default Function.prototype.toCode = function(){
         .replace(`function ${this.name}() {`, '')
         .slice(0,-1)
         .trim();
+};
+
+Function.prototype.toAst = function() {
+    return parse(this.toCode());
 };
 

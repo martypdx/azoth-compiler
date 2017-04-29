@@ -73,7 +73,7 @@ class Module {
         //TODO: unsubscribe plucks?...
         return `(${Object.keys(params)}) => {
             const __nodes = render_${i}();
-            ${plucks.length ? '\n' + plucks.map(pluck).join('\n') : ''}
+            ${plucks && plucks.length ? '\n' + plucks.map(pluck).join('\n') : ''}
             
             ${bindings.map(bind).join('\n')}
             
