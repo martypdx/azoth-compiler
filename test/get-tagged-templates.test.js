@@ -1,12 +1,11 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
 import assert from 'assert';
-import getTaggedTemplate from '../src/get-tagged-template';
+import getTaggedTemplates from '../src/get-tagged-templates';
 
 describe('get tagged template', () => {
     
-    const TAG = { tag: '_' };
-    const getTemplate = source => getTaggedTemplate(source.toAst(), TAG);
+    const getTemplate = source => getTaggedTemplates(source.toAst());
     
     const isProgramTTE = ({ ancestors, node }) => {
         assert.ok(ancestors.length);

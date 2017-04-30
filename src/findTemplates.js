@@ -9,7 +9,7 @@ export default function findTemplates(ast, tag, parentScope = { params: {} }) {
     ancestor(ast, {
         TaggedTemplateExpression(node, ancestors) {
             if (node.tag.name !== tag) return;
-            console.log('ANCESTORS', ancestors);
+
             const scope = getFnScope(ancestors);
             if (scope) scope.params = Object.assign(parentScope.params, scope.params);
             const params = scope ? scope.params : undefined;
