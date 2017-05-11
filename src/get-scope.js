@@ -15,8 +15,9 @@ export default function getScope(ancestors, { identifiers = new Set() } = {}) {
             };
         }
     }
+
     return { 
-        identifiers: new Set(...identifiers),
+        identifiers: new Set(identifiers),
         params: []
     };
 }

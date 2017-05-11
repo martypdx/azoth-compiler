@@ -5,10 +5,6 @@ import getTaggedTemplates from '../src/get-tagged-templates';
 import getScope, { getIdentifiers } from '../src/get-scope';
 
 const getTemplates = source => getTaggedTemplates(source.toAst());
-const getScopeFor = source => {
-    const [{ ancestors }] = getTemplates(source);
-    return getScope(ancestors);
-};
 
 describe.only('get scope for tagged template', () => {
 
@@ -76,6 +72,12 @@ describe.only('get scope for tagged template', () => {
     });
 
     describe('simple top-level', () => {
+
+        const getScopeFor = source => {
+            const [{ ancestors }] = getTemplates(source);
+            return getScope(ancestors);
+        };
+                
         it('raw', () => {
             function source() {
                 _`<span>${'foo'}</span>`;
@@ -115,10 +117,8 @@ describe.only('get scope for tagged template', () => {
             assert.deepEqual([...identifiers], []);
             assert.equal(params.length, 0);
         });
-    });
 
-    describe('multiple top-level params', () => {
-        it('arrow function', () => {
+        it('multiple params', () => {
             function source() {
                 (foo, bar) => _`<span>${foo + bar}</span>`;
             }
@@ -130,7 +130,7 @@ describe.only('get scope for tagged template', () => {
     });
 
     describe('sibling templates with shared scope', () => {
-        it('siblings have same scope values', () => {
+        it('same identifer', () => {
             function source() {
                 const t1 = (foo, condition) => {
                     const view = _`<span>${foo}</span>`;
@@ -154,7 +154,7 @@ describe.only('get scope for tagged template', () => {
         });
     });
 
-    describe.skip('nested', () => {
+    describe('nested', () => {
         it('raw', () => {
             function source() {
                 foo => _`<span>${_`<p>nested</p>`}</span>`;
@@ -162,15 +162,12 @@ describe.only('get scope for tagged template', () => {
 
             const [{ node, ancestors: parentAncestors }] = getTemplates(source);
             const parentScope = getScope(parentAncestors);
-
+            
             const [{ ancestors }] = getTaggedTemplates(node.quasi);
 
-            const scope = getScope(ancestors, null, parentScope);
-            assert.deepEqual(scope, {
-                params: new Set(['foo']),
-                // same parent
-                parent: parentScope.parent
-            });
+            const { params, identifiers } = getScope(ancestors, parentScope);
+            assert.deepEqual([...identifiers], ['foo']);
+            assert.equal(params.length, 0);
         });
 
         it('with own params', () => {
@@ -182,34 +179,42 @@ describe.only('get scope for tagged template', () => {
             const parentScope = getScope(parentAncestors);
 
             const [{ ancestors }] = getTaggedTemplates(node.quasi);
-            const scope = getScope(ancestors, null, parentScope);
-            assert.deepEqual(scope, {
-                params: new Set(['items', 'items']),
-                // -> function
-                parent: ancestors[ancestors.length - 1]
-            });
-        });
-    });
 
-    describe.skip('destructuring', () => {
-        it('arrow function single param', () => {
+            const { params, identifiers } = getScope(ancestors, parentScope);
+            assert.deepEqual([...identifiers], ['items', 'item']);
+            assert.equal(params.length, 1);
+        });
+
+
+        it('siblings have own params, shared parent', () => {
             function source() {
-                ({ foo }) => _`<span>${foo}</span>`;
+                const template = (items, condition) => {
+                    const one = _`<span>${items.map(one => _`<p>${one}</p>`)}</span>`;
+                    const two = _`<span>${items.map(two => _`<p>${two}</p>`)}</span>`;
+                    return _`${condition ? one : two}`;
+                };
             }
 
-            const [{ ancestors }] = getTemplates(source);
-            const { params, destructured } = getScope(ancestors);
+            const templates = getTemplates(source);
+            assert.equal(templates.length, 3);
 
-            // -> function
-            const parent = ancestors[ancestors.length - 1];
-            const entries = [...destructured.entries()];
-            assert.equal(entries.length, 1);
-            const [[key, value]] = entries;
+            const test = ({ node, ancestors: parentAncestors }, child) => {
+                const parentScope = getScope(parentAncestors);
+                const { params, identifiers } = parentScope;
+                assert.deepEqual([...identifiers], ['items', 'condition']);
+                assert.equal(params.length, 2);
 
-            assert.equal(key, parent);
-            assert.deepEqual(value, new Map([[0, ['foo']]]));
+                if (child) {
+                    const [{ ancestors }] = getTaggedTemplates(node.quasi);
+                    const { params, identifiers } = getScope(ancestors, parentScope);
+                    assert.deepEqual([...identifiers], ['items', 'condition', child]);
+                    assert.equal(params.length, 1);
+                }                
+            };
 
-            assert.deepEqual(params, new Set(['foo']));
+            test(templates[0], 'one');
+            test(templates[1], 'two');
+            test(templates[2]);
         });
     });
 });
