@@ -1,51 +1,40 @@
 
 const isFn = /function/i;
 
-export default function getScope(ancestors, { 
-    params = new Set(),
-    destructured = new Map()
-} = {}) {
+export default function getScope(ancestors, { identifiers = new Set() } = {}) {
 
     let i = ancestors.length - 1;
     let node = null;
     while(node = ancestors[i--]) {
         if(isFn.test(node.type)) {
-            const newParams = makeScope(node, destructured);
+            const { params } = node;
+            const newIdentifiers = getIdentifiers(params);
             return {
-                params: new Set([...params].concat(newParams)),
-                destructured
+                identifiers: new Set([...identifiers].concat(newIdentifiers)),
+                params
             };
         }
     }
     return { 
-        params: new Set(...params),
-        destructured
+        identifiers: new Set(...identifiers),
+        params: []
     };
 }
 
-function makeScope(node, destructured) {
-    return node.params.reduce((params, param, index) => {
-        if (param.type === 'Identifier') params.push(param.name);
+export function getIdentifiers(params) {
+    const identifiers = [];
 
-        else if (param.type === 'ObjectPattern') {
-            // TODO: add rest of destructuring
-            // currently only handles ObjectPattern 1 prop, 1 level deep
-            const destructure = new Map();
-            param.properties.forEach(p => {
-                const key = p.key.name;
-                params.push(key);
-                if(destructure.has(index)) {
-                    destructure.get(index).plucks.push(key);
-                }
-                else {
-                    destructure.set(index, [ key ]);
-                }
-            });
+    const types = {
+        Identifier: value => identifiers.push(value.name),
+        Property: value => getByType(value.value),
+        ObjectPattern: value => getProperties(value.properties)
+    };
+    const getProperties = list => list.forEach(getByType);
+    const getByType = value => types[value.type](value);
 
-            destructured.set(node, destructure);
-        }
-
-        return params;
-    }, []);
+    getProperties(params);
+    
+    return identifiers;
 }
+
 
