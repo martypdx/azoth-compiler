@@ -2,11 +2,11 @@
 /* globals _ */
 import { assert } from 'chai';
 import getTaggedTemplates from '../src/find-templates';
-import getScope, { getIdentifiers } from '../src/get-scope';
+import getParams, { getIdentifiers } from '../src/get-params';
 
 const getTemplates = source => getTaggedTemplates(source.toAst());
 
-describe.only('get scope for tagged template', () => {
+describe('get scope for tagged template', () => {
 
     describe('get identifiers', () => {
 
@@ -73,17 +73,17 @@ describe.only('get scope for tagged template', () => {
 
     describe('simple top-level', () => {
 
-        const getScopeFor = source => {
+        const getParamsFor = source => {
             const [{ ancestors }] = getTemplates(source);
-            return getScope(ancestors);
+            return getParams(ancestors);
         };
                 
         it('raw', () => {
             function source() {
                 _`<span>${'foo'}</span>`;
             }
-            const { params, identifiers } = getScopeFor(source);
-            assert.deepEqual([...identifiers], []);
+            const { params, identifiers } = getParamsFor(source);
+            assert.deepEqual(identifiers, []);
             assert.equal(params.length, 0);
         });
 
@@ -91,8 +91,8 @@ describe.only('get scope for tagged template', () => {
             function source() {
                 foo => _`<span>${foo}</span>`;
             }
-            const { params, identifiers } = getScopeFor(source);
-            assert.deepEqual([...identifiers], ['foo']);
+            const { params, identifiers } = getParamsFor(source);
+            assert.deepEqual(identifiers, ['foo']);
             assert.equal(params.length, 1);
         });
 
@@ -102,8 +102,8 @@ describe.only('get scope for tagged template', () => {
                     return _`<span>${foo}</span>`;
                 }
             }
-            const { params, identifiers } = getScopeFor(source);
-            assert.deepEqual([...identifiers], ['foo']);
+            const { params, identifiers } = getParamsFor(source);
+            assert.deepEqual(identifiers, ['foo']);
             assert.equal(params.length, 1);
         });
 
@@ -113,8 +113,8 @@ describe.only('get scope for tagged template', () => {
                     return () => _`<span>#${template}</span>`;
                 }
             }
-            const { params, identifiers } = getScopeFor(source);
-            assert.deepEqual([...identifiers], []);
+            const { params, identifiers } = getParamsFor(source);
+            assert.deepEqual(identifiers, []);
             assert.equal(params.length, 0);
         });
 
@@ -123,8 +123,8 @@ describe.only('get scope for tagged template', () => {
                 (foo, bar) => _`<span>${foo + bar}</span>`;
             }
 
-            const { params, identifiers } = getScopeFor(source);
-            assert.deepEqual([...identifiers], ['foo', 'bar']);
+            const { params, identifiers } = getParamsFor(source);
+            assert.deepEqual(identifiers, ['foo', 'bar']);
             assert.equal(params.length, 2);
         });
     });
@@ -140,8 +140,8 @@ describe.only('get scope for tagged template', () => {
             }
 
             const test = ({ ancestors }) => {
-                const { params, identifiers } = getScope(ancestors);
-                assert.deepEqual([...identifiers], ['foo', 'condition']);
+                const { params, identifiers } = getParams(ancestors);
+                assert.deepEqual(identifiers, ['foo', 'condition']);
                 assert.equal(params.length, 2);
             };
             
@@ -161,12 +161,12 @@ describe.only('get scope for tagged template', () => {
             }
 
             const [{ node, ancestors: parentAncestors }] = getTemplates(source);
-            const parentScope = getScope(parentAncestors);
+            const parentScope = getParams(parentAncestors);
             
             const [{ ancestors }] = getTaggedTemplates(node.quasi);
 
-            const { params, identifiers } = getScope(ancestors, parentScope);
-            assert.deepEqual([...identifiers], ['foo']);
+            const { params, identifiers } = getParams(ancestors);
+            assert.deepEqual(identifiers, []);
             assert.equal(params.length, 0);
         });
 
@@ -176,17 +176,17 @@ describe.only('get scope for tagged template', () => {
             }
 
             const [{ node, ancestors: parentAncestors }] = getTemplates(source);
-            const parentScope = getScope(parentAncestors);
+            const parentScope = getParams(parentAncestors);
 
             const [{ ancestors }] = getTaggedTemplates(node.quasi);
 
-            const { params, identifiers } = getScope(ancestors, parentScope);
-            assert.deepEqual([...identifiers], ['items', 'item']);
+            const { params, identifiers } = getParams(ancestors, parentScope);
+            assert.deepEqual(identifiers, ['item']);
             assert.equal(params.length, 1);
         });
 
 
-        it('siblings have own params, shared parent', () => {
+        it('siblings have own params', () => {
             function source() {
                 const template = (items, condition) => {
                     const one = _`<span>${items.map(one => _`<p>${one}</p>`)}</span>`;
@@ -199,15 +199,15 @@ describe.only('get scope for tagged template', () => {
             assert.equal(templates.length, 3);
 
             const test = ({ node, ancestors: parentAncestors }, child) => {
-                const parentScope = getScope(parentAncestors);
+                const parentScope = getParams(parentAncestors);
                 const { params, identifiers } = parentScope;
-                assert.deepEqual([...identifiers], ['items', 'condition']);
+                assert.deepEqual(identifiers, ['items', 'condition']);
                 assert.equal(params.length, 2);
 
                 if (child) {
                     const [{ ancestors }] = getTaggedTemplates(node.quasi);
-                    const { params, identifiers } = getScope(ancestors, parentScope);
-                    assert.deepEqual([...identifiers], ['items', 'condition', child]);
+                    const { params, identifiers } = getParams(ancestors, parentScope);
+                    assert.deepEqual(identifiers, [child]);
                     assert.equal(params.length, 1);
                 }                
             };

@@ -1,27 +1,28 @@
 
 const isFn = /function/i;
-// getContainingFunction
-export default function getScope(ancestors, { identifiers = new Set() } = {}) {
+
+export default function getParams(ancestors) {
 
     let i = ancestors.length - 1;
     let node = null;
     while(node = ancestors[i--]) {
         if(isFn.test(node.type)) {
             const { params } = node;
-            const newIdentifiers = getIdentifiers(params);
+            const identifiers = getIdentifiers(params);
             return {
-                identifiers: new Set([...identifiers].concat(newIdentifiers)),
+                identifiers,
                 params
             };
         }
     }
 
     return { 
-        identifiers: new Set(identifiers),
+        identifiers: [],
         params: []
     };
 }
 
+//TODO: Can I use acorn walker for this?
 export function getIdentifiers(params) {
     const identifiers = [];
 
