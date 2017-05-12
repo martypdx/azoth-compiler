@@ -1,6 +1,6 @@
 
 const isFn = /function/i;
-
+// getContainingFunction
 export default function getScope(ancestors, { identifiers = new Set() } = {}) {
 
     let i = ancestors.length - 1;

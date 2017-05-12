@@ -1,7 +1,7 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
 import assert from 'assert';
-import getTaggedTemplates from '../src/get-tagged-templates';
+import getTaggedTemplates from '../src/find-templates';
 
 describe('get tagged template', () => {
     

@@ -3,6 +3,7 @@ import undeclared from 'undeclared';
 import astring from 'astring';
 
 const attrPattern = /\s*?([a-zA-Z0-9\-]+?)=$/;
+
 const specials = {
     on: 'event',
     class: 'class'
@@ -147,7 +148,7 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
     quasis.forEach((quasi, i) => {
         const raw =  quasi.value.raw;
         parser.write(raw);
-        // TDOO extract to strategy for attr, text, etc. 
+        // TODO: extract to strategy for attr, text, etc. 
         // move behavior in handler into those
         const binding = {};
 

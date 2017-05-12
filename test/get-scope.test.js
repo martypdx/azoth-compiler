@@ -1,7 +1,7 @@
 /* eslint no-unused-vars: off */
 /* globals _ */
 import { assert } from 'chai';
-import getTaggedTemplates from '../src/get-tagged-templates';
+import getTaggedTemplates from '../src/find-templates';
 import getScope, { getIdentifiers } from '../src/get-scope';
 
 const getTemplates = source => getTaggedTemplates(source.toAst());
