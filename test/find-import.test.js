@@ -1,6 +1,6 @@
 /* global describe, it */
 import parse from '../src/ast';
-import findImport from '../src/findImport';
+import findImport from '../src/find-import';
 import chai from 'chai';
 const assert = chai.assert;
 

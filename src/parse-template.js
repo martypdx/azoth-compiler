@@ -17,7 +17,7 @@ const getEl = (name = 'root') => ({
     childCurrentIndex: -1
 });
 
-export default function parse({ expressions, quasis }, scopeParams = {}, recurse) {
+export default function parseTemplate({ expressions, quasis }, identifiers, recurse) {
 
     const fragment = getEl();
     const html = [];
@@ -29,7 +29,7 @@ export default function parse({ expressions, quasis }, scopeParams = {}, recurse
     const getParams = (expr) => {
         return Array
             .from(undeclared(expr).values())
-            .filter(v => scopeParams[v]);
+            .filter(name => identifiers.has(name));
     };
 
     const handler = {

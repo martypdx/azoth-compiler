@@ -1,11 +1,11 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
 import assert from 'assert';
-import getTaggedTemplates from '../src/find-templates';
+import findTemplates from '../src/find-templates';
 
-describe('get tagged template', () => {
+describe('find templates', () => {
     
-    const getTemplate = source => getTaggedTemplates(source.toAst());
+    const getTemplate = source => findTemplates(source.toAst());
     
     const isProgramTTE = ({ ancestors, node }) => {
         assert.ok(ancestors.length);
@@ -28,7 +28,7 @@ describe('get tagged template', () => {
         assert.equal(parentType(template), 'ExpressionStatement');
     });
 
-    it('direct return from function', () => {
+    it('direct return from arrow function', () => {
 
         function source() {
             foo => _`<span>${foo}</span>`;

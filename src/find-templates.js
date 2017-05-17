@@ -5,7 +5,7 @@ const TAG = '_';
 
 export default function findTemplates(ast, { tag = TAG } = {}) {
     const templates = [];
-
+    
     ancestor(ast, {
         TaggedTemplateExpression(node, currentAncestors) {
             if (node.tag.name !== tag) return;

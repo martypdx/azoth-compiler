@@ -1,12 +1,12 @@
 /* global describe, it */
 import chai from 'chai';
-import parseTaggedTemplate from '../src/parseTaggedTemplate';
+import parseTemplate from '../src/parse-template';
 const assert = chai.assert;
 
 describe.skip('makes', () => {
 
     it('element attributes', () => {
-        const { html, bindings } = parseTaggedTemplate(`
+        const { html, bindings } = parseTemplate(`
             done => $\`<span 
                 class="hello" 
                 class-done=\${done} 
@@ -181,7 +181,7 @@ describe.skip('makes', () => {
 describe.skip('block compiles', () => {
 
     it('basic section', () => {
-        const compiled = parseTaggedTemplate(`
+        const compiled = parseTemplate(`
             items => $\`<ul>
                 #\${ items.map(item => $\`
                     <li>\${ item }</li>

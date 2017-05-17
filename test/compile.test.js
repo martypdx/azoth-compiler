@@ -29,7 +29,7 @@ function codequal(actual, expected) {
     assert.equal(parsedActual, parsedExpected);
 }
 
-describe('compiler', () => {
+describe.skip('compiler', () => {
 
     it('adds to import', () => {
         const code = compile(`
