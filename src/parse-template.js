@@ -85,6 +85,8 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
             // }
             if (binding.index === -1) binding.index = el.childCurrentIndex;
             
+            // TODO: Need to check param identifiers first.
+            // 'Identifer' could just be in scope variable 
             if (expr.type === 'Identifier') binding.ref = expr.name;
             else {
                 binding.params = getParams(expr);
@@ -95,9 +97,10 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
         },
         unwrite(count = 1) {
             const index = html.length - 1;
-            const current = html[ index ];
-            html[ index ] = current.slice(0, -count);
-            if (!html[ index ]) currentEl.childCurrentIndex--;
+            const current = html[index];
+            html[index] = current.slice(0, -count);
+            // TODO: remembered why I did this...
+            if (!html[index]) currentEl.childCurrentIndex--;
         },
         bindBlock(expr, binding){
             const el = currentEl;
@@ -149,7 +152,7 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
         const raw =  quasi.value.raw;
         parser.write(raw);
         // TODO: extract to strategy for attr, text, etc. 
-        // move behavior in handler into those
+        // move behavior in parser handler into those
         const binding = {};
 
         function testObservable(at = 1) {
