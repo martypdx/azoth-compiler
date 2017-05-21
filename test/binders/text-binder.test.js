@@ -5,7 +5,10 @@ const assert = chai.assert;
 
 describe('TextBinder', () => {
     it('writes text-node', () => {
-        const binder = new TextBinder();
-        assert.equal(binder.write(), '<text-node></text-node>');
+        assert.equal(new TextBinder().write(), '<text-node></text-node>');
+    });
+
+    it('defaults to index -1', () => {
+        assert.equal(new TextBinder().index, -1);
     });
 });
