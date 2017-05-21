@@ -1,29 +1,29 @@
 /* global describe, it */
 import chai from 'chai';
-import parseTemplate from '../src/parse-template';
+// import parseTemplate from '../src/parse-template';
 const assert = chai.assert;
 
 describe.skip('makes', () => {
 
-    it('element attributes', () => {
-        const { html, bindings } = parseTemplate(`
-            done => $\`<span 
-                class="hello" 
-                class-done=\${done} 
-                data-custom="custom"></span>\`
-        `);
+    // it('element attributes', () => {
+    //     const { html, bindings } = parseTemplate(`
+    //         done => $\`<span 
+    //             class="hello" 
+    //             class-done=\${done} 
+    //             data-custom="custom"></span>\`
+    //     `);
         
-        assert.deepEqual(html, '<span class="hello" data-custom="custom" data-bind></span>');
+    //     assert.deepEqual(html, '<span class="hello" data-custom="custom" data-bind></span>');
 
-        assert.deepEqual(bindings, 
-            [{ 
-                elIndex: 0,
-                type: 'class',
-                name: 'class-done',
-                ref: 'done' 
-            }]
-        );
-    });
+    //     assert.deepEqual(bindings, 
+    //         [{ 
+    //             elIndex: 0,
+    //             type: 'class',
+    //             name: 'class-done',
+    //             ref: 'done' 
+    //         }]
+    //     );
+    // });
 
 
     // it('element text nodes', () => {

@@ -1,8 +1,7 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
-
-import parse from '../src/parse';
-import astParse from '../src/ast';
+import parse from '../../src/parse/parse';
+import astParse from '../../src/ast';
 import chai from 'chai';
 const assert = chai.assert;
 

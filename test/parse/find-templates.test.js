@@ -1,7 +1,7 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
 import assert from 'assert';
-import findTemplates from '../src/find-templates';
+import findTemplates from '../../src/parse/find-templates';
 
 describe('find templates', () => {
     

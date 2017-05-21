@@ -1,4 +1,3 @@
-
 const isFn = /function/i;
 
 export default function getParams(ancestors) {

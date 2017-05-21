@@ -1,8 +1,8 @@
 /* eslint no-unused-vars: off */
 /* globals _ */
 import { assert } from 'chai';
-import getTaggedTemplates from '../src/find-templates';
-import getParams, { getIdentifiers } from '../src/get-params';
+import getTaggedTemplates from '../../src/parse/find-templates';
+import getParams, { getIdentifiers } from '../../src/parse/get-params';
 
 const getTemplates = source => getTaggedTemplates(source.toAst());
 

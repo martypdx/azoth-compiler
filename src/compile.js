@@ -1,5 +1,5 @@
 import findImport from './find-import';
-import findTemplates from './find-templates';
+import findTemplates from './parse/find-templates';
 import MagicString from 'magic-string';
 // import astring from 'astring';
 import parse from './ast';

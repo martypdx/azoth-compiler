@@ -1,13 +1,13 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
 
-import findTemplates from '../src/find-templates';
-import parse from '../src/ast';
+import findTemplates from '../../src/parse/find-templates';
+import parse from '../../src/ast';
 import chai from 'chai';
 const assert = chai.assert;
 
-import getParams from '../src/get-params';
-import parseTemplate from '../src/parse-template';
+import getParams from '../../src/parse/get-params';
+import parseTemplate from '../../src/parse/parse-template';
 
 const parseSource = source => {
     const { node: { quasi }, ancestors } = findTemplates(source.toAst())[0];
@@ -15,7 +15,7 @@ const parseSource = source => {
     return parseTemplate(quasi, new Set(identifiers)); 
 };
 
-describe.skip('parse template', () => {
+describe('parse template', () => {
 
     describe('text-node', () => {
     
