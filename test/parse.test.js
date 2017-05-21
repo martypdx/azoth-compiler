@@ -8,6 +8,7 @@ const assert = chai.assert;
 
 const parseTemplates = source => parse(source.toAst());
 
+
 describe('parse', () => {
 
     function testTemplate(template, i) {
@@ -74,7 +75,7 @@ describe('parse', () => {
 
     });
 
-    it.only('nested template with outer scope', () => {
+    it('nested template with outer scope', () => {
         function source() {
             const template = items => _`
                 <ul>

@@ -7,8 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
-    "test:callstack": "mocha --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
+    "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha --recursive --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
+    "test:run": "mocha --recursive --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
     "compile": "rm -rf .compiled && babel src --source-maps --out-dir .compiled/src && babel test --source-maps --out-dir .compiled/test",
     "test:debug": "mocha --debug-brk --compilers js:babel-core/register --reporter mocha-better-spec-reporter",
     "debug": "npm run test -- --debug-brk",

@@ -149,10 +149,16 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
     var parser = new htmlparser.Parser(handler);
 
     quasis.forEach((quasi, i) => {
-        const raw =  quasi.value.raw;
+        const raw = quasi.value.raw;
+        
+        // Test for sigils and remove from raw before write
         parser.write(raw);
+
         // TODO: extract to strategy for attr, text, etc. 
-        // move behavior in parser handler into those
+        // move behavior in parser handler into those:
+        
+        //conts binding = getBinding(sigils, { inElTag, attr })
+        
         const binding = {};
 
         function testObservable(at = 1) {
@@ -165,7 +171,8 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
 
         testObservable();
 
-        if(currentAttr) {
+        if (currentAttr) {
+            console.log('ATTR', currentAttr);
             if (!attrPattern.test(raw)) throw 'unexpected ${...} in attributes';
             // finish the attr
             parser.write('""');
