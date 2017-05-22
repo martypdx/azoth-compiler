@@ -1,10 +1,10 @@
 import Binder from './binder';
-import TextBinder from './text-binder';
-import BlockBinder from './block-binder';
+import TextChildNodeBinder from './text-child-node-binder';
+import BlockChildNodeBinder from './block-child-node-binder';
 import AttributeBinder from './attribute-binder';
 
 
-export { TextBinder, BlockBinder, AttributeBinder };
+export { TextChildNodeBinder, BlockChildNodeBinder, AttributeBinder };
     
 export class AttributeBlockBinder extends Binder {
     constructor() {
@@ -19,6 +19,6 @@ export default function getBinder(options) {
         return options.block ? new AttributeBlockBinder(options) : new AttributeBinder(options);
     }
     else {
-        return options.block ? new BlockBinder(options) : new TextBinder(options);
+        return options.block ? new BlockChildNodeBinder(options) : new TextChildNodeBinder(options);
     }
 }

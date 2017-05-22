@@ -1,8 +1,7 @@
 import getBinder, {
-    TextBinder,
-    BlockBinder,
-    AttributeBinder,
-    AttributeBlockBinder
+    TextChildNodeBinder,
+    BlockChildNodeBinder,
+    AttributeBinder
 } from '../../src/binders/binder-factory';
 
 import chai from 'chai';
@@ -20,12 +19,12 @@ describe('binding factory', () => {
     describe('element child', () => {
         it('text binder', () => {
             const binder = getBinder({ inOpeningTag: false, block: false });
-            assert.instanceOf(binder, TextBinder);
+            assert.instanceOf(binder, TextChildNodeBinder);
         });
 
         it('block binder', () => {
             const binder = getBinder({ inOpeningTag: false, block: true });
-            assert.instanceOf(binder, BlockBinder);
+            assert.instanceOf(binder, BlockChildNodeBinder);
         });
     });  
 

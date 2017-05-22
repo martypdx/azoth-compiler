@@ -27,20 +27,25 @@ describe('parse template', () => {
         function testText(binding, {
             elIndex = 0,
             index = 0,
-            observable = true,
-            ref = 'expected ref',
-            type = 'text-node'
+            type = 'subscriber',
+            ref = '',
+            params = null,
+            templates = null
         } = {}) {
-            assert.deepEqual(binding, { elIndex, index, observable, ref, type });
+            const { name, type: astType } = binding.ast;
+            assert.equal(astType, 'Identifier');
+            assert.equal(name, ref);
+            delete binding.ast;
+            assert.deepEqual(binding, { elIndex, index, type, params, templates }, `ref: ${ref}`);
         }
 
         it('stand-alone text node', () => {
             function source() {
                 const template = foo => _`*${foo}`;
             }
-            const { html, bindings } = parseSource(source);
+            const { html, binders } = parseSource(source);
             assert.equal(html, '<text-node></text-node>');
-            testSingleText(bindings, { ref: 'foo' });
+            testSingleText(binders, { ref: 'foo' });
         });
 
         it('element with text node', () => {
@@ -48,12 +53,12 @@ describe('parse template', () => {
                 const template = place => _`<span>hello *${place}</span>`;
             }
 
-            const { html, bindings } = parseSource(source);
+            const { html, binders } = parseSource(source);
 
             assert.equal(html,
                 '<span data-bind>hello <text-node></text-node></span>'
             );
-            testSingleText(bindings, { index: 1, ref: 'place' });
+            testSingleText(binders, { index: 1, ref: 'place' });
         });
 
         it('second element with text node', () => {
@@ -61,12 +66,12 @@ describe('parse template', () => {
                 const template = place => _`<span>hello</span> <span>*${place}</span>`;
             }
 
-            const { html, bindings } = parseSource(source);
+            const { html, binders } = parseSource(source);
 
             assert.equal(html,
                 '<span>hello</span> <span data-bind><text-node></text-node></span>'
             );
-            testSingleText(bindings, { ref: 'place' });
+            testSingleText(binders, { ref: 'place' });
         });
 
         it('two elements with text node', () => {
@@ -74,14 +79,14 @@ describe('parse template', () => {
                 const template = (salutation, place) => _`<span>*${salutation}</span> <span>*${place}</span>`;
             }
 
-            const { html, bindings } = parseSource(source);
+            const { html, binders } = parseSource(source);
 
             assert.equal(html,
                 '<span data-bind><text-node></text-node></span> <span data-bind><text-node></text-node></span>'
             );
-            assert.equal(bindings.length, 2);
-            testText(bindings[0], { ref: 'salutation' });
-            testText(bindings[1], { elIndex: 1, ref: 'place' });
+            assert.equal(binders.length, 2);
+            testText(binders[0], { ref: 'salutation' });
+            testText(binders[1], { elIndex: 1, ref: 'place' });
         });
 
         it('one elements with two text node', () => {
@@ -89,14 +94,14 @@ describe('parse template', () => {
                 const template = (salutation, place) => _`<span>*${salutation} *${place}</span>`;
             }
 
-            const { html, bindings } = parseSource(source);
+            const { html, binders } = parseSource(source);
 
             assert.equal(html,
                 '<span data-bind><text-node></text-node> <text-node></text-node></span>'
             );
-            assert.equal(bindings.length, 2);
-            testText(bindings[0], { ref: 'salutation' });
-            testText(bindings[1], { index: 2, ref: 'place' });
+            assert.equal(binders.length, 2);
+            testText(binders[0], { ref: 'salutation' });
+            testText(binders[1], { index: 2, ref: 'place' });
         });
 
         it('child element with text node', () => {
@@ -104,36 +109,40 @@ describe('parse template', () => {
                 const template = foo => _`<div><span>*${foo}</span></div>`;
             }
 
-            const { html, bindings } = parseSource(source);
+            const { html, binders } = parseSource(source);
 
             assert.equal(html,
                 '<div><span data-bind><text-node></text-node></span></div>'
             );
-            testSingleText(bindings, { ref: 'foo' });
+            testSingleText(binders, { ref: 'foo' });
         });
 
         it('multiple nested elements with text node', () => {
             function source() {
-                const template = (one, two, three) => _`
+                const template = (one, two, three, four, five) => _`
                     <div>*${one}
-                        <span>*${two}</span>
-                        <p><span>*${three}</span></p>
+                        <span>*${three}</span>
+                        <p><span>*${five}</span>*${four}</p>
+                        *${two}
                     </div>
                 `;
             }
 
-            const { html, bindings } = parseSource(source);
+            const { html, binders } = parseSource(source);
             assert.equal(html, `
                     <div data-bind><text-node></text-node>
                         <span data-bind><text-node></text-node></span>
-                        <p><span data-bind><text-node></text-node></span></p>
+                        <p data-bind><span data-bind><text-node></text-node></span><text-node></text-node></p>
+                        <text-node></text-node>
                     </div>
                 `);
             
-            assert.equal(bindings.length, 3);
-            testText(bindings[0], { ref: 'one' });
-            testText(bindings[1], { elIndex: 1, ref: 'two' });
-            testText(bindings[2], { elIndex: 2, ref: 'three' });
+            assert.equal(binders.length, 5);
+            testText(binders[0], { elIndex: 0, ref: 'one' });
+            testText(binders[1], { elIndex: 0, index: 6, ref: 'two' });
+            testText(binders[2], { elIndex: 1, ref: 'three' });
+            testText(binders[3], { elIndex: 2, index: 1, ref: 'four' });
+            testText(binders[4], { elIndex: 3, ref: 'five' });
         });
     });
 
@@ -144,7 +153,7 @@ describe('parse template', () => {
             }
             const templates = getTemplates(source);
 
-            const [{ html, bindings }] = templates;
+            const [{ html, binders }] = templates;
 
             assert.equal(
                 html,
@@ -152,9 +161,9 @@ describe('parse template', () => {
             );
 
             // remove node prop for easier deepEqual test
-            delete bindings[0].templates[0].node;
+            delete binders[0].templates[0].node;
 
-            assert.deepEqual(bindings, [
+            assert.deepEqual(binders, [
                 {
                     elIndex: 0,
                     index: 0,
@@ -162,7 +171,7 @@ describe('parse template', () => {
                     templates: [
                         {
                             html: '<span data-bind><text-node></text-node></span>',
-                            bindings: [
+                            binders: [
                                 {
                                     elIndex: 0,
                                     index: 0,
@@ -185,14 +194,14 @@ describe('parse template', () => {
                 `
             );
 
-            const [{ html, bindings }] = templates;
+            const [{ html, binders }] = templates;
 
             assert.equal(html, '<block-node></block-node>');
 
             // remove node prop for easier deepEqual test
-            delete bindings[0].templates[0].node;
+            delete binders[0].templates[0].node;
 
-            assert.deepEqual(bindings, [
+            assert.deepEqual(binders, [
                 {
                     elIndex: 0,
                     expr: (t0, t1) => `choice ? ${t0} : ${t1}`,
@@ -202,12 +211,12 @@ describe('parse template', () => {
                     templates: [
                         {
                             html: '<span>Yes</span>',
-                            bindings: [],
+                            binders: [],
                             scope: void 0
                         },
                         {
                             html: '<span>No</span>',
-                            bindings: [],
+                            binders: [],
                             scope: void 0
                         }
                     ]
