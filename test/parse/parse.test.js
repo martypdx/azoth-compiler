@@ -8,7 +8,7 @@ const assert = chai.assert;
 const parseTemplates = source => parse(source.toAst());
 
 
-describe.only('parse', () => {
+describe.skip('parse', () => {
 
     function testTemplate(template, i) {
         const { html, bindings, params, node, position } = template;
