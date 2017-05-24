@@ -10,13 +10,13 @@ const getEl = (name = 'root') => ({
     childIndex: -1
 });
 
-export default function parseTemplate({ expressions, quasis }, identifiers, recurse) {
+export default function parseTemplate({ expressions, quasis }) {
 
     const fragment = getEl();
     const html = [];
     const stack = [];
     let currentEl = fragment;
-    let inElTag = false;
+    let inAttributes = false;
     let currentAttr = null;
 
     let allBinders = null;
@@ -26,7 +26,7 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
             currentEl.childIndex++;
             stack.push(currentEl);
             currentEl = getEl(name);
-            inElTag = true;
+            inAttributes = true;
         },
         onattribute(name, value) {
             currentEl.attributes[currentAttr = name] = value;
@@ -47,8 +47,9 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
                 '',
                 `>`
             );
+
             currentAttr = null;
-            inElTag = false;
+            inAttributes = false;
         },
         ontext(text) {
             html.push(text);
@@ -56,8 +57,7 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
         },
         add(binder) { 
             const el = currentEl;
-            binder.index = el.childIndex;
-            binder.bind(el);
+            binder.bind(el, currentAttr);
             el.binders.push(binder);
         },
         onclosetag(name) {
@@ -81,21 +81,21 @@ export default function parseTemplate({ expressions, quasis }, identifiers, recu
 
     var parser = new htmlparser.Parser(handler);
 
-
     quasis.forEach((quasi, i) => {
         // quasi is one more than expression
         if (i === expressions.length) return parser.write(quasi.value.raw);
 
-        const { block, type, text } = sigil(quasi.value.raw);   
+        const { block, type, text } = sigil(quasi.value.raw);  
+        
         parser.write(text);
         
         const binder = getBinder({
             block,
             type,
-            inOpeningTag: inElTag,
-            attr: currentAttr,
+            inAttributes,
             ast: expressions[i]
         });
+
         parser.write(binder.write());
         handler.add(binder);
     });

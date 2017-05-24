@@ -11,14 +11,15 @@ export default class AttributeBinder extends Binder {
     
     constructor(options) {
         super(options);
-        this.name = options.attr;
+        this.name = '';
     }
 
-    // bind() {
-    //     if (parts.length > 1 && (type = specials[parts[0]])) {
-    //         delete currentEl.attributes[name];
-    //     }
-    // }
+    bind(el, attr) {
+        // if (parts.length > 1 && (type = specials[parts[0]])) {
+        //     delete currentEl.attributes[name];
+        // }
+        this.name = attr;
+    }
 
     write() {
         return '""';

@@ -7,8 +7,10 @@ describe('AttributeBinder', () => {
 
     it('had name and writes empty attr ""', () => {
         const binder = new AttributeBinder({ attr: 'my-attribute' });
-        assert.equal(binder.name, 'my-attribute');
+        assert.equal(binder.name, '');
         assert.equal(binder.write(), '""');
+        binder.bind({}, 'attribute-name');
+        assert.equal(binder.name, 'attribute-name');
     });
 
 });

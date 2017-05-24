@@ -30,9 +30,8 @@ describe('binding factory', () => {
 
     describe('element attribute', () => {
         it('attribute binder', () => {
-            const binder = getBinder({ inOpeningTag: true, block: false, attr: 'class' });
+            const binder = getBinder({ inOpeningTag: true, block: false });
             assert.instanceOf(binder, AttributeBinder);
-            assert.equal(binder.name, 'class');
         });
 
         it('attribute block binder not yet supported', () => {

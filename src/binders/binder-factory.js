@@ -15,7 +15,7 @@ export class AttributeBlockBinder extends Binder {
 
 export default function getBinder(options) {
 
-    if (options.inOpeningTag) {
+    if (options.inAttributes) {
         return options.block ? new AttributeBlockBinder(options) : new AttributeBinder(options);
     }
     else {
