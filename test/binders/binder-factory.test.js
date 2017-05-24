@@ -11,31 +11,31 @@ describe('binding factory', () => {
 
     describe('binding type', () => {
         it('passes thru', () => {
-            const binder = getBinder({ inOpeningTag: false, block: false, type: 'value' });
+            const binder = getBinder({ inAttributes: false, block: false, type: 'value' });
             assert.equal(binder.type, 'value');
         });
     });
 
     describe('element child', () => {
         it('text binder', () => {
-            const binder = getBinder({ inOpeningTag: false, block: false });
+            const binder = getBinder({ inAttributes: false, block: false });
             assert.instanceOf(binder, TextChildNodeBinder);
         });
 
         it('block binder', () => {
-            const binder = getBinder({ inOpeningTag: false, block: true });
+            const binder = getBinder({ inAttributes: false, block: true });
             assert.instanceOf(binder, BlockChildNodeBinder);
         });
     });  
 
     describe('element attribute', () => {
         it('attribute binder', () => {
-            const binder = getBinder({ inOpeningTag: true, block: false });
+            const binder = getBinder({ inAttributes: true, block: false });
             assert.instanceOf(binder, AttributeBinder);
         });
 
         it('attribute block binder not yet supported', () => {
-            assert.throws(() => getBinder({ inOpeningTag: true, block: true }), /not yet supported/);
+            assert.throws(() => getBinder({ inAttributes: true, block: true }), /not yet supported/);
         });
     });
 

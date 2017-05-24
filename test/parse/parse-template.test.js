@@ -15,7 +15,7 @@ const parseSource = source => {
     return parseTemplate(quasi, new Set(identifiers)); 
 };
 
-describe.only('parse template', () => {
+describe('parse template', () => {
 
     describe('text-node', () => {
     
@@ -205,13 +205,14 @@ describe.only('parse template', () => {
             testFirst(binders, { name: 'bar', ref: 'foo' });
         });
 
-        it('with static', () => {
+        it('with statics, value and valueless', () => {
             function source() {
-                const template = foo => _`<span class="my-class" bar=${foo}></span>`;
+                const template = foo => _`<input class=${foo} type="checkbox" checked>`;
             }
             const { html, binders } = parseSource(source);
-            assert.equal(html, '<span class="my-class" bar="" data-bind></span>');
-            testFirst(binders, { name: 'bar', ref: 'foo' });
+            // NOTE: empty string is equivalent to boolean attribute per spec.
+            assert.equal(html, '<input class="" type="checkbox" checked="" data-bind>');
+            testFirst(binders, { name: 'class', ref: 'foo' });
         });
 
         it('many', () => {
@@ -247,6 +248,16 @@ describe.only('parse template', () => {
             testAttr(binders[0], { type: 'value', name: 'one', ref: 'one' });
             testAttr(binders[1], { type: 'subscriber', name: 'two', ref: 'two' });
             testAttr(binders[2], { type: 'observer', name: 'three', ref: 'three' });
+        });
+    });
+
+    describe('html', () => {
+        it('leaves void elements intact', () => {
+            function source() {
+                const template = foo => _`<input>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<input>');
         });
     });
 });

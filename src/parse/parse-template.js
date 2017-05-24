@@ -1,6 +1,7 @@
 import htmlparser from 'htmlparser2';
 import sigil from './sigil'; 
 import getBinder from '../binders/binder-factory';
+import voidElements from './void-elements';
 
 const getEl = (name = 'root') => ({
     name, 
@@ -31,15 +32,16 @@ export default function parseTemplate({ expressions, quasis }) {
         onattribute(name, value) {
             currentEl.attributes[currentAttr = name] = value;
         },
-        onopentag(name) {
+        onopentag(name, attribs) {
+            console.log(attribs);
             const el = currentEl;
             const { attributes } = el;
-            // TODO: what version node is Object.values supported?
+            // TODO: Switch to Object.values, but what node.js version supports that?
             const attrsText = Object.keys(attributes)
                 .reduce((text, key) => {
                     const val = attributes[key];
-                    // TODO: is this really undefined (vs null)?
-                    return `${text} ${key}${val == null ? '' : `="${val}"`}`;
+                    // TODO: distinguish between empty string and valueless attribute
+                    return `${text} ${key}${val === null ? '' : `="${val}"`}`;
                 },'');
 
             el.htmlIndex = -2 + html.push(
@@ -61,7 +63,7 @@ export default function parseTemplate({ expressions, quasis }) {
             el.binders.push(binder);
         },
         onclosetag(name) {
-            html.push(`</${name}>`);
+            if(!voidElements[name]) html.push(`</${name}>`);
             const el = currentEl;
             currentEl = stack.pop();
 
