@@ -1,6 +1,6 @@
 const isFn = /function/i;
 
-export default function getParams(ancestors) {
+export function findParams(ancestors) {
 
     let i = ancestors.length - 1;
     let node = null;

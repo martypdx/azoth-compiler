@@ -1,6 +1,7 @@
 import findTemplates from './find-templates';
-import getParams from './get-params';
+import { findParams } from './params';
 import parseTemplate from './parse-template';
+import matchObservables from './match-observables';
 
 export default function parse(ast, { tag, parentIdentifiers } = {}) {
 
@@ -9,11 +10,14 @@ export default function parse(ast, { tag, parentIdentifiers } = {}) {
         const { html, binders } = parseTemplate(node.quasi);
         replaceTemplateWithIdentifier(node, index);
         
-        const { params, identifiers: current } = getParams(ancestors);
+        const { params, identifiers: current } = findParams({ ancestors });
         const identifiers = combine(parentIdentifiers, current);
         const recurse = ast => parse(ast, { tag, identifiers });
 
-        binders.forEach(b => b.calculate({ identifiers, recurse }));
+        binders.forEach(binder => {
+            binder.templates = recurse(binder.ast);
+            binder.params = matchObservables(binder.ast, identifiers);
+        });
 
         const position = { start: node.start, end: node.end };
         return { html, binders, params, node, position };

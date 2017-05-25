@@ -1,5 +1,4 @@
 // import astring from 'astring';
-import getObservables from './get-observables';
 
 export default class Binder {
     constructor({ type = 'value', ast = null } = {}) {        
@@ -12,10 +11,5 @@ export default class Binder {
         // this.index = -1;
         // this.expr = '';
         
-    }
-
-    calculate({ identifiers, recurse }) {
-        this.templates = recurse(this.ast);
-        this.params = getObservables(this.ast, identifiers);
     }
 }
