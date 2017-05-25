@@ -21,7 +21,7 @@ export default class AttributeBinder extends Binder {
         this.name = attr;
     }
 
-    write() {
+    writeHtml() {
         return '""';
     }
 }

@@ -5,7 +5,7 @@ const assert = chai.assert;
 
 describe('BlockBinder', () => {
     it('writes block-node', () => {
-        assert.equal(new BlockChildNodeBinder().write(), '<block-node></block-node>');
+        assert.equal(new BlockChildNodeBinder().writeHtml(), '<block-node></block-node>');
     });
 
     it('defaults to index -1', () => {

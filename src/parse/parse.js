@@ -6,17 +6,17 @@ export default function parse(ast, { tag, parentIdentifiers } = {}) {
 
     return findTemplates(ast, { tag }).map(({ node, ancestors }, index) => {
         
+        const { html, binders } = parseTemplate(node.quasi);
+        replaceTemplateWithIdentifier(node, index);
+        
         const { params, identifiers: current } = getParams(ancestors);
         const identifiers = combine(parentIdentifiers, current);
         const recurse = ast => parse(ast, { tag, identifiers });
 
-        const { html, bindings } = parseTemplate(node.quasi, identifiers, recurse);
+        binders.forEach(b => b.calculate({ identifiers, recurse }));
 
         const position = { start: node.start, end: node.end };
-        
-        replaceTemplateWithIdentifier(node, index);
-        
-        return { html, bindings, params, node, position };
+        return { html, binders, params, node, position };
 
     });
 }
@@ -28,7 +28,7 @@ function combine(parent, child) {
 
 function replaceTemplateWithIdentifier(node, index) {
     node.type = 'Identifier',
-    node.name = `t${index}`;
+    node.name = `__t${index}`;
     delete node.tag;
     delete node.quasi;
     delete node.start;

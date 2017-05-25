@@ -1,10 +1,5 @@
-import astring from 'astring';
-
-// const isParam = name => identifiers.has(name);
-
-// const getParams = (expr) => Array
-//     .from(undeclared(expr).values())
-//     .filter(isParam);
+// import astring from 'astring';
+import getObservables from './get-observables';
 
 export default class Binder {
     constructor({ type = 'value', ast = null } = {}) {        
@@ -19,8 +14,8 @@ export default class Binder {
         
     }
 
-    bind() {
-        // const { ast } = this.ast;
-        // this.expr = ast.type === 'Identifier' ? ast.name : astring(ast);
+    calculate({ identifiers, recurse }) {
+        this.templates = recurse(this.ast);
+        this.params = getObservables(this.ast, identifiers);
     }
 }

@@ -1,6 +1,6 @@
 import htmlparser from 'htmlparser2';
 import chai from 'chai';
-const assert = chai.assert;
+// const assert = chai.assert;
 
 describe.skip('assumptions', () => {
 

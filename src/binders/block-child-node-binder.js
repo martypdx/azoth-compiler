@@ -2,7 +2,7 @@ import ChildNodeBinder from './child-node-binder';
 
 export default class BlockChildNodeBinder extends ChildNodeBinder {
 
-    write() {
+    writeHtml() {
         return '<block-node></block-node>';
     }
 

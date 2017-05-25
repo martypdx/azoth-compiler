@@ -32,16 +32,17 @@ export default function parseTemplate({ expressions, quasis }) {
         onattribute(name, value) {
             currentEl.attributes[currentAttr = name] = value;
         },
-        onopentag(name, attribs) {
-            console.log(attribs);
+        onopentag(name) {
             const el = currentEl;
             const { attributes } = el;
-            // TODO: Switch to Object.values, but what node.js version supports that?
+            // TODO: Switch to Object.values, but needs node.js version 7.x - wait for 8.x?
             const attrsText = Object.keys(attributes)
                 .reduce((text, key) => {
-                    const val = attributes[key];
-                    // TODO: distinguish between empty string and valueless attribute
-                    return `${text} ${key}${val === null ? '' : `="${val}"`}`;
+                    // NOTE: currently not distinguishing between empty string and valueless attribute.
+                    // htmlparser2 does not distinguish and html spec says empty string 
+                    // and boolean are equivalent
+                    const value = attributes[key];
+                    return `${text} ${key}="${value}"`;
                 },'');
 
             el.htmlIndex = -2 + html.push(
@@ -98,7 +99,7 @@ export default function parseTemplate({ expressions, quasis }) {
             ast: expressions[i]
         });
 
-        parser.write(binder.write());
+        parser.write(binder.writeHtml());
         handler.add(binder);
     });
 

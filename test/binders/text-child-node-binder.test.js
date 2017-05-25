@@ -5,7 +5,7 @@ const assert = chai.assert;
 
 describe('TextChildNodeBinder', () => {
     it('writes text-node', () => {
-        assert.equal(new TextChildNodeBinder().write(), '<text-node></text-node>');
+        assert.equal(new TextChildNodeBinder().writeHtml(), '<text-node></text-node>');
     });
 
     it('defaults to index -1', () => {
