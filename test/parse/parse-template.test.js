@@ -35,6 +35,7 @@ describe('parse template', () => {
             assert.equal(astType, 'Identifier');
             assert.equal(name, ref);
             delete binder.ast;
+            delete binder.writer;
             assert.deepEqual(binder, { elIndex, index, type, params, templates }, `ref: ${ref}`);
         }
 
@@ -177,8 +178,8 @@ describe('parse template', () => {
         function testFirst(binders, options) {
             assert.equal(binders.length, 1);
             testAttr(binders[0], options);
-        }    
-
+        }   
+        
         function testAttr(binder, {
             elIndex = 0,
             name = '',
@@ -192,6 +193,7 @@ describe('parse template', () => {
             assert.equal(ast.type, 'Identifier');
             assert.equal(ast.name, ref);
             delete binder.ast;
+            delete binder.writer;
             assert.deepEqual(binder, { elIndex, name, type, params, templates }, `name: ${name}`);
         }
 

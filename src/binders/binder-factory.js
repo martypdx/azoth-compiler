@@ -1,24 +1,24 @@
-import Binder from './binder';
-import TextChildNodeBinder from './text-child-node-binder';
-import BlockChildNodeBinder from './block-child-node-binder';
+import ChildBinder from './child-binder';
 import AttributeBinder from './attribute-binder';
+import { text, block, attribute } from './writers';
 
-
-export { TextChildNodeBinder, BlockChildNodeBinder, AttributeBinder };
+export { ChildBinder, AttributeBinder };
     
-export class AttributeBlockBinder extends Binder {
-    constructor() {
-        super();
-        throw new Error('Attribute Blocks not yet supported');
-    }
-}
-
 export default function getBinder(options) {
 
+    let Type = null, writer = null;
+    
     if (options.inAttributes) {
-        return options.block ? new AttributeBlockBinder(options) : new AttributeBinder(options);
+        Type = AttributeBinder;
+        if (options.block) {
+            throw new Error('Attribute Blocks not yet supported');
+        }
+        writer = attribute;
     }
     else {
-        return options.block ? new BlockChildNodeBinder(options) : new TextChildNodeBinder(options);
+        Type = ChildBinder;
+        writer = options.block ? block : text;
     }
+
+    return new Type(options, writer);
 }
