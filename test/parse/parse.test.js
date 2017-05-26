@@ -8,13 +8,13 @@ const assert = chai.assert;
 const parseTemplates = source => parse(source.toAst());
 
 
-describe.skip('parse', () => {
+describe('parse', () => {
 
     function testTemplate(template, i) {
         const { html, bindings, params, node, position } = template;
         
         assert.deepEqual(node, {
-            name: `t${i}`,
+            name: `__t${i}`,
             type: 'Identifier'
         });
 
@@ -61,15 +61,15 @@ describe.skip('parse', () => {
         }
 
         const templates = parseTemplates(source);
-        assert.equal(templates.length, 1);
-        const [{ bindings }] = templates;
+        assert.equal(templates.length, 1, 'outer template length');
+        const [{ binders }] = templates;
         
-        const [binding] = bindings;
-        const { templates: nested } = binding;
-        assert.equal(nested.length, 1);
+        const [binder] = binders;
+        const { templates: nested } = binder;
+        assert.equal(nested.length, 1, 'nested template length');
 
         const [{ params }] = nested;
-        assert.equal(params.length, 1);
+        assert.equal(params.length, 1, 'param count');
         nested.forEach(testTemplate);
 
     });
@@ -79,26 +79,26 @@ describe.skip('parse', () => {
             const template = items => _`
                 <ul>
                     #${items.map(item => _`
-                        <li>${item} of ${items}</li>
+                        <li>${item + 'of' + items}</li>
                     `)}
                 </ul>
             `;
         }
 
         const templates = parseTemplates(source);
-        const [{ bindings: outerBindings }] = templates;
-        const [binding] = outerBindings;
-        const { templates: nested } = binding;
-        assert.equal(nested.length, 1);
-        nested.forEach(testTemplate);
-        const [{ params /*, bindings*/ }] = nested;
-        assert.equal(params.length, 1);
+        const [{ binders: outerBinders }] = templates;
 
-        // TODO: ensure that identifiers are correctly passed down.
-        // parse-template should process correctly, but parse
-        // needs to be tested that they are passed from parent correctly
-        // check bindings, but prob not deepEqual
-        // assert.deepEqual(bindings, []);
+        const [ outerBinder ] = outerBinders;
+        const { templates: nested } = outerBinder;
+        assert.equal(nested.length, 1);
+
+        nested.forEach(testTemplate);
+        const [{ params, binders }] = nested;
+        assert.equal(params.length, 1);
+        assert.equal(binders.length, 1);
+
+        const [binder] = binders;
+        assert.deepEqual(binder.params, ['item', 'items']);
     });
 
 });

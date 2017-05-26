@@ -3,15 +3,16 @@ import { findParams } from './params';
 import parseTemplate from './parse-template';
 import matchObservables from './match-observables';
 
-export default function parse(ast, { tag, parentIdentifiers } = {}) {
+export default function parse(ast, { tag, identifiers: parentIdentifiers } = {}) {
 
     return findTemplates(ast, { tag }).map(({ node, ancestors }, index) => {
-        
+
         const { html, binders } = parseTemplate(node.quasi);
         replaceTemplateWithIdentifier(node, index);
         
-        const { params, identifiers: current } = findParams({ ancestors });
+        const { params, identifiers: current } = findParams(ancestors);
         const identifiers = combine(parentIdentifiers, current);
+
         const recurse = ast => parse(ast, { tag, identifiers });
 
         binders.forEach(binder => {
@@ -27,7 +28,7 @@ export default function parse(ast, { tag, parentIdentifiers } = {}) {
 
 function combine(parent, child) {
     if (parent === undefined) return new Set(child);
-    return new Set([...parent].concat(child));
+    return new Set([...parent, ...child]);
 }
 
 function replaceTemplateWithIdentifier(node, index) {
