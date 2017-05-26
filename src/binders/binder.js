@@ -1,4 +1,4 @@
-// import astring from 'astring';
+import astring from 'astring';
 
 export default class Binder {
 
@@ -28,11 +28,48 @@ export default class Binder {
         return { name: this.writer.import };
     }
 
+    get isSubscriber() {
+        return !this.type === 'value';
+    }
+
+    writeBinding(bIndex) { 
+        const { ast, params, type } = this;
+
+        let observable = '';
+        
+        if (type === 'observable') {
+            observable = `(${astring(ast)})`;
+        }
+        else {
+            const paramList = observable = params.join();
+                
+            if(ast.type !== 'Identifier') {
+                const expr = astring(ast);
+                const map = `(${paramList}) => (${expr})`;
+                if (params.length > 1) {
+                    observable = `combineLatest(${paramList}, ${map})`;
+                }
+                else {
+                    observable += `.map(${map})`;
+                }
+            }
+
+            if(type === 'value') observable += `.first()`;
+        }
+
+        return this.addSubscribe(observable, bIndex);
+    }
+
+    addSubscribe(observable, bIndex) {
+        return `${observable}.subscribe(__bind${bIndex}(__nodes[${this.elIndex}]));`;
+
+    }
+
     // [sub templates]
 
     // [expressionObserver]
     
     // value bind ||
-    // subscriber bind ||
-    // observer bind
+    // observer ||
+    // observerable
 }

@@ -26,7 +26,7 @@ describe('parse template', () => {
         function testText(binder, {
             elIndex = 0,
             index = 0,
-            type = 'subscriber',
+            type = 'observer',
             ref = '',
             params = null,
             templates = null
@@ -66,7 +66,7 @@ describe('parse template', () => {
             testFirst(binders, { ref: 'foo', type: 'value' });
         });
 
-        it('block subscriber text node', () => {
+        it('block observer text node', () => {
             function source() {
                 const template = foo => _`*#${foo}`;
             }
@@ -247,8 +247,8 @@ describe('parse template', () => {
             assert.equal(html, '<span one="" two="" three="" data-bind></span>');
             assert.equal(binders.length, 3);
             testAttr(binders[0], { type: 'value', name: 'one', ref: 'one' });
-            testAttr(binders[1], { type: 'subscriber', name: 'two', ref: 'two' });
-            testAttr(binders[2], { type: 'observer', name: 'three', ref: 'three' });
+            testAttr(binders[1], { type: 'observer', name: 'two', ref: 'two' });
+            testAttr(binders[2], { type: 'observable', name: 'three', ref: 'three' });
         });
     });
 

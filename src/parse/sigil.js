@@ -1,6 +1,6 @@
 const types = {
-    '*': 'subscriber',
-    '@': 'observer'
+    '*': 'observer',
+    '@': 'observable'
 };
 
 const escapedMatch = /\\[#*@]$/;

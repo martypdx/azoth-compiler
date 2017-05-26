@@ -23,18 +23,18 @@ describe('sigils', () => {
             });
         });
 
-        it('subscriber', () => {
+        it('observer', () => {
             assert.deepEqual(sigil('text*'), { 
                 block: false ,
-                type: 'subscriber', 
+                type: 'observer', 
                 text: 'text'
             });
         });
 
-        it('observer', () => {
+        it('observable', () => {
             assert.deepEqual(sigil('text@'), { 
                 block: false ,
-                type: 'observer', 
+                type: 'observable', 
                 text: 'text'
             });
         });
@@ -83,24 +83,8 @@ describe('sigils', () => {
             });
         });
 
-        it('subscriber block', () => {
-            assert.deepEqual(sigil('text*#'), {
-                block: true,
-                type: 'subscriber',
-                text: 'text'
-            });
-        });
-
-        it('escaped subscriber with block', () => {
-            assert.deepEqual(sigil('text\\*#'), {
-                block: true,
-                type: 'value',
-                text: 'text*'
-            });
-        });
-
         it('observer block', () => {
-            assert.deepEqual(sigil('text@#'), {
+            assert.deepEqual(sigil('text*#'), {
                 block: true,
                 type: 'observer',
                 text: 'text'
@@ -108,6 +92,22 @@ describe('sigils', () => {
         });
 
         it('escaped observer with block', () => {
+            assert.deepEqual(sigil('text\\*#'), {
+                block: true,
+                type: 'value',
+                text: 'text*'
+            });
+        });
+
+        it('observable block', () => {
+            assert.deepEqual(sigil('text@#'), {
+                block: true,
+                type: 'observable',
+                text: 'text'
+            });
+        });
+
+        it('escaped observable with block', () => {
             assert.deepEqual(sigil('text\\@#'), {
                 block: true,
                 type: 'value',
