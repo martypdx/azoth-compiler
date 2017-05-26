@@ -41,13 +41,13 @@ export default class Binder {
             observable = `(${astring(ast)})`;
         }
         else {
-            const paramList = observable = params.join();
+            observable = params.join();
                 
             if(ast.type !== 'Identifier') {
                 const expr = astring(ast);
-                const map = `(${paramList}) => (${expr})`;
+                const map = `(${observable}) => (${expr})`;
                 if (params.length > 1) {
-                    observable = `combineLatest(${paramList}, ${map})`;
+                    observable = `combineLatest(${observable}, ${map})`;
                 }
                 else {
                     observable += `.map(${map})`;
@@ -62,7 +62,6 @@ export default class Binder {
 
     addSubscribe(observable, bIndex) {
         return `${observable}.subscribe(__bind${bIndex}(__nodes[${this.elIndex}]));`;
-
     }
 
     // [sub templates]

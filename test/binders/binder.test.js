@@ -41,7 +41,7 @@ describe('Binder', () => {
                 init: binder => binder.foo
             };
 
-            const binder = new ChildBinder({}, writer);
+            const binder = new Binder({}, writer);
             binder.foo = 'FOO';
             
             assert.equal(binder.writeHtml(), writer.html);
@@ -51,12 +51,13 @@ describe('Binder', () => {
     });
     
     describe.only('binding', () => {
+
         const getAst = source => source.toAst().body[0].expression;
         const getOptions = (source, options = {}) => Object.assign(options, { ast: getAst(source) });
 
         it('value identifier', () => {
             const source = () => foo;
-            const binder = new ChildBinder(getOptions(source));
+            const binder = new Binder(getOptions(source));
             binder.params = ['foo'];
             binder.elIndex = 1;
 
@@ -68,7 +69,7 @@ describe('Binder', () => {
 
         it('value expression with single param', () => {
             const source = () => foo + bar;
-            const binder = new ChildBinder(getOptions(source));
+            const binder = new Binder(getOptions(source));
             binder.params = ['foo'];
             binder.elIndex = 1;
 
@@ -80,7 +81,7 @@ describe('Binder', () => {
 
         it('value expression with multiple params', () => {
             const source = () => foo + bar;
-            const binder = new ChildBinder(getOptions(source));
+            const binder = new Binder(getOptions(source));
             binder.params = ['foo', 'bar'];
             binder.elIndex = 1;
 
@@ -92,7 +93,7 @@ describe('Binder', () => {
 
         it('observer identifier', () => {
             const source = () => foo;
-            const binder = new ChildBinder(getOptions(source, { type: 'observer' }));
+            const binder = new Binder(getOptions(source, { type: 'observer' }));
             binder.params = ['foo'];
             binder.elIndex = 1;
 
@@ -104,7 +105,7 @@ describe('Binder', () => {
 
         it('observable identifier', () => {
             const source = () => foo.map(foo => foo + 1);
-            const binder = new ChildBinder(getOptions(source, { type: 'observable' }));
+            const binder = new Binder(getOptions(source, { type: 'observable' }));
             binder.params = ['foo'];
             binder.elIndex = 1;
 
