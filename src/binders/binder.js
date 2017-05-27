@@ -36,16 +36,19 @@ export default class Binder {
         const { ast, params, type } = this;
 
         let observable = '';
-        
-        if (type === 'observable') {
-            observable = `(${astring(ast)})`;
+
+        if (ast.type === 'Identifier') {
+            observable = ast.name;
         }
         else {
-            observable = params.join();
-                
-            if(ast.type !== 'Identifier') {
-                const expr = astring(ast);
+            const expr = astring(ast);
+            if (type === 'observable') {
+                observable = `(${expr})`;
+            }
+            else {
+                observable = params.join();
                 const map = `(${observable}) => (${expr})`;
+
                 if (params.length > 1) {
                     observable = `combineLatest(${observable}, ${map})`;
                 }
@@ -53,10 +56,10 @@ export default class Binder {
                     observable += `.map(${map})`;
                 }
             }
-
-            if(type === 'value') observable += `.first()`;
         }
 
+        if(type === 'value') observable += `.first()`;
+        
         return this.addSubscribe(observable, bIndex);
     }
 
