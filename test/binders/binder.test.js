@@ -50,6 +50,8 @@ describe('Binder', () => {
     
     describe('binding', () => {
 
+        // TODO: .distinctUntilChanged()
+        
         it('value identifier', () => {
             const source = () => foo;
             const binder = new Binder(source.toOptions());

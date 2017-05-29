@@ -29,7 +29,7 @@ export default class Binder {
     }
 
     get isSubscriber() {
-        return this.params.length > 0;
+        return (!!this.params && this.params.length > 0);
     }
 
     writeBinding(bIndex) { 
