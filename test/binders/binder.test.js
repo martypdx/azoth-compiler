@@ -6,8 +6,6 @@ import AttributeBinder from '../../src/binders/attribute-binder';
 import chai from 'chai';
 const assert = chai.assert;
 
-
-
 describe('Binder', () => {
 
     it('elIndex defaults to -1', () => {
@@ -50,72 +48,89 @@ describe('Binder', () => {
         });
     });
     
-    describe.only('binding', () => {
-
-        const getAst = source => source.toAst().body[0].expression;
-        const getOptions = (source, options = {}) => Object.assign(options, { ast: getAst(source) });
+    describe('binding', () => {
 
         it('value identifier', () => {
             const source = () => foo;
-            const binder = new Binder(getOptions(source));
+            const binder = new Binder(source.toOptions());
             binder.params = ['foo'];
             binder.elIndex = 1;
+            const binderIndex = 0;
 
-            const binding = binder.writeBinding(0);
-            const expected = `foo.first().subscribe(__bind0(__nodes[1]));`;
+            // possible REFACTOR direction: 
+            // const node = `__nodes[${binder.elIndex}]`;
+            // const observer = `__bind${binderIndex}(${node})`;
+            // const binding = binder.subscribe()(observer);
+            
+            const binding = binder.writeBinding(binderIndex);
+            const expected = `foo.first().subscribe(__bind0(__nodes[1]))`;
             
             assert.equal(binding, expected);
         });
 
         it('value expression with single param', () => {
             const source = () => foo + bar;
-            const binder = new Binder(getOptions(source));
+            const binder = new Binder(source.toOptions());
             binder.params = ['foo'];
             binder.elIndex = 1;
+            const binderIndex = 0;
 
-            const binding = binder.writeBinding(0);
-            const expected = `foo.map((foo) => (foo + bar)).first().subscribe(__bind0(__nodes[1]));`;
+            const binding = binder.writeBinding(binderIndex);
+            const expected = `foo.map((foo) => (foo + bar)).first().subscribe(__bind0(__nodes[1]))`;
             
             assert.equal(binding, expected);
         });
 
         it('value expression with multiple params', () => {
             const source = () => foo + bar;
-            const binder = new Binder(getOptions(source));
+            const binder = new Binder(source.toOptions());
             binder.params = ['foo', 'bar'];
             binder.elIndex = 1;
+            const binderIndex = 0;
 
-            const binding = binder.writeBinding(0);
-            const expected = `combineLatest(foo,bar, (foo,bar) => (foo + bar)).first().subscribe(__bind0(__nodes[1]));`;
+            const binding = binder.writeBinding(binderIndex);
+            const expected = `combineLatest(foo,bar, (foo,bar) => (foo + bar)).first().subscribe(__bind0(__nodes[1]))`;
             
             assert.equal(binding, expected);
         });
 
         it('observer identifier', () => {
             const source = () => foo;
-            const binder = new Binder(getOptions(source, { type: 'observer' }));
+            const binder = new Binder(source.toOptions({ type: 'observer' }));
             binder.params = ['foo'];
             binder.elIndex = 1;
+            const binderIndex = 0;
 
-            const binding = binder.writeBinding(0);
-            const expected = `foo.subscribe(__bind0(__nodes[1]));`;
+            const binding = binder.writeBinding(binderIndex);
+            const expected = `foo.subscribe(__bind0(__nodes[1]))`;
             
             assert.equal(binding, expected);
         });
 
         it('observable identifier', () => {
             const source = () => foo.map(foo => foo + 1);
-            const binder = new Binder(getOptions(source, { type: 'observable' }));
+            const binder = new Binder(source.toOptions({ type: 'observable' }));
             binder.params = ['foo'];
             binder.elIndex = 1;
+            const binderIndex = 0;
 
-            const binding = binder.writeBinding(0);
-            const expected = `(foo.map(foo => foo + 1)).subscribe(__bind0(__nodes[1]));`;
+            const binding = binder.writeBinding(binderIndex);
+            const expected = `(foo.map(foo => foo + 1)).subscribe(__bind0(__nodes[1]))`;
             
             assert.equal(binding, expected);
         });
 
-
-        // TODO expressions with no param
+        it('no params', () => {
+            const source = () => 1 + 2;
+            const binder = new Binder(source.toOptions());
+            binder.params = [];
+            binder.elIndex = 1;
+            const binderIndex = 0;
+            
+            const binding = binder.writeBinding(binderIndex);
+            const expected = `__bind0(__nodes[1])(1 + 2)`;
+            
+            assert.equal(binding, expected);
+        });
     });
 });

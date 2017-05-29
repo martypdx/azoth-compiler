@@ -70,7 +70,6 @@ class Module {
         const bind = this.bind.bind(this);
         const { plucks, params } = scope;
 
-        //TODO: unsubscribe plucks?...
         return `(${Object.keys(params)}) => {
             const __nodes = render_${i}();
             ${plucks && plucks.length ? '\n' + plucks.map(pluck).join('\n') : ''}

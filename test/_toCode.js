@@ -27,3 +27,12 @@ Function.prototype.toAst = function() {
     return parse(this.toCode());
 };
 
+Function.prototype.toExpr = function () {
+    return this.toAst().body[0].expression; 
+};
+
+Function.prototype.toOptions = function (options = {}) {
+    const ast = this.toExpr();
+    return Object.assign(options, { ast });
+};
+

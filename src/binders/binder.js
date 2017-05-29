@@ -29,19 +29,25 @@ export default class Binder {
     }
 
     get isSubscriber() {
-        return !this.type === 'value';
+        return this.params.length > 0;
     }
 
     writeBinding(bIndex) { 
         const { ast, params, type } = this;
+        const isIdentifier = ast.type === 'Identifier';
+
+        const expr = isIdentifier ? ast.name : astring(ast);
+
+        if (!params.length) {
+            return `${this.writeBind(bIndex)}(${expr})`;
+        }
 
         let observable = '';
 
-        if (ast.type === 'Identifier') {
-            observable = ast.name;
+        if(isIdentifier) {
+            observable = expr;
         }
         else {
-            const expr = astring(ast);
             if (type === 'observable') {
                 observable = `(${expr})`;
             }
@@ -64,14 +70,14 @@ export default class Binder {
     }
 
     addSubscribe(observable, bIndex) {
-        return `${observable}.subscribe(__bind${bIndex}(__nodes[${this.elIndex}]));`;
+        return `${observable}.subscribe(${this.writeBind(bIndex)})`;
+    }
+
+    writeBind(bIndex) {
+        return `__bind${bIndex}(__nodes[${this.elIndex}])`;
     }
 
     // [sub templates]
 
-    // [expressionObserver]
-    
-    // value bind ||
-    // observer ||
-    // observerable
+    // unsubscribe?
 }
