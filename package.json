@@ -33,7 +33,7 @@
     "rollup-plugin-node-resolve": "^1.7.1"
   },
   "dependencies": {
-    "acorn": "^3.2.0",
+    "acorn": "^4.0.13",
     "astring": "^0.8.0",
     "htmlparser2": "^3.9.1",
     "magic-string": "^0.19.0",
