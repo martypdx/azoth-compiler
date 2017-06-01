@@ -1,5 +1,5 @@
 import htmlparser from 'htmlparser2';
-import sigil from './sigil'; 
+import { getBindingType, getBlock } from './sigil'; 
 import getBinder from '../binders/binder-factory';
 import voidElements from './void-elements';
 
@@ -86,11 +86,19 @@ export default function parseTemplate({ expressions, quasis }) {
 
     quasis.forEach((quasi, i) => {
         // quasi is one more than expression
-        if (i === expressions.length) return parser.write(quasi.value.raw);
+        if(i === expressions.length) return parser.write(quasi.value.raw);
 
-        const { block, type, text } = sigil(quasi.value.raw);  
-        
+        const { type, text } = getBindingType(quasi.value.raw);
+
         parser.write(text);
+
+        let block = false;
+        if(i < quasis.length) {
+            const value = quasis[i + 1].value;
+            const result = getBlock(value.raw);
+            value.raw = result.text;
+            block = result.block;
+        }
         
         const binder = getBinder({
             block,

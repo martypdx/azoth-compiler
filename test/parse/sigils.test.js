@@ -1,119 +1,69 @@
 import chai from 'chai';
 const assert = chai.assert;
-import sigil from '../../src/parse/sigil';
+import { getBindingType, getBlock } from '../../src/parse/sigil';
+import { VALUE, MAP, SUBSCRIBE } from '../../src/binders/binding-types';
 
 
 describe('sigils', () => {
 
-    describe('text', () => {
+    describe('binding type', () => {
 
-        it('empty string is value', () => {
-            assert.deepEqual(sigil(''), { 
-                block: false,
-                type: 'value', 
-                text: ''
-            });
+        function test(text, expected) {
+            assert.deepEqual(getBindingType(text), expected);
+        }
+
+        it('empty string okay', () => {
+            test('', { type: VALUE, text: ''});
         });
 
         it('value', () => {
-            assert.deepEqual(sigil('text'), { 
-                block: false,
-                type: 'value', 
-                text: 'text' 
-            });
+            test('text', { type: VALUE, text: 'text' });
         });
 
-        it('observer', () => {
-            assert.deepEqual(sigil('text*'), { 
-                block: false ,
-                type: 'observer', 
-                text: 'text'
-            });
+        it('map observer', () => {
+            test('text*', { type: MAP, text: 'text'});
         });
 
-        it('observable', () => {
-            assert.deepEqual(sigil('text@'), { 
-                block: false ,
-                type: 'observable', 
-                text: 'text'
-            });
+        it('subscribe', () => {
+            test('text@', { type: SUBSCRIBE, text: 'text'});
         });
 
         it('is end of string', () => {
-            assert.deepEqual(sigil('* '), { 
-                block: false,
-                type: 'value', 
-                text: '* '
-            });
+            test('* ', { type: VALUE, text: '* '});
         });
 
         it('escaped *', () => {
-            assert.deepEqual(sigil('text\\*'), { 
-                block: false,
-                type: 'value', 
-                text: 'text*' 
-            });
+            test('text\\*', { type: VALUE, text: 'text*' });
         });
 
         it('escaped @', () => {
-            assert.deepEqual(sigil('text\\@'), { 
-                block: false,
-                type: 'value', 
-                text: 'text@' 
-            });
+            test('text\\@', { type: VALUE, text: 'text@' });
         });
-
     });
+
 
     describe('block', () => {
 
+        function test(text, expected) {
+            assert.deepEqual(getBlock(text), expected);
+        }
+
+        it('empty string okay', () => {
+            test('', { block: false, text: '' });
+        });
+
+        it('no block', () => {
+            test('text', { block: false, text: 'text' });
+        });
+
         it('block', () => {
-            assert.deepEqual(sigil('text#'), {
-                block: true,
-                type: 'value',
-                text: 'text'
-            });
+            test('#text', { block: true, text: 'text' });
         });
 
-        it('escaped #', () => {
-            assert.deepEqual(sigil('text\\#'), { 
-                block: false,
-                type: 'value', 
-                text: 'text#' 
-            });
+        it('escaped block', () => {
+            test('\\#text', { block: false, text: '#text' });
         });
 
-        it('observer block', () => {
-            assert.deepEqual(sigil('text*#'), {
-                block: true,
-                type: 'observer',
-                text: 'text'
-            });
-        });
-
-        it('escaped observer with block', () => {
-            assert.deepEqual(sigil('text\\*#'), {
-                block: true,
-                type: 'value',
-                text: 'text*'
-            });
-        });
-
-        it('observable block', () => {
-            assert.deepEqual(sigil('text@#'), {
-                block: true,
-                type: 'observable',
-                text: 'text'
-            });
-        });
-
-        it('escaped observable with block', () => {
-            assert.deepEqual(sigil('text\\@#'), {
-                block: true,
-                type: 'value',
-                text: 'text@'
-            });
-        });
 
     });
 });

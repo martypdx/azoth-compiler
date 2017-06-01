@@ -1,57 +1,63 @@
+import { VALUE, MAP, SUBSCRIBE } from '../binders/binding-types';
+
 const types = {
-    '*': 'observer',
-    '@': 'observable'
+    '*': MAP,
+    '@': SUBSCRIBE
 };
 
-const escapedMatch = /\\[#*@]$/;
-const binderMatch = /[\*@]$/;
-const blockMatch = /#$/;
+const escapedBindingMatch = /\\[#*@]$/;
+const bindingMatch = /[\*@]$/;
 
-export default function sigil(text) {
+export function getBindingType(text) {
 
     const tryEscaped = () => {
         let escaped = false;
-        text = text.replace(escapedMatch, m => {
+        text = text.replace(escapedBindingMatch, m => {
             escaped = true;
             return m[m.length - 1];
         });
         return escaped;
     };
 
-    const tryBlock = () => {
-        if (blockMatch.test(text)) {
-            text = text.slice(0, -1);
-            return true;
-        }
-        return false;
-    };
+    let type = VALUE;
 
-    const tryBinder = () => {
-        let type = 'value';
-        text = text.replace(binderMatch, m => {
-            type = types[m];
-            return '';
+    if(tryEscaped()) return { type, text };
+
+    text = text.replace(bindingMatch, m => {
+        type = types[m];
+        return '';
+    });
+
+    return { type, text };
+}
+
+const escapedBlockMatch = /^\\#/;
+const blockMatch = /^#/;
+
+export function getBlock(text) {
+
+    const tryEscaped = () => {
+        let escaped = false;
+        text = text.replace(escapedBlockMatch, m => {
+            escaped = true;
+            return m[m.length - 1];
         });
-        return type;
+        return escaped;
     };
 
-    if (tryEscaped()) return {
-        block: false,
-        type: 'value',
-        text
-    };
+    let block = false;
 
-    const block = tryBlock();
-    if (block && tryEscaped()) return {
-        block,
-        type: 'value',
-        text
-    };
+    if(tryEscaped()) {
+        return {
+            block, 
+            text
+        };
+    }
 
-    const type = tryBinder();    
-    return {
-        block,
-        type,
-        text
-    };
+    text = text.replace(blockMatch, () => {
+        block = true;
+        return '';
+    });
+
+    return { block, text };
 }

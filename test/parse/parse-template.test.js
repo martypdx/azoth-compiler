@@ -1,12 +1,12 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
 import findTemplates from '../../src/parse/find-templates';
-import parse from '../../src/ast';
+import { VALUE, MAP, SUBSCRIBE } from '../../src/binders/binding-types';
+import { findParams } from '../../src/parse/params';
+import parseTemplate from '../../src/parse/parse-template';
 import chai from 'chai';
 const assert = chai.assert;
 
-import { findParams } from '../../src/parse/params';
-import parseTemplate from '../../src/parse/parse-template';
 
 const parseSource = source => {
     const { node: { quasi }, ancestors } = findTemplates(source.toAst())[0];
@@ -26,7 +26,7 @@ describe('parse template', () => {
         function testText(binder, {
             elIndex = 0,
             index = 0,
-            type = 'observer',
+            type = MAP,
             ref = '',
             params = null,
             templates = null
@@ -54,21 +54,21 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<text-node></text-node>');
-            testFirst(binders, { ref: 'foo', type: 'value' });
+            testFirst(binders, { ref: 'foo', type: VALUE });
         });
 
         it('block text node', () => {
             function source() {
-                const template = foo => _`#${foo}`;
+                const template = foo => _`${foo}#`;
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<block-node></block-node>');
-            testFirst(binders, { ref: 'foo', type: 'value' });
+            testFirst(binders, { ref: 'foo', type: VALUE });
         });
 
         it('block observer text node', () => {
             function source() {
-                const template = foo => _`*#${foo}`;
+                const template = foo => _`*${foo}#`;
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<block-node></block-node>');
@@ -183,7 +183,7 @@ describe('parse template', () => {
         function testAttr(binder, {
             elIndex = 0,
             name = '',
-            type = 'value',
+            type = VALUE,
             ref = '',
             params = null,
             templates = null
@@ -246,9 +246,9 @@ describe('parse template', () => {
             const { html, binders } = parseSource(source);
             assert.equal(html, '<span one="" two="" three="" data-bind></span>');
             assert.equal(binders.length, 3);
-            testAttr(binders[0], { type: 'value', name: 'one', ref: 'one' });
-            testAttr(binders[1], { type: 'observer', name: 'two', ref: 'two' });
-            testAttr(binders[2], { type: 'observable', name: 'three', ref: 'three' });
+            testAttr(binders[0], { type: VALUE, name: 'one', ref: 'one' });
+            testAttr(binders[1], { type: MAP, name: 'two', ref: 'two' });
+            testAttr(binders[2], { type: SUBSCRIBE, name: 'three', ref: 'three' });
         });
     });
 
