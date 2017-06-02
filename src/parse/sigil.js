@@ -5,7 +5,7 @@ const types = {
     '@': SUBSCRIBE
 };
 
-const escapedBindingMatch = /\\[#*@]$/;
+const escapedBindingMatch = /\\[*@]$/;
 const bindingMatch = /[\*@]$/;
 
 export function getBindingType(text) {
