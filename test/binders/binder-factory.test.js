@@ -1,5 +1,5 @@
 import getBinder, { ChildBinder, AttributeBinder } from '../../src/binders/binder-factory';
-import { text, block, attribute } from '../../src/binders/writers';
+import { text, block, attribute } from '../../src/binders/targets';
 
 import chai from 'chai';
 const assert = chai.assert;

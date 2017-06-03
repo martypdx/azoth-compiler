@@ -7,9 +7,6 @@ import Binder from './binder';
 //     class: 'class'
 // };
 
-const BINDER = '__attrBinder';
-const HTML = '""';
-
 export default class AttributeBinder extends Binder {
     
     constructor(options, writer) {
@@ -17,22 +14,10 @@ export default class AttributeBinder extends Binder {
         this.name = '';
     }
 
-    init(el, attr) {
-        // if (parts.length > 1 && (type = specials[parts[0]])) {
-        //     delete currentEl.attributes[name];
-        // }
-        this.name = attr;
-    }
-
-    writeHtml() {
-        return HTML;
-    }
-
-    writeImport() {
-        return { named: BINDER };
-    }
-
-    writeInit() {
-        return `${BINDER}('${this.name}')`;
-    }
+    // init(el, attr) {
+    //     // if (parts.length > 1 && (type = specials[parts[0]])) {
+    //     //     delete currentEl.attributes[name];
+    //     // }
+    //     this.name = attr;
+    // }
 }

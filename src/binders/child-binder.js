@@ -7,7 +7,7 @@ export default class ChildNodeBinder extends Binder {
         this.index = -1;
     }
 
-    init(el) {
-        this.index = el.childIndex;
-    }
+    // init(el) {
+    //     this.index = el.childIndex;
+    // }
 }

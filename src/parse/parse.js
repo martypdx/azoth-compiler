@@ -3,20 +3,20 @@ import { findParams } from './params';
 import parseTemplate from './parse-template';
 import matchObservables from './match-observables';
 
-export default function parse(ast, { tag, identifiers: parentIdentifiers } = {}) {
+export default function parse(ast, { tag, index = 0, identifiers: parentIdentifiers } = {}) {
 
-    return findTemplates(ast, { tag }).map(({ node, ancestors }, index) => {
+    return findTemplates(ast, { tag }).map(({ node, ancestors }, templateIndex) => {
 
         const { html, binders } = parseTemplate(node.quasi);
-        replaceTemplateWithIdentifier(node, index);
+        replaceTemplateWithIdentifier(node, index, templateIndex);
         
         const { params, identifiers: current } = findParams(ancestors);
         const identifiers = combine(parentIdentifiers, current);
 
-        const recurse = ast => parse(ast, { tag, identifiers });
+        const recurse = (ast, index) => parse(ast, { tag, identifiers, index });
 
-        binders.forEach(binder => {
-            binder.templates = recurse(binder.ast);
+        binders.forEach((binder, i) => {
+            binder.templates = recurse(binder.ast, i);
             binder.params = matchObservables(binder.ast, identifiers);
         });
 
@@ -31,9 +31,9 @@ function combine(parent, child) {
     return new Set([...parent, ...child]);
 }
 
-function replaceTemplateWithIdentifier(node, index) {
+function replaceTemplateWithIdentifier(node, binderIndex, templateIndex) {
     node.type = 'Identifier',
-    node.name = `__t${index}`;
+    node.name = `__t${binderIndex}_${templateIndex}`;
     delete node.tag;
     delete node.quasi;
     delete node.start;

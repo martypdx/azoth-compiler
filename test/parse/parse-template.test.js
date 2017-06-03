@@ -26,17 +26,18 @@ describe('parse template', () => {
         function testText(binder, {
             elIndex = 0,
             index = 0,
+            name = '',
             type = MAP,
             ref = '',
             params = null,
             templates = null
         } = {}) {
-            const { name, type: astType } = binder.ast;
+            const { name: astName, type: astType } = binder.ast;
             assert.equal(astType, 'Identifier');
-            assert.equal(name, ref);
+            assert.equal(astName, ref);
             delete binder.ast;
             delete binder.writer;
-            assert.deepEqual(binder, { elIndex, index, type, params, templates }, `ref: ${ref}`);
+            assert.deepEqual(binder, { elIndex, index, name, type, params, templates }, `ref: ${ref}`);
         }
 
         it('stand-alone text node', () => {
@@ -183,6 +184,7 @@ describe('parse template', () => {
         function testAttr(binder, {
             elIndex = 0,
             name = '',
+            index = -1,
             type = VALUE,
             ref = '',
             params = null,
@@ -194,7 +196,7 @@ describe('parse template', () => {
             assert.equal(ast.name, ref);
             delete binder.ast;
             delete binder.writer;
-            assert.deepEqual(binder, { elIndex, name, type, params, templates }, `name: ${name}`);
+            assert.deepEqual(binder, { elIndex, name, index, type, params, templates }, `name: ${name}`);
         }
 
         it('simple', () => {

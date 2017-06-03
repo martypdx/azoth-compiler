@@ -10,11 +10,11 @@ const parseTemplates = source => parse(source.toAst());
 
 describe('parse', () => {
 
-    function testTemplate(template, i) {
+    function testTemplate(template, i, bIndex = 0) {
         const { html, bindings, params, node, position } = template;
         
         assert.deepEqual(node, {
-            name: `__t${i}`,
+            name: `__t${bIndex}_${i}`,
             type: 'Identifier'
         });
 
@@ -33,7 +33,7 @@ describe('parse', () => {
         }
         const templates = parseTemplates(source);
         assert.equal(templates.length, 1, 'expected one template');
-        templates.forEach(testTemplate);
+        templates.forEach((t, i) => testTemplate(t, i, 0));
     });
 
     it('sibling templates', () => {
@@ -44,7 +44,7 @@ describe('parse', () => {
 
         const templates = parseTemplates(source);
         assert.equal(templates.length, 2);
-        templates.forEach(testTemplate);
+        templates.forEach((t, i) => testTemplate(t, i, 0));
     });
     
     // TODO: nest template in non-block should warn
@@ -70,7 +70,8 @@ describe('parse', () => {
 
         const [{ params }] = nested;
         assert.equal(params.length, 1, 'param count');
-        nested.forEach(testTemplate);
+        nested.forEach((t, i) => testTemplate(t, i, 0));
+
 
     });
 
@@ -78,6 +79,7 @@ describe('parse', () => {
         function source() {
             const template = items => _`
                 <ul>
+                    #${items.length || _`<span>No items</span>`}
                     #${items.map(item => _`
                         <li>${item + 'of' + items}</li>
                     `)}
@@ -88,17 +90,30 @@ describe('parse', () => {
         const templates = parseTemplates(source);
         const [{ binders: outerBinders }] = templates;
 
-        const [ outerBinder ] = outerBinders;
-        const { templates: nested } = outerBinder;
-        assert.equal(nested.length, 1);
+        const [ firstOuter, secondOuter ] = outerBinders;
+        
+        {
+            const { templates: nested } = firstOuter;
+            assert.equal(nested.length, 1);
 
-        nested.forEach(testTemplate);
-        const [{ params, binders }] = nested;
-        assert.equal(params.length, 1);
-        assert.equal(binders.length, 1);
+            nested.forEach((t, i) => testTemplate(t, i, 0));
+            const [{ params, binders }] = nested;
+            assert.equal(params.length, 0);
+            assert.equal(binders.length, 0);
+        }
 
-        const [binder] = binders;
-        assert.deepEqual(binder.params, ['item', 'items']);
+        {
+            const { templates: nested } = secondOuter;
+            assert.equal(nested.length, 1);
+
+            nested.forEach((t, i) => testTemplate(t, i, 1));
+            const [{ params, binders }] = nested;
+            assert.equal(params.length, 1);
+            assert.equal(binders.length, 1);
+
+            const [binder] = binders;
+            assert.deepEqual(binder.params, ['item', 'items']);
+        }
     });
 
 });

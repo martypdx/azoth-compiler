@@ -60,7 +60,7 @@ export default function parseTemplate({ expressions, quasis }) {
         },
         add(binder) { 
             const el = currentEl;
-            binder.init(el, currentAttr);
+            binder.init(el, currentAttr || '');
             el.binders.push(binder);
         },
         onclosetag(name) {

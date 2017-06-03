@@ -1,6 +1,6 @@
 import ChildBinder from './child-binder';
 import AttributeBinder from './attribute-binder';
-import { text, block, attribute } from './writers';
+import { text, block, attribute } from './targets';
 
 export { ChildBinder, AttributeBinder };
     

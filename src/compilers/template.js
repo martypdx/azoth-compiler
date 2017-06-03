@@ -1,19 +1,12 @@
 
-export default function compileTemplate(template) {
-    //  return `(${Object.keys(params)}) => {
-    //         const __nodes = render_${i}();
-    //         ${plucks && plucks.length ? '\n' + plucks.map(pluck).join('\n') : ''}
-            
-    //         ${bindings.map(bind).join('\n')}
-            
-    //         const __fragment = __nodes[__nodes.length];
-    //         __fragment.unsubscribe = () => {
-    //             ${bindings.map(unsubscribe).join('')}
-    //         };
-    //         return __fragment;
-    //     }`;
-
-
+export default function compile({ html, binders: b, params: p, node, position }, index) {
+    return schema({
+        binders: binders(b),
+        params: params(p),
+        render: '__render0()',
+        bindings: bindings(b),
+        unsubscribes: unsubscribes(b)
+    });
 }
 
 const indent = '    ';
@@ -45,15 +38,31 @@ export function schema({ binders, params, render, bindings, unsubscribes }) {
 `);
 }
 
+export function params(params) {
+    return { 
+        params: params.map(p => p.name),
+        destructure: []
+    };
+}
+
+
+export function binders(binders) {
+    return binders.map((binder, i) => {
+        return `const __bind${i} = ${binder.writeInit()};`;
+    });
+}
+
 export function bindings(binders) {
     return binders.map((binder, i) => {
         const subscriber = binder.isSubscriber ? `const __sub${i} = ` : '';
-        return `${subscriber}${binder.writeBinding(i)};`;
+        const observer = `__bind${i}(__nodes[${binder.elIndex}])`;
+        return `${subscriber}${binder.writeBinding(observer)};`;
     });
 }
 
 export function unsubscribes(binders) {
     return binders
+        // map first because we need to preserve original index
         .map((binder, i) => {
             if (!binder.isSubscriber) return;
             return `__sub${i}.unsubscribe();`;
