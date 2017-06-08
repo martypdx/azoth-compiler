@@ -1,15 +1,19 @@
 import { $, _ } from 'diamond';
 import { from } from 'rxjs/observable';
 
+const filter$ = getEventSubject();
+
 const Search = () => _`
+    <input onChange=@${filter$}>
 `;
 
-let search = null;
 
 const Movies = (movies) => _`
     <h1>Movies</h1>
     <ul>
+        <Search/>
         ${movies.map(from)
+            .filterMap(filter$)
             .map(({ url, title, description, year }=$) => _`
                 <li class="poster">
                     <img src=${url} alt=${title}>
