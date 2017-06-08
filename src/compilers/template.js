@@ -1,9 +1,10 @@
 
-export default function compile({ html, binders: b, params: p, node, position }, index) {
+export default function compile({ html, binders: b, params: p, node, position }) {
     return schema({
         binders: binders(b),
         params: params(p),
         render: '__render0()',
+        subtemplates: subtemplates(b),
         bindings: bindings(b),
         unsubscribes: unsubscribes(b)
     });
@@ -11,7 +12,7 @@ export default function compile({ html, binders: b, params: p, node, position },
 
 const indent = '    ';
 
-export function schema({ binders, params, render, bindings, unsubscribes }) {
+export function schema({ binders, params, render, bindings, unsubscribes, subtemplates = [] }) {
     return (
 `(() => {${
     binders.length ? `
@@ -22,6 +23,9 @@ export function schema({ binders, params, render, bindings, unsubscribes }) {
         ${params.destructure.join('\n' + indent.repeat(2))}`
         : ''}
         const __nodes = ${render};${
+        subtemplates.length ? `
+        ${subtemplates.join('\n' + indent.repeat(2))}`
+        : ''}${
         bindings.length ? `
         ${bindings.join('\n' + indent.repeat(2))}`
         : ''}${
@@ -34,8 +38,7 @@ export function schema({ binders, params, render, bindings, unsubscribes }) {
         : `
         return __nodes[__nodes.length];`}
     };
-})();
-`);
+})();`);
 }
 
 export function params(params) {
@@ -58,6 +61,14 @@ export function bindings(binders) {
         const observer = `__bind${i}(__nodes[${binder.elIndex}])`;
         return `${subscriber}${binder.writeBinding(observer)};`;
     });
+}
+
+export function subtemplates(binders) {
+    return binders.reduce((templates, binder, iBinder) => {
+        return templates.concat(binder.templates.map((template, i) => {
+            return `const __t${iBinder}_${i} = ${compile(template)}`;
+        }));
+    }, []);
 }
 
 export function unsubscribes(binders) {

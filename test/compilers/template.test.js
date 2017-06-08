@@ -8,10 +8,9 @@ import { text, block, attribute } from '../../src/binders/targets';
 import chai from 'chai';
 const assert = chai.assert;
 
-describe('compile template', () => {
+describe.only('compile template', () => {
 
-
-    describe.only('integration (full template)', () => {
+    describe('integration (full template)', () => {
 
         const parseTemplates = source => parse(source.toAst());
 
@@ -32,8 +31,35 @@ describe('compile template', () => {
         __bind0(__nodes[0])(name);
         return __nodes[__nodes.length];
     };
+})();`      
+            );
+        });
+
+        it('nested', () => {
+
+            function source() {
+                const template = () => _`<span>${_`inner`}</span>`;
+            }
+
+            const [ template ] = parseTemplates(source);
+            const compiled = compile(template);
+
+            assert.strictEqual(compiled,
+`(() => {
+    const __bind0 = __textBinder(0);
+    return () => {
+        const __nodes = __render0();
+        const __t0_0 = (() => {
+    return () => {
+        const __nodes = __render0();
+        return __nodes[__nodes.length];
+    };
 })();
-`);
+        __bind0(__nodes[0])(__t0_0);
+        return __nodes[__nodes.length];
+    };
+})();`
+            );
         });
     });
 
@@ -66,8 +92,8 @@ describe('compile template', () => {
         };
         return __fragment;
     };
-})();
-`);
+})();`
+            );
         });
 
         it('no destructure or unsubscribe', () => {
@@ -90,8 +116,8 @@ describe('compile template', () => {
         bindings2
         return __nodes[__nodes.length];
     };
-})();
-`);
+})();`
+            );
         });
 
         it('minimal', () => {
@@ -110,8 +136,8 @@ describe('compile template', () => {
         const __nodes = render0;
         return __nodes[__nodes.length];
     };
-})();
-`);
+})();`
+            );
         });
     });
 
