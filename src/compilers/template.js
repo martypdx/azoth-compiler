@@ -1,19 +1,20 @@
+import MagicString from 'magic-string';
 
-export default function compile({ html, binders: b, params: p, node, position }) {
+export default function compile({ html, binders: b, params: p, node, position }, level = 0) {
     return schema({
         binders: binders(b),
         params: params(p),
         render: '__render0()',
-        subtemplates: subtemplates(b),
+        subtemplates: subtemplates(b, level + 1),
         bindings: bindings(b),
         unsubscribes: unsubscribes(b)
-    });
+    }, level);
 }
 
 const indent = '    ';
 
-export function schema({ binders, params, render, bindings, unsubscribes, subtemplates = [] }) {
-    return (
+export function schema({ binders, params, render, bindings, unsubscribes, subtemplates = [] }, level) {
+    const template = (
 `(() => {${
     binders.length ? `
     ${binders.join('\n' + indent)}`
@@ -24,7 +25,17 @@ export function schema({ binders, params, render, bindings, unsubscribes, subtem
         : ''}
         const __nodes = ${render};${
         subtemplates.length ? `
-        ${subtemplates.join('\n' + indent.repeat(2))}`
+        ${subtemplates
+            .map(template => {
+                const firstLineIndex = template.indexOf('\n');
+                return new MagicString(template)
+                    .indent(indent.repeat(2), { 
+                        // TODO: this needs to be first \n - 1
+                        exclude: [0 , firstLineIndex]
+                    })
+                    .toString();
+            })
+            .join('\n' + indent.repeat(2))}`
         : ''}${
         bindings.length ? `
         ${bindings.join('\n' + indent.repeat(2))}`
@@ -39,6 +50,8 @@ export function schema({ binders, params, render, bindings, unsubscribes, subtem
         return __nodes[__nodes.length];`}
     };
 })();`);
+
+    return template;
 }
 
 export function params(params) {
@@ -63,10 +76,10 @@ export function bindings(binders) {
     });
 }
 
-export function subtemplates(binders) {
+export function subtemplates(binders, level) {
     return binders.reduce((templates, binder, iBinder) => {
         return templates.concat(binder.templates.map((template, i) => {
-            return `const __t${iBinder}_${i} = ${compile(template)}`;
+            return `const __t${iBinder}_${i} = ${compile(template, level)}`;
         }));
     }, []);
 }

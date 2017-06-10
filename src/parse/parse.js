@@ -4,7 +4,7 @@ import parseTemplate from './parse-template';
 import matchObservables from './match-observables';
 
 export default function parse(ast, { tag, index = 0, identifiers: parentIdentifiers } = {}) {
-
+    
     return findTemplates(ast, { tag }).map(({ node, ancestors }, templateIndex) => {
 
         const { html, binders } = parseTemplate(node.quasi);

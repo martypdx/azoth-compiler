@@ -35,10 +35,10 @@ describe.only('compile template', () => {
             );
         });
 
-        it('two nested', () => {
+        it('nested', () => {
 
             function source() {
-                const template = () => _`<span>${foo ? _`one` : _`two`}${_`three`}</span>`;
+                const template = () => _`<span>${foo ? _`one` : _`two`}${_`three ${_`four`}`}</span>`;
             }
 
             const [ template ] = parseTemplates(source);
@@ -51,23 +51,31 @@ describe.only('compile template', () => {
     return () => {
         const __nodes = __render0();
         const __t0_0 = (() => {
-    return () => {
-        const __nodes = __render0();
-        return __nodes[__nodes.length];
-    };
-})();
+            return () => {
+                const __nodes = __render0();
+                return __nodes[__nodes.length];
+            };
+        })();
         const __t0_1 = (() => {
-    return () => {
-        const __nodes = __render0();
-        return __nodes[__nodes.length];
-    };
-})();
+            return () => {
+                const __nodes = __render0();
+                return __nodes[__nodes.length];
+            };
+        })();
         const __t1_0 = (() => {
-    return () => {
-        const __nodes = __render0();
-        return __nodes[__nodes.length];
-    };
-})();
+            const __bind0 = __textBinder(1);
+            return () => {
+                const __nodes = __render0();
+                const __t0_0 = (() => {
+                    return () => {
+                        const __nodes = __render0();
+                        return __nodes[__nodes.length];
+                    };
+                })();
+                __bind0(__nodes[0])(__t0_0);
+                return __nodes[__nodes.length];
+            };
+        })();
         __bind0(__nodes[0])(foo ? __t0_0 : __t0_1);
         __bind1(__nodes[0])(__t1_0);
         return __nodes[__nodes.length];
