@@ -8,7 +8,7 @@ import { text, block, attribute } from '../../src/binders/targets';
 import chai from 'chai';
 const assert = chai.assert;
 
-describe.only('compile template', () => {
+describe('compile template', () => {
 
     describe('integration (full template)', () => {
 

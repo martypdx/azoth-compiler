@@ -1,19 +1,19 @@
 import MagicString from 'magic-string';
 
-export default function compile({ html, binders: b, params: p, node, position }, level = 0) {
+export default function compile({ html, binders: b, params: p /*, node, position*/ }) {
     return schema({
         binders: binders(b),
         params: params(p),
         render: '__render0()',
-        subtemplates: subtemplates(b, level + 1),
+        subtemplates: subtemplates(b),
         bindings: bindings(b),
         unsubscribes: unsubscribes(b)
-    }, level);
+    });
 }
 
 const indent = '    ';
 
-export function schema({ binders, params, render, bindings, unsubscribes, subtemplates = [] }, level) {
+export function schema({ binders, params, render, bindings, unsubscribes, subtemplates = [] }) {
     const template = (
 `(() => {${
     binders.length ? `
@@ -30,7 +30,6 @@ export function schema({ binders, params, render, bindings, unsubscribes, subtem
                 const firstLineIndex = template.indexOf('\n');
                 return new MagicString(template)
                     .indent(indent.repeat(2), { 
-                        // TODO: this needs to be first \n - 1
                         exclude: [0 , firstLineIndex]
                     })
                     .toString();
@@ -76,10 +75,10 @@ export function bindings(binders) {
     });
 }
 
-export function subtemplates(binders, level) {
+export function subtemplates(binders) {
     return binders.reduce((templates, binder, iBinder) => {
         return templates.concat(binder.templates.map((template, i) => {
-            return `const __t${iBinder}_${i} = ${compile(template, level)}`;
+            return `const __t${iBinder}_${i} = ${compile(template)}`;
         }));
     }, []);
 }
