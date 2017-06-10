@@ -3,7 +3,7 @@ const assert = chai.assert;
 import UniqueStrings from '../../src/compilers/unique-strings';
 
 
-describe.only('Map By String Collection', () => {
+describe('Map By String Collection', () => {
 
     const collection = new UniqueStrings();
 
