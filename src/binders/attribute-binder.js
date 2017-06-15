@@ -9,8 +9,8 @@ import Binder from './binder';
 
 export default class AttributeBinder extends Binder {
     
-    constructor(options, writer) {
-        super(options, writer);
+    constructor(options, target) {
+        super(options, target);
         this.name = '';
     }
 

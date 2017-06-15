@@ -1,18 +1,18 @@
 
-const childNode = (binder, html) => ({
-    binder,
+const childNode = (name, html) => ({
+    import: name,
     html,
     init(binder) {
-        return `${this.binder}(${binder.index})`;
+        return `${this.import}(${binder.index})`;
     }
 });
 
 export const text = childNode('__textBinder', '<text-node></text-node>');
 export const block = childNode('__blockBinder', '<block-node></block-node>');
 export const attribute = {
-    binder: '__attrBinder',
+    import: '__attrBinder',
     html: '""',
     init(binder) {
-        return `${this.binder}('${binder.name}')`;
+        return `${this.import}('${binder.name}')`;
     }
 };

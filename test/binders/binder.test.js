@@ -9,8 +9,9 @@ const assert = chai.assert;
 
 describe('Binder', () => {
 
-    it('elIndex defaults to -1', () => {
+    it('elIndex and moduleIndex default to -1', () => {
         assert.equal(new Binder().elIndex, -1);
+        assert.equal(new Binder().moduleIndex, -1);
     });
 
     it('isSubscriber', () => {
@@ -44,12 +45,12 @@ describe('Binder', () => {
             binder.foo = 'FOO';
             
             assert.equal(binder.writeHtml(), writer.html);
-            assert.deepEqual(binder.writeImport(), { name: writer.import });
+            assert.deepEqual(binder.writeImport(), writer.import);
             assert.equal(binder.writeInit(), 'FOO');
         });
     });
     
-    describe('binding', () => {
+    describe.skip('binding', () => {
 
         const OBSERVER = '<observer>';
 
@@ -60,11 +61,6 @@ describe('Binder', () => {
             const binder = new Binder({ ast: source.toExpr() });
             binder.params = ['foo'];
 
-            // possible REFACTOR direction: 
-            // const node = `__nodes[${binder.elIndex}]`;
-            // const observer = `__bind${binderIndex}(${node})`;
-            // const binding = binder.subscribe()(observer);
-            
             const binding = binder.writeBinding(OBSERVER);
             const expected = `foo.first().subscribe(${OBSERVER})`;
             
@@ -122,6 +118,17 @@ describe('Binder', () => {
             
             const binding = binder.writeBinding(OBSERVER);
             const expected = `${OBSERVER}(1 + 2)`;
+            
+            assert.equal(binding, expected);
+        });
+
+        it('static expression, no params', () => {
+            const source = () => x  + y;
+            const binder = new Binder({ ast: source.toExpr() });
+            binder.params = [];
+            
+            const binding = binder.writeBinding(OBSERVER);
+            const expected = `${OBSERVER}(x + y)`;
             
             assert.equal(binding, expected);
         });

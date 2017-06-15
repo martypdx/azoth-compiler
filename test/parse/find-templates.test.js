@@ -7,9 +7,14 @@ describe('find templates', () => {
     
     const getTemplate = source => findTemplates(source.toAst());
     
-    const isProgramTTE = ({ ancestors, node }) => {
-        assert.ok(ancestors.length);
-        assert.equal(ancestors[0].type, 'Program');
+    // const isProgramTTE = ({ ancestors, node }) => {
+    //     assert.ok(ancestors.length);
+    //     assert.equal(ancestors[0].type, 'Program');
+    //     assert.equal(node.type, 'TaggedTemplateExpression');
+    // };
+
+
+    const isTTE = (node) => {
         assert.equal(node.type, 'TaggedTemplateExpression');
     };
 
@@ -24,8 +29,8 @@ describe('find templates', () => {
         const templates = getTemplate(source);
         assert.equal(templates.length, 1);
         const [ template ] = templates;
-        isProgramTTE(template);
-        assert.equal(parentType(template), 'ExpressionStatement');
+        isTTE(template);
+        // assert.equal(parentType(template), 'ExpressionStatement');
     });
 
     it('direct return from arrow function', () => {
@@ -37,8 +42,8 @@ describe('find templates', () => {
         const templates = getTemplate(source);
         assert.equal(templates.length, 1);
         const [ template ] = templates;
-        isProgramTTE(template);
-        assert.equal(parentType(template), 'ArrowFunctionExpression');
+        isTTE(template);
+        // assert.equal(parentType(template), 'ArrowFunctionExpression');
     });
 
     it('variable declaration', () => {
@@ -50,11 +55,11 @@ describe('find templates', () => {
         const templates = getTemplate(source);
         assert.equal(templates.length, 1);
         const [ template ] = templates;
-        isProgramTTE(template);
-        assert.equal(parentType(template), 'VariableDeclarator');
+        isTTE(template);
+        // assert.equal(parentType(template), 'VariableDeclarator');
     });
 
-    it('sibling functions', () => {
+    it('sibling templates', () => {
 
         function source() {
             const t1 = foo => _`<span>${foo}</span>`;
@@ -63,20 +68,18 @@ describe('find templates', () => {
 
         const templates = getTemplate(source);
         assert.equal(templates.length, 2);
-        isProgramTTE(templates[0]);
-        isProgramTTE(templates[1]);     
+        isTTE(templates[0]);
+        isTTE(templates[1]);     
     });
 
-    it('ignores nested', () => {
+    it('nested templates', () => {
         function source() {
             foo => _`<span>${ _`nested` }</span>`;
         }
 
         const templates = getTemplate(source);
-        assert.equal(templates.length, 1);
-        const [ template ] = templates;
-        isProgramTTE(template);
-        // make sure this is outer template
-        assert.equal(template.node.start, 'foo => '.length);
+        assert.equal(templates.length, 2);
+        isTTE(templates[0]);
+        isTTE(templates[1]);  
     });
 });

@@ -3,7 +3,7 @@ import matchObservables from '../../src/parse/match-observables';
 import chai from 'chai';
 const assert = chai.assert;
 
-describe('match observables', () => {
+describe.skip('match observables', () => {
 
     const match = source => matchObservables(
         source.toAst(),

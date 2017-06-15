@@ -9,9 +9,9 @@ const assert = chai.assert;
 
 
 const parseSource = source => {
-    const { node: { quasi }, ancestors } = findTemplates(source.toAst())[0];
-    const { identifiers } = findParams(ancestors);
-    return parseTemplate(quasi, new Set(identifiers)); 
+    const { quasi } = findTemplates(source.toAst())[0];
+    // const { identifiers } = findParams(ancestors);
+    return parseTemplate(quasi) ; //, new Set(identifiers)); 
 };
 
 describe('parse template', () => {
@@ -25,6 +25,7 @@ describe('parse template', () => {
 
         function testText(binder, {
             elIndex = 0,
+            moduleIndex = -1,
             index = 0,
             name = '',
             type = MAP,
@@ -36,8 +37,8 @@ describe('parse template', () => {
             assert.equal(astType, 'Identifier');
             assert.equal(astName, ref);
             delete binder.ast;
-            delete binder.writer;
-            assert.deepEqual(binder, { elIndex, index, name, type, params, templates }, `ref: ${ref}`);
+            delete binder.target;
+            assert.deepEqual(binder, { elIndex, moduleIndex, index, name, type, params, templates }, `ref: ${ref}`);
         }
 
         it('stand-alone text node', () => {
@@ -183,6 +184,7 @@ describe('parse template', () => {
         
         function testAttr(binder, {
             elIndex = 0,
+            moduleIndex = -1,
             name = '',
             index = -1,
             type = VALUE,
@@ -195,8 +197,8 @@ describe('parse template', () => {
             assert.equal(ast.type, 'Identifier');
             assert.equal(ast.name, ref);
             delete binder.ast;
-            delete binder.writer;
-            assert.deepEqual(binder, { elIndex, name, index, type, params, templates }, `name: ${name}`);
+            delete binder.target;
+            assert.deepEqual(binder, { elIndex, moduleIndex, name, index, type, params, templates }, `name: ${name}`);
         }
 
         it('simple', () => {

@@ -4,14 +4,15 @@ import { VALUE, /*MAP,*/ SUBSCRIBE } from './binding-types';
 
 export default class Binder {
 
-    constructor({ type = VALUE, ast = null } = {}, writer) {        
+    constructor({ type = VALUE, ast = null } = {}, target) {        
         this.type = type;
         this.params = null;
         this.ast = ast;
         this.elIndex = -1;
         this.templates = null;
         
-        this.writer = writer;
+        this.moduleIndex = -1;
+        this.target = target;
 
         this.index = -1;
         this.name = '';        
@@ -23,19 +24,20 @@ export default class Binder {
     }
 
     writeHtml() {
-        return this.writer.html;
+        return this.target.html;
     }
 
     writeInit() {
-        return this.writer.init(this);
+        return this.target.init(this);
     }
 
     writeImport() {
-        return { name: this.writer.import };
+        return this.target.import;
     }
 
     get isSubscriber() {
-        return (!!this.params && this.params.length > 0);
+        const { type, params } = this;
+        return (type === SUBSCRIBE || (!!params && params.length > 0));
     }
 
     writeBinding(observer) { 
@@ -43,7 +45,7 @@ export default class Binder {
         const isIdentifier = ast.type === 'Identifier';
 
         const expr = isIdentifier ? ast.name : astring(ast);
-        if (!params.length) {
+        if ((!params || !params.length) && type !== SUBSCRIBE) {
             return `${observer}(${expr})`;
         }
 
@@ -70,7 +72,7 @@ export default class Binder {
         }
 
         if(type === VALUE) observable += `.first()`;
-        
+
         return this.addSubscribe(observable, observer);
     }
 

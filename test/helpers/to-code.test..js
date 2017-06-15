@@ -1,5 +1,5 @@
 import chai from 'chai';
-import './_toCode';
+import './to-code';
 const assert = chai.assert;
 const $ = () => {};
 

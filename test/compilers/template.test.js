@@ -1,5 +1,7 @@
 /*eslint no-undef: off, no-unused-vars: off */
-import compile, { schema, binders, bindings, unsubscribes } from '../../src/compilers/template';
+import '../helpers/to-code';
+import codeEqual from '../helpers/code-equal';
+import compile, { schema, binders, bindings, unsubscribes, subtemplates } from '../../src/compilers/template';
 import Binder from '../../src/binders/binder';
 import parse from '../../src/parse/parse';
 import { VALUE, MAP, SUBSCRIBE } from '../../src/binders/binding-types';
@@ -8,7 +10,7 @@ import { text, block, attribute } from '../../src/binders/targets';
 import chai from 'chai';
 const assert = chai.assert;
 
-describe('compile template', () => {
+describe.skip('compile template', () => {
 
     describe('integration (full template)', () => {
 
@@ -23,19 +25,18 @@ describe('compile template', () => {
             const [ template ] = parseTemplates(source);
             const compiled = compile(template);
 
-            assert.strictEqual(compiled,
-`(() => {
-    const __bind0 = __textBinder(1);
-    return (name) => {
-        const __nodes = __render0();
-        __bind0(__nodes[0])(name);
-        return __nodes[__nodes.length];
-    };
-})();`      
-            );
+            codeEqual(compiled, expected);
+
+            function expected() {
+                (() => {
+                    const __nodes = __render0();
+                    __bind0(__nodes[0])(name);
+                    return __nodes[__nodes.length];
+                })();
+            }
         });
 
-        it('nested', () => {
+        it.skip('nested only work on one template at a time', () => {
 
             function source() {
                 const template = () => _`<span>${foo ? _`one` : _`two`}${_`three ${_`four`}`}</span>`;
@@ -44,102 +45,86 @@ describe('compile template', () => {
             const [ template ] = parseTemplates(source);
             const compiled = compile(template);
 
-            assert.strictEqual(compiled,
-`(() => {
-    const __bind0 = __textBinder(0);
-    const __bind1 = __textBinder(1);
-    return () => {
-        const __nodes = __render0();
-        const __t0_0 = (() => {
-            return () => {
-                const __nodes = __render0();
-                return __nodes[__nodes.length];
-            };
-        })();
-        const __t0_1 = (() => {
-            return () => {
-                const __nodes = __render0();
-                return __nodes[__nodes.length];
-            };
-        })();
-        const __t1_0 = (() => {
-            const __bind0 = __textBinder(1);
-            return () => {
-                const __nodes = __render0();
-                const __t0_0 = (() => {
-                    return () => {
-                        const __nodes = __render0();
+            codeEqual(compiled, expected);
+
+            function expected() {
+                (() => {
+                    const __nodes = __render0();
+                    const __t0_0 = (() => {
+                        const __nodes = __render1();
                         return __nodes[__nodes.length];
-                    };
+                    })();
+                    const __t0_1 = (() => {
+                        const __nodes = __render2();
+                        return __nodes[__nodes.length];
+                    })();
+                    __bind0(__nodes[0])(foo ? __t0_0 : __t0_1);
+                    __bind1(__nodes[0])((() => {
+                        const __nodes = __render3();
+                        const __t0_0 = (() => {
+                            const __nodes = __render4();
+                            return __nodes[__nodes.length];
+                        })();
+                        __bind1(__nodes[0])(__t0_0);
+                        return __nodes[__nodes.length];
+                    })());
+                    return __nodes[__nodes.length];
                 })();
-                __bind0(__nodes[0])(__t0_0);
-                return __nodes[__nodes.length];
-            };
-        })();
-        __bind0(__nodes[0])(foo ? __t0_0 : __t0_1);
-        __bind1(__nodes[0])(__t1_0);
-        return __nodes[__nodes.length];
-    };
-})();`
-            );
+            }
         });
     });
 
     describe('schema', () => {
 
         it('all', () => {
-            const binders = ['binder1', 'binder2'];
+            const binders = ['binder1;', 'binder2;'];
             const params = {
                 params: ['param1', 'param2'],
-                destructure: ['destructure1', 'destructure2']
+                destructure: ['destructure1;', 'destructure2;']
             };
             const render = 'render0';
-            const bindings = ['bindings1', 'bindings2'];
-            const unsubscribes = ['unsubscribe1', 'unsubscribe1'];
+            const bindings = ['bindings1;', 'bindings2;'];
+            const unsubscribes = ['unsubscribe1;', 'unsubscribe1;'];
 
-            assert.strictEqual(schema({ binders, params, render, bindings, unsubscribes }),
-`(() => {
-    binder1
-    binder2
-    return (param1,param2) => {
-        destructure1
-        destructure2
-        const __nodes = render0;
-        bindings1
-        bindings2
-        const __fragment = __nodes[__nodes.length];
-        __fragment.unsubscribe = () => {
-            unsubscribe1
-            unsubscribe1
-        };
-        return __fragment;
-    };
-})();`
-            );
+            const template = schema({ binders, params, render, bindings, unsubscribes });
+            codeEqual(template, expected);
+
+            function expected() {
+                (() => {
+                    const __nodes = render0;
+                    bindings1;
+                    bindings2;
+                    const __fragment = __nodes[__nodes.length];
+                    __fragment.unsubscribe = () => {
+                        unsubscribe1;
+                        unsubscribe1;
+                    };
+                    return __fragment;
+                })();
+            }
         });
 
         it('no destructure or unsubscribe', () => {
-            const binders = ['binder1', 'binder2'];
+            const binders = ['binder1;', 'binder2;'];
             const params = {
                 params: ['param1', 'param2'],
                 destructure: []
             };
             const render = 'render0';
-            const bindings = ['bindings1', 'bindings2'];
+            const bindings = ['bindings1;', 'bindings2;'];
             const unsubscribes = [];
 
-            assert.strictEqual(schema({ binders, params, render, bindings, unsubscribes }),
-`(() => {
-    binder1
-    binder2
-    return (param1,param2) => {
-        const __nodes = render0;
-        bindings1
-        bindings2
-        return __nodes[__nodes.length];
-    };
-})();`
-            );
+            const template = schema({ binders, params, render, bindings, unsubscribes });
+            codeEqual(template, expected);
+            
+            function expected() {
+                (() => {
+                    const __nodes = render0;
+                    bindings1;
+                    bindings2;
+                    return __nodes[__nodes.length];
+                })();
+            }
         });
 
         it('minimal', () => {
@@ -152,19 +137,21 @@ describe('compile template', () => {
             const bindings = [];
             const unsubscribes = [];
 
-            assert.strictEqual(schema({ binders, params, render, bindings, unsubscribes }),
-`(() => {
-    return () => {
-        const __nodes = render0;
-        return __nodes[__nodes.length];
-    };
-})();`
-            );
+            const template = schema({ binders, params, render, bindings, unsubscribes });
+            codeEqual(template, expected);
+
+            function expected() {
+                (() => {
+                    const __nodes = render0;
+                    return __nodes[__nodes.length];
+                })();
+            }
         });
     });
 
 
-    describe('binders', () => {
+    // TODO: move to module
+    describe.skip('binders', () => {
 
         function getBinder(target, childIndex, name) {
             const binder = new Binder({}, target);
@@ -190,11 +177,13 @@ describe('compile template', () => {
 
 
     describe('bindings', () => {
+        let index = 0;
 
         function getBinder(options, params, elIndex = 0) {
             const binder = new Binder(options);
             binder.params = params;
             binder.elIndex = elIndex;
+            binder.moduleIndex = index++;
             return binder;
         }    
 
@@ -226,11 +215,11 @@ describe('compile template', () => {
 
         it('expressions', () => {
             assert.deepEqual(bindings(expressions), [
-                `const __sub0 = (foo + 1).subscribe(__bind0(__nodes[0]));`,
-                `__bind1(__nodes[0])(non + 1);`,
-                `__bind2(__nodes[0])(non + 1);`,
-                `const __sub3 = bar.map((bar) => (bar + 1)).first().subscribe(__bind3(__nodes[0]));`,
-                `const __sub4 = qux.map((qux) => (qux + 1)).subscribe(__bind4(__nodes[0]));`,
+                `const __sub0 = (foo + 1).subscribe(__bind5(__nodes[0]));`,
+                `__bind6(__nodes[0])(non + 1);`,
+                `__bind7(__nodes[0])(non + 1);`,
+                `const __sub3 = bar.map((bar) => (bar + 1)).first().subscribe(__bind8(__nodes[0]));`,
+                `const __sub4 = qux.map((qux) => (qux + 1)).subscribe(__bind9(__nodes[0]));`,
             ]);
         });
 
@@ -245,7 +234,7 @@ describe('compile template', () => {
         });
     });
 
-    describe.skip('subtemplates', () => {
+    describe('subtemplates', () => {
        
         it('write subtemplates', () => {
             const binder = new Binder({ 
@@ -254,12 +243,12 @@ describe('compile template', () => {
             });
             binder.params =  ['foo'];
             binder.templates = ['template1', 'template2'];
+            const compiled = [];
+            const compile = template => compiled.push(template);
 
-            assert.deepEqual(bindings([binder]), [
-                `const __sub0 = foo.subscribe(__bind0(__nodes[0]));`,
-                `__bind1(__nodes[0])(non);`,
-                `const __sub2 = bar.first().subscribe(__bind2(__nodes[0]));`,
-                `const __sub3 = qux.subscribe(__bind3(__nodes[0]));`,
+            assert.deepEqual(subtemplates([binder], compile), [
+                `const __t0_0 = 1`,
+                `const __t0_1 = 2`
             ]);
         });
 

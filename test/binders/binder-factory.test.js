@@ -17,13 +17,13 @@ describe('binder factory', () => {
         it('text binder', () => {
             const binder = getBinder({ inAttributes: false, block: false });
             assert.instanceOf(binder, ChildBinder);
-            assert.equal(binder.writer, text);
+            assert.equal(binder.target, text);
         });
 
         it('block binder', () => {
             const binder = getBinder({ inAttributes: false, block: true });
             assert.instanceOf(binder, ChildBinder);
-            assert.equal(binder.writer, block);
+            assert.equal(binder.target, block);
         });
     });  
 
@@ -31,7 +31,7 @@ describe('binder factory', () => {
         it('attribute binder', () => {
             const binder = getBinder({ inAttributes: true, block: false });
             assert.instanceOf(binder, AttributeBinder);
-            assert.equal(binder.writer, attribute);
+            assert.equal(binder.target, attribute);
         });
 
         it('attribute block binder not yet supported', () => {
