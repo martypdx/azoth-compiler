@@ -1,28 +1,12 @@
 import { declareConst, identifier, callExpression } from './common';
 import fragment from './fragment';
 import binding from './binding';
-import { NODES, RENDER } from './identifiers';
+import { NODES } from './identifiers';
 
-// (() => {}())
-const iife = () => ({
-    type: 'ArrowFunctionExpression',
-    id: null,
-    generator: false,
-    expression: false,
-    params: [],
-    body: {
-        type: 'BlockStatement',
-        body: []
-    }
-});
+const RENDER = '__render';
 
-const iifeWith = statements => {
-    const ast = iife();
-    ast.body.body = statements;
-    return ast;
-};
-
-const render = index => {
+// const __nodes = __render${index}();
+const renderNodes = index => {
     return declareConst({ 
         name: NODES, 
         init: callExpression({ 
@@ -31,22 +15,30 @@ const render = index => {
     });
 };
 
+// (() => {}())
+const iife = body => ({
+    type: 'ArrowFunctionExpression',
+    id: null,
+    generator: false,
+    expression: false,
+    params: [],
+    body: {
+        type: 'BlockStatement',
+        body
+    }
+});
 
 export default ({ binders, index }) => {
     const bindings = binders.map(binding);
     const statements = [
-        render(index),
+        renderNodes(index),
         ...bindings,
         ...fragment(binders)
     ];
-    return iifeWith(statements);
+    return iife(statements);
 };
 
 export function TTEtoAFE(node, AFE) {
     node.type = 'CallExpression',
     node.callee = AFE;
-    delete node.tag;
-    delete node.quasi;
-    delete node.start;
-    delete node.end;
 }

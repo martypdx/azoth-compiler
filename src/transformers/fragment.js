@@ -1,5 +1,7 @@
 import { declareConst, memberExpression, identifier, callExpression } from './common';
-import { FRAGMENT, NODES, SUB } from './identifiers';
+import { NODES, SUB } from './identifiers';
+
+const FRAGMENT = '__fragment';
 
 // __nodes.length
 const NODES_LENGTH = memberExpression({

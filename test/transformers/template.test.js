@@ -57,7 +57,7 @@ describe('transform - template', () => {
         const AFE = template({ binders: [], index: 0 });
         const ast = parse('const template = _``;');
 
-        // TODO? use find template?
+        // TODO: use find template?
         const TTE = ast.body[0].declarations[0].init;
         TTEtoAFE(TTE, AFE);
         
@@ -70,7 +70,6 @@ describe('transform - template', () => {
                 return __nodes[__nodes.length - 1];
             })();
         }
-
     });
 
 });
