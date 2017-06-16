@@ -5,10 +5,8 @@ import {
     identifier } from './common';
 import fragment from './fragment';
 import binding from './binding';
-import { NODES, RENDER } from './identifiers';
+import { NODES, RENDER, RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT } from './identifiers';
 
-const RENDERER_IMPORT = 'renderer';
-const MAKE_FRAGMENT_IMPORT = 'makeFragment';
 
 
 // const __nodes = __render${index}();

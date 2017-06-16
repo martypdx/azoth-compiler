@@ -15,7 +15,7 @@ describe.only('compiler compiles', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
-            import { __textBinder, render, makeFragment } from 'diamond';
+            import { renderer, makeFragment, __textBinder } from 'diamond';
             const template = name => (() => {
                 const __nodes = __render0();
                 __bind0(__nodes[0])(name);

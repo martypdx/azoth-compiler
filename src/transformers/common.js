@@ -46,3 +46,10 @@ export const arrowFunctionExpression = body => ({
         body
     }
 });
+
+// importMe
+export const specifier = name => ({
+    type: 'Import Specifier',
+    imported: identifier(name),
+    local: identifier(name)
+});
