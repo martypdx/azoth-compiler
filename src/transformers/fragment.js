@@ -1,7 +1,10 @@
-import { declareConst, memberExpression, identifier, callExpression } from './common';
-import { NODES, SUB } from './identifiers';
-
-const FRAGMENT = '__fragment';
+import { 
+    arrowFunctionExpression,
+    callExpression,
+    declareConst, 
+    identifier, 
+    memberExpression } from './common';
+import { FRAGMENT, NODES, SUB } from './identifiers';
 
 // __nodes.length
 const NODES_LENGTH = memberExpression({
@@ -82,17 +85,7 @@ const fragmentUnsubscribe = unsubscribes => {
                 name: FRAGMENT,
                 property: identifier('unsubscribe')
             }),
-            right: {
-                type: 'ArrowFunctionExpression',
-                id: null,
-                generator: false,
-                expression: false,
-                params: [],
-                body: {
-                    type: 'BlockStatement',
-                    body: unsubscribes
-                }
-            }
+            right: arrowFunctionExpression(unsubscribes)
         }
     };
 };

@@ -1,5 +1,9 @@
-import { VALUE, SUBSCRIBE } from '../binders/binding-types';
-import { declareConst, callExpression, memberExpression, identifier } from './common';
+import { 
+    callExpression, 
+    declareConst, 
+    identifier, 
+    memberExpression } from './common';
+import { SUBSCRIBE, VALUE } from '../binders/binding-types';
 import { BINDER, NODES, SUB } from './identifiers';
 
 // __bind${moduleIndex}(__nodes[${elementIndex}])
@@ -56,4 +60,18 @@ export default (binder, i) => {
         default:
             throw new Error(`Unsupported binding type ${binder.type}`);
     }
+};
+
+export const initBinder = ({ name, arg, index }) => {
+    return declareConst({
+        name: `${BINDER}${index}`,
+        init: callExpression({
+            name,
+            args: [{
+                type: 'Literal',
+                value: arg,
+                raw: typeof arg === 'string' ? `"${arg}"` : `${arg}`
+            }]
+        })
+    });
 };

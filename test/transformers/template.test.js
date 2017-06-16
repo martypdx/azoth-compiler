@@ -8,7 +8,7 @@ import { assert } from 'chai';
 import codeEqual from '../helpers/code-equal';
 import parse from '../../src/ast';
 
-import template, { TTEtoAFE } from '../../src/transformers/template';
+import { templateAFE, TTEtoAFE } from '../../src/transformers/template';
 
 describe('transform - template', () => {
     const binders = [
@@ -18,7 +18,7 @@ describe('transform - template', () => {
     ];
 
     it('no bindings', () => {
-        const ast = template({ binders: [], index: 1 });
+        const ast = templateAFE({ binders: [], index: 1 });
         const code = generate(ast);
 
         codeEqual(code, expected);
@@ -32,7 +32,7 @@ describe('transform - template', () => {
     });
 
     it('with bindings', () => {
-        const ast = template({ binders, index: 2 });
+        const ast = templateAFE({ binders, index: 2 });
         const code = generate(ast);
 
         codeEqual(code, expected);
@@ -54,10 +54,12 @@ describe('transform - template', () => {
     });
 
     it('TTE to AFE', () => {
-        const AFE = template({ binders: [], index: 0 });
-        const ast = parse('const template = _``;');
+        const AFE = templateAFE({ binders: [], index: 0 });
+        const source = () => {
+            const template = _``;
+        };
+        const ast = source.toAst();
 
-        // TODO: use find template?
         const TTE = ast.body[0].declarations[0].init;
         TTEtoAFE(TTE, AFE);
         

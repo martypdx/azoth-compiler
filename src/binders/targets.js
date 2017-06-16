@@ -3,7 +3,7 @@ const childNode = (name, html) => ({
     import: name,
     html,
     init(binder) {
-        return `${this.import}(${binder.index})`;
+        return binder.index;
     }
 });
 
@@ -13,6 +13,6 @@ export const attribute = {
     import: '__attrBinder',
     html: '""',
     init(binder) {
-        return `${this.import}('${binder.name}')`;
+        return binder.name;
     }
 };

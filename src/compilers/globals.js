@@ -4,16 +4,24 @@ export class UniqueStrings {
         this.map = new Map();
     }
 
-    add(string) {
+    add(string, value = {}) {
         const { map } = this;
-        if(map.has(string)) return map.get(string);
-        const size = map.size;
-        map.set(string, size);
-        return size;
+        if(map.has(string)) return map.get(string).index;
+        const index = value.index = map.size;
+        map.set(string, value);
+        return index;
+    }
+
+    set(string, value) {
+        this.map.set(string, value);
     }
 
     get all() {
         return [...this.map.keys()];
+    }
+
+    get values() {
+        return [...this.map.values()];
     }
 }
 
@@ -25,7 +33,7 @@ export class Globals {
     }
 
     get imports() { return this._imports.all; }
-    get binders() { return this._binders.all; }
+    get binders() { return this._binders.values; }
     get fragments() { return this._fragments.all; }
 
     addFragment(html) {
@@ -33,7 +41,12 @@ export class Globals {
     }
 
     addBinder(binder) {
-        this._imports.add(binder.writeImport());
-        return this._binders.add(binder.writeInit());
+        const name = binder.writeImport();
+        const arg = binder.writeInit();
+        const value = { name, arg };
+        const unique = JSON.stringify(value);
+        
+        this._imports.add(name);
+        return this._binders.add(unique, value);
     }
 }
