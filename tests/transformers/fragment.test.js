@@ -17,7 +17,7 @@ describe('transform - fragment nodes', () => {
     it('direct return', () => {
         const code = fragment([]).map(generate);
         assert.deepEqual(code, [
-            'return __nodes[__nodes.length - 1];'
+            'return __nodes[__nodes.length];'
         ]);
     });
 
@@ -31,7 +31,7 @@ describe('transform - fragment nodes', () => {
         ];
 
         assert.deepEqual(code, [
-            'const __fragment = __nodes[__nodes.length - 1];',
+            'const __fragment = __nodes[__nodes.length];',
             '__fragment.unsubscribe = () => {',
             '__sub0.unsubscribe();',
             '__sub2.unsubscribe();',

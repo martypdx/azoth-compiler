@@ -1,4 +1,4 @@
-import { recursive } from 'acorn/dist/walk';
+import { recursive } from 'acorn/dist/walk.es';
 
 const MODULE_NAME = 'diamond';
 const SPECIFIER_NAME = 'html';

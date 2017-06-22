@@ -1,4 +1,4 @@
-import astring from 'astring';
+import { generate } from 'astring';
 import { VALUE, /*MAP,*/ SUBSCRIBE } from './binding-types';
 
 
@@ -44,7 +44,7 @@ export default class Binder {
         const { ast, params, type } = this;
         const isIdentifier = ast.type === 'Identifier';
 
-        const expr = isIdentifier ? ast.name : astring(ast);
+        const expr = isIdentifier ? ast.name : generate(ast);
         if ((!params || !params.length) && type !== SUBSCRIBE) {
             return `${observer}(${expr})`;
         }

@@ -1,6 +1,6 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
-import assert from 'assert';
+import { assert } from 'chai';
 import findTemplates from '../../src/parse/find-templates';
 
 describe('find templates', () => {

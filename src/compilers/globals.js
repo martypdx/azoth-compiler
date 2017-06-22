@@ -25,11 +25,15 @@ export class UniqueStrings {
     }
 }
 
+const TAG = '_';
+
 export class Globals {
     constructor() {
         this._imports = new UniqueStrings();
         this._binders = new UniqueStrings();
         this._fragments = new UniqueStrings();
+        this.tag = TAG;
+        this.specifiers = null;
     }
 
     get imports() { return this._imports.all; }

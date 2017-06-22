@@ -1,4 +1,4 @@
-import { simple, base } from 'acorn/dist/walk';
+import { simple, base } from 'acorn/dist/walk.es';
 
 
 // TODO: manage scope if needed via ancestor walk

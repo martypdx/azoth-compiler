@@ -1,7 +1,7 @@
 /*eslint no-undef: off */
 import chai from 'chai';
 const assert = chai.assert;
-import { recursive, simple, base } from 'acorn/dist/walk';
+import { recursive, simple, base } from 'acorn/dist/walk.es';
 
 function full(node, callback, b = base, state, override) {
     (function c(node, st, override) {

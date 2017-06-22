@@ -26,7 +26,7 @@ describe('transform - template', () => {
         function expected() {
             () => {
                 const __nodes = __render1();
-                return __nodes[__nodes.length - 1];
+                return __nodes[__nodes.length];
             } // eslint-disable-line
         }
     });
@@ -43,7 +43,7 @@ describe('transform - template', () => {
                 const __sub0 = one.subscribe(__bind0(__nodes[0]));
                 __bind1(__nodes[0])(two);
                 const __sub2 = three.subscribe(__bind1(__nodes[1]));
-                const __fragment = __nodes[__nodes.length - 1];
+                const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                     __sub2.unsubscribe();
@@ -69,7 +69,7 @@ describe('transform - template', () => {
         function expected() {
             const template = (() => {
                 const __nodes = __render0();
-                return __nodes[__nodes.length - 1];
+                return __nodes[__nodes.length];
             })();
         }
     });
