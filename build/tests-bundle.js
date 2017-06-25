@@ -1425,27 +1425,51 @@ describe.skip('compiler', () => {
 const IDENTIFIER = '$';
 
 function compile$3(ast, visitors) {
-    const scope = { __function: null };
-    scope.__function = scope;
+    const scope = Object.create(null);
+    const state = { 
+        scope,
+        functionScope: scope 
+    };
 
-    acorn_dist_walk.simple(ast, {
-        TaggedTemplateExpression(node, { scope }) {
+    acorn_dist_walk.recursive(ast, state, {
+        TaggedTemplateExpression(node, state, c) {
+            console.log('TTE');
+            const { scope } = state;
             const visitor = visitors[node.tag.name];
             if(visitor) visitor(scope);
+            acorn_dist_walk.base.TaggedTemplateExpression(node, state, c);
         },
-        Function(node, state) {
-            console.log('function!', node.type);
+        Function(node, state, c) {
+            console.log('Function');
+            const { scope, functionScope } = state;
+            state.scope = state.functionScope = Object.create(scope);
+            acorn_dist_walk.base.Function(node, state, c);
+            state.scope = scope;
+            state.functionScope = functionScope;
         },
-        VariableDeclaration(node, { scope }) {
-            
-        },
-        AssignmentPattern(node, { scope }) {
-
-            console.log('pattern', node.type);
+        AssignmentPattern(node, { scope, functionScope, declaration }) {
+            console.log('AssignmentPattern', node.left.name, declaration);
             if(node.right.name!==IDENTIFIER) return;
-            scope[node.left.name] = true;
+            const addTo = declaration === 'var' ? functionScope : scope;
+            addTo[node.left.name] = true;
+        },
+        VariableDeclaration(node, state, c) {
+            state.declaration = node.kind;
+            acorn_dist_walk.base.VariableDeclaration(node, state, c);
+            state.declaration = null;
+        },
+        VariablePattern({ name }, { scope }) {
+            console.log('VariablePattern', name);
+            if(scope[name]) scope[name] = false;
+        },
+        BlockStatement(node, state, c) {
+            console.log('BlockStatement');
+            const { scope } = state;
+            state.scope = Object.create(scope);
+            acorn_dist_walk.base.BlockStatement(node, state, c);
+            state.scope = scope;
         }
-    }, acorn_dist_walk.base, { scope });
+    }, acorn_dist_walk.base);
 
 }
 
@@ -1454,7 +1478,7 @@ function compile$3(ast, visitors) {
 
 const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
 
-describe('compiler', () => {
+describe.only('compiler', () => {
 
     it('no import', done => {
         function source() {
@@ -1504,7 +1528,7 @@ describe('compiler', () => {
         });
     });
 
-    it.only('parameter not in scope for function sibling', done => {
+    it('parameter not in scope for function sibling', () => {
         function source() {
             const one = (name=$, foo, bar=BAR) => _``;
             const two = qux => _1``;
@@ -1512,15 +1536,95 @@ describe('compiler', () => {
 
         compile$3(source.toAst(), {
             _(scope) {
-                chai.assert.equal(keyCount(scope), 1);
                 chai.assert.ok(scope.name);
             },
             _1(scope) {
-                chai.assert.equal(keyCount(scope), 0);
+                chai.assert.notOk(scope.name);
             }
         });
     });
 
+    it('inner variable masks outer scope', () => {
+        function source() {
+            const { name=$ } = item;
+            const one = (name) => {
+                return _``;
+            };
+            const template = _1``;
+        }
+
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.notOk(scope.name);
+            },
+            _1(scope) {
+                chai.assert.ok(scope.name);
+            }
+        });
+    });
+
+    it('through nested templates', () => {
+        function source() {
+            const template = (items=$) => _`
+                ${items.map((item=$) => _1`${item} of ${items.length}`)}
+            `;
+        }
+
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.ok(scope.items);
+                chai.assert.notOk(scope.item);
+            },
+            _1(scope) {
+                chai.assert.ok(scope.items);
+                chai.assert.ok(scope.item);
+            }
+        });
+    });
+
+    it('block scope', () => {
+        function source() {
+            _1``;
+            {
+                const { name=$ } = item;
+                _``;
+            }
+            _1``;
+        }
+
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.ok(scope.name);
+            },
+            _1(scope) {
+                chai.assert.notOk(scope.name);
+            }
+        });
+    });
+
+    // NOTE: if hoisting would be supported,
+    // _1`` below should have "name" in scope.
+    // Destructure has to be init-ed though,
+    // so doesn't seem something that needs to be supported
+    it('var survives block, but not hoisted', () => {
+        function source() {
+            _1``;
+            {
+                var { name=$ } = item;
+                _``;
+            }
+            _``;
+        }
+
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.ok(scope.name);
+            },
+            _1(scope) {
+                chai.assert.notOk(scope.name);
+            }
+        });
+    });
 
 
   
