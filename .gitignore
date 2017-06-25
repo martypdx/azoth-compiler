@@ -1,4 +1,3 @@
 node_modules
-dist
-.compiled
+build
 .DS_Store

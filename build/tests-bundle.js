@@ -1421,6 +1421,70 @@ describe.skip('compiler', () => {
     });
 });
 
+// import scope from '../../src/compilers/scope';
+const IDENTIFIER = '$';
+
+function compile$3(ast, initialState) {
+
+    acorn_dist_walk.simple(ast, {
+        TaggedTemplateExpression(node, state) {
+            state.found = !!state.scope.name;
+        },
+        VariableDeclaration(node, { scope }) {
+            scope.variable = true;
+        },
+        AssignmentPattern(node, { scope }) {
+            if(node.right.name!==IDENTIFIER) return;
+            scope[node.left.name] = true;
+        }
+    }, acorn_dist_walk.base, initialState);
+
+}
+
+/*eslint no-unused-vars: off */
+/* globals _, $ */
+
+describe.only('compiler', () => {
+
+    it('no import', () => {
+        function source() {
+            const template = name => _``;
+        }
+
+        const scope = {};
+        const ast = source.toAst();
+
+        compile$3(ast, { scope });
+        chai.assert.ok(scope.variable);
+    });
+
+
+    /* globals item, BAR */
+    it('find observable', () => {
+
+        function source() {
+            const { name=$ } = item;
+            const { foo=BAR } = item;
+            const template = _``;
+        }
+
+        const scope = {};
+        const state = { scope };
+        const ast = source.toAst();
+
+        compile$3(ast, state);
+        chai.assert.ok(scope.name);
+        chai.assert.notOk(scope.foo);
+
+        chai.assert.ok(state.found);
+    });
+
+
+
+  
+
+});
+
 Function.prototype.toCode = function() {
     const trimmed = this.toString().trim();
     const length = trimmed.length;

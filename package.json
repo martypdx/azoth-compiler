@@ -1,7 +1,7 @@
 {
   "name": "diamond-compiler",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.6",
+  "description": "compiler for diamond templates",
   "main": "dist/diamond-compiler.js",
   "module": "dist/diamond-compiler.es.js",
   "directories": {
@@ -23,17 +23,19 @@
     "eslint": "^3.19.0",
     "mocha": "^3.4.2",
     "mocha-better-spec-reporter": "^3.1.0",
-    "nodemon": "^1.11.0",
     "rollup": "^0.43.0",
     "rollup-plugin-json": "^2.3.0",
     "rollup-plugin-multi-entry": "^2.0.1",
-    "rollup-plugin-node-resolve": "^3.0.0"
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "source-map": "^0.5.6",
+    "source-map-support": "^0.4.15"
   },
   "dependencies": {
     "acorn": "^5.0.3",
     "astring": "^1.0.2",
     "htmlparser2": "^3.9.2",
     "magic-string": "^0.19.1",
+    "nodemon": "^1.11.0",
     "undeclared": "^1.0.6"
   }
 }
