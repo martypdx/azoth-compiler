@@ -1424,59 +1424,101 @@ describe.skip('compiler', () => {
 // import scope from '../../src/compilers/scope';
 const IDENTIFIER = '$';
 
-function compile$3(ast, initialState) {
+function compile$3(ast, visitors) {
+    const scope = { __function: null };
+    scope.__function = scope;
 
     acorn_dist_walk.simple(ast, {
-        TaggedTemplateExpression(node, state) {
-            state.found = !!state.scope.name;
+        TaggedTemplateExpression(node, { scope }) {
+            const visitor = visitors[node.tag.name];
+            if(visitor) visitor(scope);
+        },
+        Function(node, state) {
+            console.log('function!', node.type);
         },
         VariableDeclaration(node, { scope }) {
-            scope.variable = true;
+            
         },
         AssignmentPattern(node, { scope }) {
+
+            console.log('pattern', node.type);
             if(node.right.name!==IDENTIFIER) return;
             scope[node.left.name] = true;
         }
-    }, acorn_dist_walk.base, initialState);
+    }, acorn_dist_walk.base, { scope });
 
 }
 
 /*eslint no-unused-vars: off */
-/* globals _, $ */
+/* globals _, _1, _2 $ */
 
-describe.only('compiler', () => {
+const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
 
-    it('no import', () => {
+describe('compiler', () => {
+
+    it('no import', done => {
         function source() {
             const template = name => _``;
         }
 
-        const scope = {};
-        const ast = source.toAst();
-
-        compile$3(ast, { scope });
-        chai.assert.ok(scope.variable);
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.equal(keyCount(scope), 0);
+                done();
+            }
+        });
     });
 
 
     /* globals item, BAR */
-    it('find observable', () => {
+    it('find observable', done => {
 
         function source() {
             const { name=$ } = item;
-            const { foo=BAR } = item;
+            const { foo } = item;
+            const { bar=BAR } = item;
             const template = _``;
         }
 
-        const scope = {};
-        const state = { scope };
-        const ast = source.toAst();
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.equal(keyCount(scope), 1);
+                chai.assert.ok(scope.name);
+                done();
+            }
+        });
+    });
 
-        compile$3(ast, state);
-        chai.assert.ok(scope.name);
-        chai.assert.notOk(scope.foo);
+    it('function parameter observable', done => {
 
-        chai.assert.ok(state.found);
+        function source() {
+            const template = (name=$, foo, bar=BAR) => _``;
+        }
+
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.equal(keyCount(scope), 1);
+                chai.assert.ok(scope.name);
+                done();
+            }
+        });
+    });
+
+    it.only('parameter not in scope for function sibling', done => {
+        function source() {
+            const one = (name=$, foo, bar=BAR) => _``;
+            const two = qux => _1``;
+        }
+
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.equal(keyCount(scope), 1);
+                chai.assert.ok(scope.name);
+            },
+            _1(scope) {
+                chai.assert.equal(keyCount(scope), 0);
+            }
+        });
     });
 
 

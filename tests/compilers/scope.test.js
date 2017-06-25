@@ -5,59 +5,101 @@ import { assert } from 'chai';
 
 const IDENTIFIER = '$';
 
-function compile(ast, initialState) {
+function compile(ast, visitors) {
+    const scope = { __function: null };
+    scope.__function = scope;
 
     simple(ast, {
-        TaggedTemplateExpression(node, state) {
-            state.found = !!state.scope.name;
+        TaggedTemplateExpression(node, { scope }) {
+            const visitor = visitors[node.tag.name];
+            if(visitor) visitor(scope);
+        },
+        Function(node, state) {
+            console.log('function!', node.type);
         },
         VariableDeclaration(node, { scope }) {
-            scope.variable = true;
+            
         },
         AssignmentPattern(node, { scope }) {
+
+            console.log('pattern', node.type);
             if(node.right.name!==IDENTIFIER) return;
             scope[node.left.name] = true;
         }
-    }, base, initialState);
+    }, base, { scope });
 
 }
 
 /*eslint no-unused-vars: off */
-/* globals _, $ */
+/* globals _, _1, _2 $ */
+
+const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
 
 describe.only('compiler', () => {
 
-    it('no import', () => {
+    it('no import', done => {
         function source() {
             const template = name => _``;
         }
 
-        const scope = {};
-        const ast = source.toAst();
-
-        compile(ast, { scope });
-        assert.ok(scope.variable);
+        compile(source.toAst(), {
+            _(scope) {
+                assert.equal(keyCount(scope), 0);
+                done();
+            }
+        });
     });
 
 
     /* globals item, BAR */
-    it('find observable', () => {
+    it('find observable', done => {
 
         function source() {
             const { name=$ } = item;
-            const { foo=BAR } = item;
+            const { foo } = item;
+            const { bar=BAR } = item;
             const template = _``;
         }
 
-        const scope = {};
-        const state = { scope };
-        const ast = source.toAst();
+        compile(source.toAst(), {
+            _(scope) {
+                assert.equal(keyCount(scope), 1);
+                assert.ok(scope.name);
+                done();
+            }
+        });
+    });
 
-        compile(ast, state);
-        assert.ok(scope.name);
-        assert.notOk(scope.foo);
+    it('function parameter observable', done => {
 
-        assert.ok(state.found);
+        function source() {
+            const template = (name=$, foo, bar=BAR) => _``;
+        }
+
+        compile(source.toAst(), {
+            _(scope) {
+                assert.equal(keyCount(scope), 1);
+                assert.ok(scope.name);
+                done();
+            }
+        });
+    });
+
+    it.skip('parameter not in scope for function sibling', done => {
+        function source() {
+            const one = (name=$, foo, bar=BAR) => _``;
+            const two = qux => _1``;
+        }
+
+        compile(source.toAst(), {
+            _(scope) {
+                assert.equal(keyCount(scope), 1);
+                assert.ok(scope.name);
+            },
+            _1(scope) {
+                assert.equal(keyCount(scope), 0);
+            }
+        });
     });
 
 
