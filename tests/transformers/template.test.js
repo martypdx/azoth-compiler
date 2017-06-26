@@ -5,6 +5,7 @@ import getBinder from './getBinder';
 import { VALUE, SUBSCRIBE } from '../../src/binders/binding-types';
 
 import { assert } from 'chai';
+import '../helpers/to-code';
 import codeEqual from '../helpers/code-equal';
 import parse from '../../src/ast';
 

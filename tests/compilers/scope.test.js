@@ -18,7 +18,7 @@ function compile(ast, visitors) {
         }
     }, observables);
 
-    recursive(ast, state, handlers, base);
+    recursive(ast, state, handlers);
 }
 
 const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
