@@ -1,10 +1,6 @@
 import * as observables from '../../src/compilers/observables';
 import { recursive, base } from 'acorn/dist/walk.es';
-import { generate } from 'astring';
 import { assert } from 'chai';
-
-const IDENTIFIER = '$';
-
 
 function compile(ast, visitors) {
     const scope = Object.create(null);
@@ -25,11 +21,10 @@ function compile(ast, visitors) {
     recursive(ast, state, handlers, base);
 }
 
-/*eslint no-unused-vars: off */
-/* globals _, _1, _2 $ */
-
 const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
 
+/*eslint no-unused-vars: off */
+/* globals _, _1, _2 $ */
 describe('compiler', () => {
 
     it('no import', done => {
