@@ -1432,26 +1432,42 @@ function compile$3(ast, visitors) {
     };
 
     acorn_dist_walk.recursive(ast, state, {
+        // For testing purposes, report back the scope.
+        // Plus, recurse to nested content.
         TaggedTemplateExpression(node, state, c) {
-            console.log('TTE');
             const { scope } = state;
             const visitor = visitors[node.tag.name];
             if(visitor) visitor(scope);
             acorn_dist_walk.base.TaggedTemplateExpression(node, state, c);
         },
-        Function(node, state, c) {
-            console.log('Function');
-            const { scope, functionScope } = state;
-            state.scope = state.functionScope = Object.create(scope);
-            acorn_dist_walk.base.Function(node, state, c);
-            state.scope = scope;
-            state.functionScope = functionScope;
-        },
-        AssignmentPattern(node, { scope, functionScope, declaration }) {
-            console.log('AssignmentPattern', node.left.name, declaration);
+        Observable(node, { scope, functionScope, declaration }) {
             if(node.right.name!==IDENTIFIER) return;
             const addTo = declaration === 'var' ? functionScope : scope;
             addTo[node.left.name] = true;
+        },
+        Function(node, state, c) {
+            const { scope, functionScope } = state;
+            state.scope = state.functionScope = Object.create(scope);
+
+            for(let param of node.params) {
+                if(param.type === 'AssignmentPattern') c(param, state, 'Observable');
+                else c(param, state, 'Pattern');
+            }
+
+            c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
+            
+            state.scope = scope;
+            state.functionScope = functionScope;
+        },
+        VariableDeclarator({ id, init }, state, c) {
+            if(id && id.type === 'ObjectPattern') {
+                for(let { value } of id.properties) {
+                    if(value && value.type === 'AssignmentPattern') {
+                        c(value, state, 'Observable');
+                    }
+                }
+            }
+            if (init) c(init, state, 'Expression');
         },
         VariableDeclaration(node, state, c) {
             state.declaration = node.kind;
@@ -1459,11 +1475,9 @@ function compile$3(ast, visitors) {
             state.declaration = null;
         },
         VariablePattern({ name }, { scope }) {
-            console.log('VariablePattern', name);
             if(scope[name]) scope[name] = false;
         },
         BlockStatement(node, state, c) {
-            console.log('BlockStatement');
             const { scope } = state;
             state.scope = Object.create(scope);
             acorn_dist_walk.base.BlockStatement(node, state, c);
@@ -1478,7 +1492,7 @@ function compile$3(ast, visitors) {
 
 const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
 
-describe.only('compiler', () => {
+describe('compiler', () => {
 
     it('no import', done => {
         function source() {
@@ -1563,7 +1577,7 @@ describe.only('compiler', () => {
         });
     });
 
-    it('through nested templates', () => {
+    it('nested scopes', () => {
         function source() {
             const template = (items=$) => _`
                 ${items.map((item=$) => _1`${item} of ${items.length}`)}
@@ -1602,11 +1616,7 @@ describe.only('compiler', () => {
         });
     });
 
-    // NOTE: if hoisting would be supported,
-    // _1`` below should have "name" in scope.
-    // Destructure has to be init-ed though,
-    // so doesn't seem something that needs to be supported
-    it('var survives block, but not hoisted', () => {
+    it('var function scoped, but not hoisted', () => {
         function source() {
             _1``;
             {
@@ -1621,12 +1631,31 @@ describe.only('compiler', () => {
                 chai.assert.ok(scope.name);
             },
             _1(scope) {
+                // NOTE: if hoisting would be supported,
+                // _1`` below should have "name" in scope.
+                // Destructure has to be init-ed though,
+                // which means value wouldn't exist.
+                // So doesn't seem something that needs to be supported
                 chai.assert.notOk(scope.name);
             }
         });
     });
 
+    // TODO: log warning
+    it('nested =$ ignored', done => {
 
+        function source() {
+            const { outer: { name=$ } } = item;
+            _``;
+        }
+
+        compile$3(source.toAst(), {
+            _(scope) {
+                chai.assert.notOk(scope.name);
+                done();
+            }
+        });
+    });
   
 
 });
