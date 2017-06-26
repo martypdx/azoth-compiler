@@ -1,12 +1,13 @@
 import parse from '../../src/ast';
 import { generate } from 'astring';
-import chai from 'chai';
-const assert = chai.assert;
+import { assert } from 'chai';
 
 const stripParse = code => {
     const ast = parse(code);
-    return generate(ast, { indent: '    ' });
+    return generateCode(ast);
 };
+
+const generateCode = (ast) => generate(ast, { indent: '    ' });
 
 const tryParse = (name, code) => {
     try {
@@ -20,7 +21,7 @@ const tryParse = (name, code) => {
 
 export default function codeEqual(actual, expected) {
     if(typeof expected !== 'string') expected = expected.toCode();
-    const parsedActual = tryParse('actual', actual);
+    const parsedActual = typeof actual === 'string' ? tryParse('actual', actual) : generateCode(actual);
     const parsedExpected = tryParse('expected', expected);
     assert.equal(parsedActual, parsedExpected);
 }

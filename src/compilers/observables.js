@@ -1,10 +1,22 @@
 import { base } from 'acorn/dist/walk.es';
 const IDENTIFIER = '$';
 
+function vars(nodes, state, c, elseFn) {
+    return nodes.map(node => {
+        if (node.type === 'AssignmentPattern' && node.right.name === IDENTIFIER) {
+            c(node, state, 'Observable');
+            return node.left;
+        }
+        else if(elseFn) elseFn(node);
+        
+        return node;
+        
+    });
+}
+
 export const Observable = (node, { scope, functionScope, declaration }) => {
-    if (node.right.name !== IDENTIFIER) return;
     const addTo = declaration === 'var' ? functionScope : scope;
-    addTo[node.left.name] = true;
+    return addTo[node.left.name] = true;
 };
 
     // modification of acorn's Function walk.
@@ -13,10 +25,7 @@ export const Function = (node, state, c) => {
     const { scope, functionScope } = state;
     state.scope = state.functionScope = Object.create(scope);
 
-    for (let param of node.params) {
-        if (param.type === 'AssignmentPattern') c(param, state, 'Observable');
-        else c(param, state, 'Pattern');
-    }
+    node.params = vars(node.params, state, c, node => c(node, state, 'Pattern'));
 
     c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
 
@@ -33,9 +42,8 @@ export const BlockStatement = (node, state, c) => {
 
 export const VariableDeclarator = ({ id, init }, state, c) => {
     if (id && id.type === 'ObjectPattern') {
-        for (let { value } of id.properties) {
-            if (value.type === 'AssignmentPattern') c(value, state, 'Observable');
-        }
+        const newValues = vars(id.properties.map(p => p.value), state, c);
+        id.properties.forEach((p, i) => p.value = newValues[i]);
     }
     if (init) c(init, state, 'Expression');
 };

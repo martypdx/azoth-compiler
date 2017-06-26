@@ -1,6 +1,7 @@
 import * as observables from '../../src/compilers/observables';
 import { recursive, base } from 'acorn/dist/walk.es';
 import { assert } from 'chai';
+import codeEqual from '../helpers/code-equal';
 
 function compile(ast, visitors) {
     const scope = Object.create(null);
@@ -42,7 +43,7 @@ describe('compiler', () => {
 
 
     /* globals item, BAR */
-    it('find observable', done => {
+    it('find observable', () => {
 
         function source() {
             const { name=$ } = item;
@@ -51,28 +52,45 @@ describe('compiler', () => {
             const template = _``;
         }
 
-        compile(source.toAst(), {
+        const ast = source.toAst();
+
+        compile(ast, {
             _(scope) {
                 assert.equal(keyCount(scope), 1);
                 assert.ok(scope.name);
-                done();
             }
         });
+
+        codeEqual(ast, expected);
+
+        function expected() {
+            const { name } = item;
+            const { foo } = item;
+            const { bar=BAR } = item;
+            const template = _``;
+        }
     });
 
-    it('function parameter observable', done => {
+    it('function parameter observable', () => {
 
         function source() {
             const template = (name=$, foo, bar=BAR) => _``;
         }
 
-        compile(source.toAst(), {
+        const ast = source.toAst();
+
+        compile(ast, {
             _(scope) {
                 assert.equal(keyCount(scope), 1);
                 assert.ok(scope.name);
-                done();
             }
         });
+
+        codeEqual(ast, expected);
+
+        function expected() {
+            const template = (name, foo, bar=BAR) => _``;
+        }
     });
 
     it('parameter not in scope for function sibling', () => {

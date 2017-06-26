@@ -1,6 +1,6 @@
 import chai from 'chai';
 const assert = chai.assert;
-import { UniqueStrings } from '../../src/compilers/globals';
+import { UniqueStrings } from '../../src/compilers/state';
 
 
 describe('Map By String Collection', () => {

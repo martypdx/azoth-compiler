@@ -79,6 +79,26 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     });
 
-  
+    it.only('hello world observable', () => {
+        const source = `
+            import { html as _ } from 'diamond';
+            const template = (name=$) => _\`<span>Hello \${name}</span>\`;
+        `;
+
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
+            const __bind0 = __textBinder(1);
+            import { renderer, makeFragment, __textBinder } from 'diamond';
+            const template = name => (() => {
+                const __nodes = __render0();
+                name.subscribe(__bind0(__nodes[0]));
+                return __nodes[__nodes.length];
+            })();
+        `;
+
+        codeEqual(compiled, expected);
+    }); 
 
 });

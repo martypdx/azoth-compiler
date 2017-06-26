@@ -27,13 +27,15 @@ export class UniqueStrings {
 
 const TAG = '_';
 
-export class Globals {
+export class State {
     constructor() {
         this._imports = new UniqueStrings();
         this._binders = new UniqueStrings();
         this._fragments = new UniqueStrings();
         this.tag = TAG;
         this.specifiers = null;
+        this.scope = null;
+        this.functionScope = null;
     }
 
     get imports() { return this._imports.all; }
