@@ -1,4 +1,4 @@
-import observables from '../../src/compilers/observables';
+import * as observables from '../../src/compilers/observables';
 import { recursive, base } from 'acorn/dist/walk.es';
 import { generate } from 'astring';
 import { assert } from 'chai';
@@ -13,14 +13,14 @@ function compile(ast, visitors) {
         functionScope: scope 
     };
 
-    const handlers = Object.assign(observables, {
+    const handlers = Object.assign({
         TaggedTemplateExpression(node, state, c) {
             const { scope } = state;
             const visitor = visitors[node.tag.name];
             if(visitor) visitor(scope);
             base.TaggedTemplateExpression(node, state, c);
         }
-    });
+    }, observables);
 
     recursive(ast, state, handlers, base);
 }
@@ -30,7 +30,7 @@ function compile(ast, visitors) {
 
 const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
 
-describe.only('compiler', () => {
+describe('compiler', () => {
 
     it('no import', done => {
         function source() {
