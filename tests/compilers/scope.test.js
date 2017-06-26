@@ -1,9 +1,10 @@
-// import scope from '../../src/compilers/scope';
+import observables from '../../src/compilers/observables';
 import { recursive, base } from 'acorn/dist/walk.es';
 import { generate } from 'astring';
 import { assert } from 'chai';
 
 const IDENTIFIER = '$';
+
 
 function compile(ast, visitors) {
     const scope = Object.create(null);
@@ -12,60 +13,16 @@ function compile(ast, visitors) {
         functionScope: scope 
     };
 
-    recursive(ast, state, {
-        // For testing purposes, report back the scope.
-        // Plus, recurse to nested content.
+    const handlers = Object.assign(observables, {
         TaggedTemplateExpression(node, state, c) {
             const { scope } = state;
             const visitor = visitors[node.tag.name];
             if(visitor) visitor(scope);
             base.TaggedTemplateExpression(node, state, c);
-        },
-        Observable(node, { scope, functionScope, declaration }) {
-            if(node.right.name!==IDENTIFIER) return;
-            const addTo = declaration === 'var' ? functionScope : scope;
-            addTo[node.left.name] = true;
-        },
-        Function(node, state, c) {
-            const { scope, functionScope } = state;
-            state.scope = state.functionScope = Object.create(scope);
-
-            for(let param of node.params) {
-                if(param.type === 'AssignmentPattern') c(param, state, 'Observable');
-                else c(param, state, 'Pattern');
-            }
-
-            c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
-            
-            state.scope = scope;
-            state.functionScope = functionScope;
-        },
-        VariableDeclarator({ id, init }, state, c) {
-            if(id && id.type === 'ObjectPattern') {
-                for(let { value } of id.properties) {
-                    if(value && value.type === 'AssignmentPattern') {
-                        c(value, state, 'Observable');
-                    }
-                }
-            }
-            if (init) c(init, state, 'Expression');
-        },
-        VariableDeclaration(node, state, c) {
-            state.declaration = node.kind;
-            base.VariableDeclaration(node, state, c);
-            state.declaration = null;
-        },
-        VariablePattern({ name }, { scope }) {
-            if(scope[name]) scope[name] = false;
-        },
-        BlockStatement(node, state, c) {
-            const { scope } = state;
-            state.scope = Object.create(scope);
-            base.BlockStatement(node, state, c);
-            state.scope = scope;
         }
-    }, base);
+    });
 
+    recursive(ast, state, handlers, base);
 }
 
 /*eslint no-unused-vars: off */
@@ -73,7 +30,7 @@ function compile(ast, visitors) {
 
 const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
 
-describe('compiler', () => {
+describe.only('compiler', () => {
 
     it('no import', done => {
         function source() {
