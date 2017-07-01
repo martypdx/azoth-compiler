@@ -26,7 +26,7 @@ export const templateAFE = ({ binders, index }) => {
         ...bindings,
         ...fragment(binders)
     ];
-    return arrowFunctionExpression(statements);
+    return arrowFunctionExpression({ block: statements });
 };
 
 export const TTEtoAFE = (node, AFE) => {

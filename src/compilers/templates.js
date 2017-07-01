@@ -14,7 +14,11 @@ export const TaggedTemplateExpression = (node, state, c) => {
     if (node.tag.name !== state.tag) return;
     const { html, binders } = parseTemplate(node.quasi);
     const index = state.addFragment(html);
-    binders.forEach(b => b.moduleIndex = state.addBinder(b));
+
+    binders.forEach(b => {
+        b.matchObservables(state.scope);
+        b.moduleIndex = state.addBinder(b);
+    });
     
     const newAst = templateAFE({ binders, index });
     TTEtoAFE(node, newAst);

@@ -1,13 +1,16 @@
 import { generate } from 'astring';
-import { VALUE, /*MAP,*/ SUBSCRIBE } from './binding-types';
+import { VALUE, MAP, SUBSCRIBE } from './binding-types';
+import matchObservables from './match-observables';
 
 
 export default class Binder {
 
     constructor({ type = VALUE, ast = null } = {}, target) {        
         this.type = type;
-        this.params = null;
         this.ast = ast;
+        this.undeclareds = null;
+        this.observables = [];
+
         this.elIndex = -1;
         this.templates = null;
         
@@ -23,6 +26,11 @@ export default class Binder {
         this.name = attr;
     }
 
+    matchObservables(scope) {
+        if(this.type === SUBSCRIBE) return;
+        this.observables = matchObservables(this.ast, scope);
+    }
+
     writeHtml() {
         return this.target.html;
     }
@@ -35,17 +43,30 @@ export default class Binder {
         return this.target.import;
     }
 
+    get typeImport() {
+        if(this.type !== MAP || this.ast.type === 'Identifier') return;
+        
+        switch(this.observables.length) {
+            case 0:
+                return;
+            case 1:
+                return '__map';
+            default:
+                return '__combine';
+        }
+    }
+
     get isSubscriber() {
-        const { type, params } = this;
-        return (type === SUBSCRIBE || (!!params && params.length > 0));
+        const { type, observables } = this;
+        return (type === SUBSCRIBE || (!!observables && observables.length > 0));
     }
 
     writeBinding(observer) { 
-        const { ast, params, type } = this;
+        const { ast, observables, type } = this;
         const isIdentifier = ast.type === 'Identifier';
 
         const expr = isIdentifier ? ast.name : generate(ast);
-        if ((!params || !params.length) && type !== SUBSCRIBE) {
+        if ((!observables || !observables.length) && type !== SUBSCRIBE) {
             return `${observer}(${expr})`;
         }
 
@@ -59,10 +80,10 @@ export default class Binder {
                 observable = `(${expr})`;
             }
             else {
-                observable = params.join();
+                observable = observables.join();
                 const map = `(${observable}) => (${expr})`;
 
-                if (params.length > 1) {
+                if (observables.length > 1) {
                     observable = `combineLatest(${observable}, ${map})`;
                 }
                 else {

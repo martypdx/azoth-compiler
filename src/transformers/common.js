@@ -14,6 +14,13 @@ export function identifier(name) {
     return { type: 'Identifier', name };
 }
 
+export function arrayExpression({ elements }) {
+    return {
+        type: 'ArrayExpression',
+        elements
+    };
+}
+
 export function memberExpression({ name, object, property, computed = false }) {
     if(name) object = identifier(name);
     return {
@@ -35,17 +42,18 @@ export function callExpression({ callee, name, args = [] }) {
 }
 
 // (() => {<body>}())
-export const arrowFunctionExpression = body => ({
-    type: 'ArrowFunctionExpression',
-    id: null,
-    generator: false,
-    expression: false,
-    params: [],
-    body: {
-        type: 'BlockStatement',
+export const arrowFunctionExpression = ({ body, block, params = [] }) => {
+    if(block) { body = { type: 'BlockStatement', body: block }; }
+
+    return {
+        type: 'ArrowFunctionExpression',
+        id: null,
+        generator: false,
+        expression: false,
+        params,
         body
-    }
-});
+    };
+};
 
 // importMe
 export const specifier = name => ({

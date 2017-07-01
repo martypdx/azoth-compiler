@@ -30,15 +30,16 @@ describe('parse template', () => {
             name = '',
             type = MAP,
             ref = '',
-            params = null,
-            templates = null
+            observables = [],
+            templates = null,
+            undeclareds = null
         } = {}) {
             const { name: astName, type: astType } = binder.ast;
             assert.equal(astType, 'Identifier');
             assert.equal(astName, ref);
             delete binder.ast;
             delete binder.target;
-            assert.deepEqual(binder, { elIndex, moduleIndex, index, name, type, params, templates }, `ref: ${ref}`);
+            assert.deepEqual(binder, { elIndex, moduleIndex, index, name, type, observables, templates, undeclareds }, `ref: ${ref}`);
         }
 
         it('stand-alone text node', () => {
@@ -189,8 +190,9 @@ describe('parse template', () => {
             index = -1,
             type = VALUE,
             ref = '',
-            params = null,
-            templates = null
+            observables = [],
+            templates = null,
+            undeclareds = null
         } = {}) {
             assert.ok(binder, 'binder does not exist');
             const { ast } = binder;
@@ -198,7 +200,7 @@ describe('parse template', () => {
             assert.equal(ast.name, ref);
             delete binder.ast;
             delete binder.target;
-            assert.deepEqual(binder, { elIndex, moduleIndex, name, index, type, params, templates }, `name: ${name}`);
+            assert.deepEqual(binder, { elIndex, moduleIndex, name, index, type, observables, undeclareds, templates }, `name: ${name}`);
         }
 
         it('simple', () => {

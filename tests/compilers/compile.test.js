@@ -79,10 +79,10 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     });
 
-    it.only('hello world observable', () => {
+    it('hello world observable', () => {
         const source = `
             import { html as _ } from 'diamond';
-            const template = (name=$) => _\`<span>Hello \${name}</span>\`;
+            const template = (name=$) => _\`<span>Hello *\${name}</span>\`;
         `;
 
         const compiled = compile(source);
@@ -93,8 +93,64 @@ describe('compiler', () => {
             import { renderer, makeFragment, __textBinder } from 'diamond';
             const template = name => (() => {
                 const __nodes = __render0();
-                name.subscribe(__bind0(__nodes[0]));
-                return __nodes[__nodes.length];
+                const __sub0 = name.subscribe(__bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
+                };
+                return __fragment;
+            })();
+        `;
+
+        codeEqual(compiled, expected);
+    }); 
+
+    it('mapped observable expression', () => {
+        const source = `
+            import { html as _ } from 'diamond';
+            const template = (x=$) => _\`<span>*\${x * x}</span>\`;
+        `;
+
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
+            const __bind0 = __textBinder(0);
+            import { renderer, makeFragment, __textBinder, __map } from 'diamond';
+            const template = x => (() => {
+                const __nodes = __render0();
+                const __sub0 = __map(x, x => (x * x), __bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
+                };
+                return __fragment;
+            })();
+        `;
+
+        codeEqual(compiled, expected);
+    }); 
+
+    it('combined observable expression', () => {
+        const source = `
+            import { html as _ } from 'diamond';
+            const template = (x=$, y=$) => _\`<span>*\${x + y}</span>\`;
+        `;
+
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
+            const __bind0 = __textBinder(0);
+            import { renderer, makeFragment, __textBinder, __combine } from 'diamond';
+            const template = (x, y) => (() => {
+                const __nodes = __render0();
+                const __sub0 = __combine([x, y], (x, y) => (x + y), __bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
+                };
+                return __fragment;
             })();
         `;
 

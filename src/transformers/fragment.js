@@ -78,7 +78,7 @@ const fragmentUnsubscribe = unsubscribes => {
                 name: FRAGMENT,
                 property: identifier('unsubscribe')
             }),
-            right: arrowFunctionExpression(unsubscribes)
+            right: arrowFunctionExpression({ block: unsubscribes })
         }
     };
 };

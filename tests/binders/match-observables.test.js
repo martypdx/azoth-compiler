@@ -1,5 +1,5 @@
 /*eslint no-undef: off */
-import matchObservables from '../../src/parse/match-observables';
+import matchObservables from '../../src/binders/match-observables';
 import chai from 'chai';
 const assert = chai.assert;
 

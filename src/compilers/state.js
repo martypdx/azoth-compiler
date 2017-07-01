@@ -48,11 +48,14 @@ export class State {
 
     addBinder(binder) {
         const name = binder.writeImport();
+        this._imports.add(name);
+        
+        const typeImport = binder.typeImport;
+        if(typeImport) this._imports.add(typeImport);
+
         const arg = binder.writeInit();
         const value = { name, arg };
         const unique = JSON.stringify(value);
-        
-        this._imports.add(name);
         return this._binders.add(unique, value);
     }
 }
