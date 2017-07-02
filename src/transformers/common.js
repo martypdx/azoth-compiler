@@ -10,8 +10,31 @@ export function declareConst({ name, init }) {
     };
 }
 
+
 export function identifier(name) {
     return { type: 'Identifier', name };
+}
+
+export function literal(arg) {
+    return {
+        type: 'Literal',
+        value: arg,
+        raw: typeof arg === 'string' ? `"${arg}"` : `${arg}`
+    };
+}
+
+export function blockStatement({ body = [] }) {
+    return {
+        type: 'BlockStatement',
+        body
+    };
+}
+
+export function returnStatement({ arg }) {
+    return {
+        type: 'ReturnStatement',
+        argument: arg
+    };
 }
 
 export function arrayExpression({ elements }) {
