@@ -16,7 +16,7 @@ function compile(ast) {
 
 /*eslint no-unused-vars: off, quotes: off */
 /* globals _, _1, _2 $ */
-describe.only('params', () => {
+describe('params', () => {
 
     it('direct identifier', () => {
         function source() {
