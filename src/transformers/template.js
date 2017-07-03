@@ -2,13 +2,10 @@ import {
     arrowFunctionExpression,
     callExpression, 
     declareConst, 
-    identifier,
-    literal } from './common';
+    identifier } from './common';
 import fragment from './fragment';
 import binding from './binding';
-import { NODES, RENDER, RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT } from './identifiers';
-
-
+import { NODES, RENDER } from './identifiers';
 
 // const __nodes = __render${index}();
 const renderNodes = index => {
@@ -33,22 +30,4 @@ export const templateAFE = ({ binders, index }) => {
 export const TTEtoAFE = (node, AFE) => {
     node.type = 'CallExpression',
     node.callee = AFE;
-};
-
-export const renderer = (html, index) =>{
-    return declareConst({ 
-        name: `${RENDER}${index}`, 
-        init: callExpression({ 
-            name: RENDERER_IMPORT,
-            args: [
-                callExpression({
-                    name: MAKE_FRAGMENT_IMPORT,
-                    args: [literal({
-                        value: html,
-                        raw: `\`${html}\``
-                    })]
-                })
-            ]
-        })
-    });  
 };

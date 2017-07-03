@@ -2,9 +2,35 @@ import {
     arrowFunctionExpression,
     callExpression,
     declareConst, 
-    identifier, 
+    identifier,
+    literal, 
     memberExpression } from './common';
-import { FRAGMENT, NODES, SUB } from './identifiers';
+import { 
+    FRAGMENT, 
+    NODES, 
+    SUB, 
+    RENDER,
+    RENDERER_IMPORT, 
+    MAKE_FRAGMENT_IMPORT } from './identifiers';
+
+
+export const renderer = (html, index) =>{
+    return declareConst({ 
+        name: `${RENDER}${index}`, 
+        init: callExpression({ 
+            name: RENDERER_IMPORT,
+            args: [
+                callExpression({
+                    name: MAKE_FRAGMENT_IMPORT,
+                    args: [literal({
+                        value: html,
+                        raw: `\`${html}\``
+                    })]
+                })
+            ]
+        })
+    });  
+};
 
 // __nodes.length
 const NODES_LENGTH = memberExpression({

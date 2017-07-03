@@ -1,5 +1,7 @@
 import { UniqueStrings } from './unique-strings';
 import { Imports } from './imports';
+import { renderer } from '../transformers/fragment';
+import { initBinder } from '../transformers/binding';
 
 const TAG = '_';
 const MODULE_NAME = 'diamond';
@@ -12,19 +14,25 @@ export class Module {
         this.tag = tag;
         this.imports = new Imports({ tag });
 
-        this._binders = new UniqueStrings();
-        this._fragments = new UniqueStrings();
+        this.fragments = new UniqueStrings();
+        this.binders = new UniqueStrings();
         
-        this.specifiers = null;
         this.scope = null;
         this.functionScope = null;
     }
 
-    get binders() { return this._binders.values; }
-    get fragments() { return this._fragments.all; }
+    addDeclarations(body) {
+        const { fragments, binders } = this;
+
+        body.splice(0, 0, 
+            // TODO: rename: all --> keys
+            ...fragments.all.map(renderer), 
+            ...binders.values.map(initBinder)
+        );
+    }
 
     addFragment(html) {
-        return this._fragments.add(html);
+        return this.fragments.add(html);
     }
 
     addBinder(binder) {
@@ -34,6 +42,6 @@ export class Module {
         const arg = binder.writeInit();
         const value = { name, arg };
         const unique = JSON.stringify(value);
-        return this._binders.add(unique, value);
+        return this.binders.add(unique, value);
     }
 }
