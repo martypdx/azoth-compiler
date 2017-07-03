@@ -3,7 +3,8 @@ import {
     arrowFunctionExpression,
     callExpression, 
     declareConst, 
-    identifier, 
+    identifier,
+    literal, 
     memberExpression } from './common';
 import { SUBSCRIBE, VALUE, MAP } from '../binders/binding-types';
 import { BINDER, NODES, SUB } from './identifiers';
@@ -14,11 +15,7 @@ function nodeBinding(moduleIndex, elementIndex) {
         callee: identifier(`${BINDER}${moduleIndex}`), 
         args: [memberExpression({
             name: NODES, 
-            property: {
-                type: 'Literal',
-                value: elementIndex,
-                raw: `${elementIndex}`
-            }, 
+            property: literal({ value: elementIndex }), 
             computed: true
         })]
     });
@@ -135,11 +132,9 @@ export const initBinder = ({ name, arg, index }) => {
         name: `${BINDER}${index}`,
         init: callExpression({
             name,
-            args: [{
-                type: 'Literal',
-                value: arg,
-                raw: typeof arg === 'string' ? `"${arg}"` : `${arg}`
-            }]
+            args: [
+                literal({ value: arg })
+            ]
         })
     });
 };

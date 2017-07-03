@@ -15,12 +15,10 @@ export function identifier(name) {
     return { type: 'Identifier', name };
 }
 
-export function literal(arg) {
-    return {
-        type: 'Literal',
-        value: arg,
-        raw: typeof arg === 'string' ? `"${arg}"` : `${arg}`
-    };
+const from = value => typeof value === 'string' ? `"${value}"` : `${value}`;
+
+export function literal({ value, raw = from(value) }) {
+    return { type: 'Literal', value, raw };
 }
 
 export function blockStatement({ body = [] }) {

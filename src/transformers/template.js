@@ -2,7 +2,8 @@ import {
     arrowFunctionExpression,
     callExpression, 
     declareConst, 
-    identifier } from './common';
+    identifier,
+    literal } from './common';
 import fragment from './fragment';
 import binding from './binding';
 import { NODES, RENDER, RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT } from './identifiers';
@@ -42,11 +43,10 @@ export const renderer = (html, index) =>{
             args: [
                 callExpression({
                     name: MAKE_FRAGMENT_IMPORT,
-                    args: [{
-                        type: 'Literal',
+                    args: [literal({
                         value: html,
                         raw: `\`${html}\``
-                    }]
+                    })]
                 })
             ]
         })

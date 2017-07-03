@@ -101,7 +101,7 @@ function paramWalk(ast, state) {
             
             for (let prop of node.properties) {
                 const oldKey = state.key;
-                state.key = literal(prop.key.name);
+                state.key = literal({ value: prop.key.name });
                 c(prop.value, state, 'Pattern');
                 state.key = oldKey;
             }
@@ -124,7 +124,7 @@ function paramWalk(ast, state) {
             node.elements.forEach((element, i) => {
                 if(!element) return;
                 const oldKey = state.key;
-                state.key = literal(i);
+                state.key = literal({ value: i });
                 c(element, state, 'Pattern');
                 state.key = oldKey;
             });
