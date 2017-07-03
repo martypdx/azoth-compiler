@@ -2,6 +2,8 @@ import { UniqueStrings } from './unique-strings';
 import { Imports } from './imports';
 import { renderer } from '../transformers/fragment';
 import { initBinder } from '../transformers/binding';
+import parseTemplate from '../parse/parse-template';
+import { templateToFunction } from '../transformers/template';
 
 const TAG = '_';
 const MODULE_NAME = 'diamond';
@@ -43,5 +45,17 @@ export class Module {
         const value = { name, arg };
         const unique = JSON.stringify(value);
         return this.binders.add(unique, value);
+    }
+
+    makeTemplate(node) {
+        const { html, binders } = parseTemplate(node.quasi);
+
+        const index = this.addFragment(html);
+        binders.forEach(b => {
+            b.matchObservables(this.scope);
+            b.moduleIndex = this.addBinder(b);
+        });
+        
+        templateToFunction(node, { binders, index });
     }
 }

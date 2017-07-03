@@ -17,6 +17,11 @@ const renderNodes = index => {
     });
 };
 
+export const templateToFunction = (node, options) => {
+    const newAst = templateAFE(options);
+    TTEtoAFE(node, newAst);
+};
+
 export const templateAFE = ({ binders, index }) => {
     const bindings = binders.map(binding);
     const statements = [
