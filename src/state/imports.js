@@ -8,7 +8,7 @@ const baseSpecifiers = baseNames.map(specifier);
 export class Imports {
     constructor({ tag }) {
         this.names = new Set(baseNames);
-        this._specifiers = [];
+        this.ast = [];
         this.tag = tag;
     }
 
@@ -20,14 +20,14 @@ export class Imports {
     }
 
     addName(name) {
-        const { _specifiers, names } = this;
-        if(!_specifiers || names.has(name)) return;
+        const { ast, names } = this;
+        if(!ast || names.has(name)) return;
         names.add(name);
-        this._specifiers.push(specifier(name));
+        this.ast.push(specifier(name));
     }
 
     set specifiers(specifiers) {
-        this._specifiers = specifiers;
+        this.ast = specifiers;
         const index = specifiers.findIndex(({ imported }) => imported.name === SPECIFIER_NAME); 
         if(index > -1) {
             this.tag = specifiers[index].local.name;
