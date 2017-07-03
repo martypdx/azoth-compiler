@@ -1,9 +1,8 @@
-import chai from 'chai';
-const assert = chai.assert;
-import { UniqueStrings } from '../../src/compilers/state';
+import { assert } from 'chai';
+import { UniqueStrings } from '../../src/state/unique-strings';
 
 
-describe('Map By String Collection', () => {
+describe('Unique strings', () => {
 
     const collection = new UniqueStrings();
 
