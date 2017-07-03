@@ -4,8 +4,10 @@ export default function getObservables(ast, scope) {
     if(ast.type === 'Identifier') {
         return scope[ast.name] ? [ast.name] : [];
     }
+
+    const undeclareds = undeclared(ast).values();
     
     return Array
-        .from(undeclared(ast).values())
+        .from(undeclareds)
         .filter(name => scope[name]);
 }

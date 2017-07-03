@@ -3,11 +3,11 @@ import matchObservables from '../../src/binders/match-observables';
 import chai from 'chai';
 const assert = chai.assert;
 
-describe.skip('match observables', () => {
+describe('match observables', () => {
 
     const match = source => matchObservables(
         source.toAst(),
-        new Set(['foo', 'bar', 'qux'])
+        { foo: true, bar: true, qux: true, noMatch: false }
     );
     
     it('match', () => {
@@ -20,14 +20,15 @@ describe.skip('match observables', () => {
         assert.deepEqual(match(source), []);
     }); 
 
-    it('multiple matches', () => {
-        const source = () => foo + bar + qux;
+    it('needle in haystack', () => {
+        const source = () => noFoo + bar + noMatch;
+        assert.deepEqual(match(source), ['bar']);
+    });
+
+    it('mixed multiple matches', () => {
+        const source = () => noFoo + foo + bar + qux + noMatch;
         assert.deepEqual(match(source), ['foo', 'bar', 'qux']);
     }); 
 
-    it('mixed', () => {
-        const source = () => noFoo + bar;
-        assert.deepEqual(match(source), ['bar']);
-    });
 });
 
