@@ -1,9 +1,7 @@
 import { RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT } from '../transformers/identifiers';
 import { specifier } from '../transformers/common';
 
-
 const SPECIFIER_NAME = 'html';
-
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
 
@@ -35,6 +33,6 @@ export class Imports {
             this.tag = specifiers[index].local.name;
             specifiers.splice(index, 1);
         }
-        specifiers.push(...specifiers, ...baseSpecifiers.slice());
+        specifiers.push(...baseSpecifiers.slice());
     }
 }
