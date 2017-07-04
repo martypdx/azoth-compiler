@@ -85,7 +85,7 @@ export default function parseTemplate({ expressions, quasis }) {
     var parser = new htmlparser.Parser(handler);
 
     quasis.forEach((quasi, i) => {
-        // quasi is one more than expression
+        // quasi length is one more than expression
         if(i === expressions.length) return parser.write(quasi.value.raw);
 
         const { type, text } = getBindingType(quasi.value.raw);

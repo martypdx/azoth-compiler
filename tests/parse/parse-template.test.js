@@ -1,17 +1,30 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
-import findTemplates from '../../src/parse/find-templates';
 import { VALUE, MAP, SUBSCRIBE } from '../../src/binders/binding-types';
-import { findParams } from '../../src/parse/params';
 import parseTemplate from '../../src/parse/parse-template';
 import chai from 'chai';
 const assert = chai.assert;
+import { recursive } from 'acorn/dist/walk.es';
 
+const TAG = '_';
+
+function findTemplates(ast) {
+    const state = { template: null };
+    
+    recursive(ast, state, {
+        TaggedTemplateExpression(node, st) {
+            if (node.tag.name !== TAG) return;
+            st.template = node;
+        },
+
+    });
+
+    return state.template;
+}
 
 const parseSource = source => {
-    const { quasi } = findTemplates(source.toAst())[0];
-    // const { identifiers } = findParams(ancestors);
-    return parseTemplate(quasi) ; //, new Set(identifiers)); 
+    const { quasi } = findTemplates(source.toAst());
+    return parseTemplate(quasi);
 };
 
 describe('parse template', () => {
