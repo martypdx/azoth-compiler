@@ -34,103 +34,99 @@ describe('Binder', () => {
             assert.equal(attrBinder.name, 'name');
         });
 
-        it('writes', () => {
+        it('declaration', () => {
             const writer = {
-                html: 'html',
-                import: '__import',
                 init: binder => binder.foo
             };
-
             const binder = new Binder({}, writer);
             binder.foo = 'FOO';
-            
-            assert.equal(binder.writeHtml(), writer.html);
-            assert.deepEqual(binder.writeImport(), writer.import);
-            assert.equal(binder.writeInit(), 'FOO');
+            assert.equal(binder.declaration, 'FOO');
         });
     });
     
-    describe.skip('binding', () => {
+    // TODO: should these become ast tests?
+    // or does equivalent exist?
+    // describe.skip('binding', () => {
 
-        const OBSERVER = '<observer>';
+    //     const OBSERVER = '<observer>';
 
-        // TODO: .distinctUntilChanged()
+    //     // TODO: .distinctUntilChanged()
         
-        it('value identifier', () => {
-            const source = () => foo;
-            const binder = new Binder({ ast: source.toExpr() });
-            binder.params = ['foo'];
+    //     it('value identifier', () => {
+    //         const source = () => foo;
+    //         const binder = new Binder({ ast: source.toExpr() });
+    //         binder.params = ['foo'];
 
-            const binding = binder.writeBinding(OBSERVER);
-            const expected = `foo.first().subscribe(${OBSERVER})`;
+    //         const binding = binder.writeBinding(OBSERVER);
+    //         const expected = `foo.first().subscribe(${OBSERVER})`;
             
-            assert.equal(binding, expected);
-        });
+    //         assert.equal(binding, expected);
+    //     });
 
-        it('value expression with single param', () => {
-            const source = () => foo + bar;
-            const binder = new Binder({ ast: source.toExpr() });
-            binder.params = ['foo'];
+    //     it('value expression with single param', () => {
+    //         const source = () => foo + bar;
+    //         const binder = new Binder({ ast: source.toExpr() });
+    //         binder.params = ['foo'];
 
-            const binding = binder.writeBinding(OBSERVER);
-            const expected = `foo.map((foo) => (foo + bar)).first().subscribe(${OBSERVER})`;
+    //         const binding = binder.writeBinding(OBSERVER);
+    //         const expected = `foo.map((foo) => (foo + bar)).first().subscribe(${OBSERVER})`;
             
-            assert.equal(binding, expected);
-        });
+    //         assert.equal(binding, expected);
+    //     });
 
-        it('value expression with multiple params', () => {
-            const source = () => foo + bar;
-            const binder = new Binder({ ast: source.toExpr() });
-            binder.params = ['foo', 'bar'];
+    //     it('value expression with multiple params', () => {
+    //         const source = () => foo + bar;
+    //         const binder = new Binder({ ast: source.toExpr() });
+    //         binder.params = ['foo', 'bar'];
 
-            const binding = binder.writeBinding(OBSERVER);
-            const expected = `combineLatest(foo,bar, (foo,bar) => (foo + bar)).first().subscribe(${OBSERVER})`;
+    //         const binding = binder.writeBinding(OBSERVER);
+    //         const expected = `combineLatest(foo,bar, (foo,bar) => (foo + bar)).first().subscribe(${OBSERVER})`;
             
-            assert.equal(binding, expected);
-        });
+    //         assert.equal(binding, expected);
+    //     });
 
-        it('map identifier', () => {
-            const source = () => foo;
-            const binder = new Binder({ ast: source.toExpr(), type: MAP });
-            binder.params = ['foo'];
+    //     it('map identifier', () => {
+    //         const source = () => foo;
+    //         const binder = new Binder({ ast: source.toExpr(), type: MAP });
+    //         binder.params = ['foo'];
 
-            const binding = binder.writeBinding(OBSERVER);
-            const expected = `foo.subscribe(${OBSERVER})`;
+    //         const binding = binder.writeBinding(OBSERVER);
+    //         const expected = `foo.subscribe(${OBSERVER})`;
             
-            assert.equal(binding, expected);
-        });
+    //         assert.equal(binding, expected);
+    //     });
 
-        it('subscribe identifier', () => {
-            const source = () => foo.map(foo => foo + 1);
-            const binder = new Binder({ ast: source.toExpr(), type: SUBSCRIBE });
-            binder.params = ['foo'];
+    //     it('subscribe identifier', () => {
+    //         const source = () => foo.map(foo => foo + 1);
+    //         const binder = new Binder({ ast: source.toExpr(), type: SUBSCRIBE });
+    //         binder.params = ['foo'];
 
-            const binding = binder.writeBinding(OBSERVER);
-            const expected = `(foo.map(foo => foo + 1)).subscribe(${OBSERVER})`;
+    //         const binding = binder.writeBinding(OBSERVER);
+    //         const expected = `(foo.map(foo => foo + 1)).subscribe(${OBSERVER})`;
             
-            assert.equal(binding, expected);
-        });
+    //         assert.equal(binding, expected);
+    //     });
 
-        it('no params', () => {
-            const source = () => 1 + 2;
-            const binder = new Binder({ ast: source.toExpr() });
-            binder.params = [];
+    //     it('no params', () => {
+    //         const source = () => 1 + 2;
+    //         const binder = new Binder({ ast: source.toExpr() });
+    //         binder.params = [];
             
-            const binding = binder.writeBinding(OBSERVER);
-            const expected = `${OBSERVER}(1 + 2)`;
+    //         const binding = binder.writeBinding(OBSERVER);
+    //         const expected = `${OBSERVER}(1 + 2)`;
             
-            assert.equal(binding, expected);
-        });
+    //         assert.equal(binding, expected);
+    //     });
 
-        it('static expression, no params', () => {
-            const source = () => x  + y;
-            const binder = new Binder({ ast: source.toExpr() });
-            binder.params = [];
+    //     it('static expression, no params', () => {
+    //         const source = () => x  + y;
+    //         const binder = new Binder({ ast: source.toExpr() });
+    //         binder.params = [];
             
-            const binding = binder.writeBinding(OBSERVER);
-            const expected = `${OBSERVER}(x + y)`;
+    //         const binding = binder.writeBinding(OBSERVER);
+    //         const expected = `${OBSERVER}(x + y)`;
             
-            assert.equal(binding, expected);
-        });
-    });
+    //         assert.equal(binding, expected);
+    //     });
+    // });
 });

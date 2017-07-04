@@ -12,10 +12,8 @@ export class Imports {
         this.tag = tag;
     }
 
-    addBinder(binder) {
-        const name = binder.writeImport();
+    addBinder({ declaration: { name }, typeImport }) {
         this.addName(name);
-        const typeImport = binder.typeImport;
         if(typeImport) this.addName(typeImport);     
     }
 

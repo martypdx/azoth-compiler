@@ -2,7 +2,6 @@ import { generate } from 'astring';
 import { VALUE, MAP, SUBSCRIBE } from './binding-types';
 import matchObservables from './match-observables';
 
-
 export default class Binder {
 
     constructor({ type = VALUE, ast = null } = {}, target) {        
@@ -31,16 +30,12 @@ export default class Binder {
         this.observables = matchObservables(this.ast, scope);
     }
 
-    writeHtml() {
+    get html() {
         return this.target.html;
     }
 
-    writeInit() {
+    get declaration() {
         return this.target.init(this);
-    }
-
-    writeImport() {
-        return this.target.import;
     }
 
     get typeImport() {
@@ -97,11 +92,5 @@ export default class Binder {
         return this.addSubscribe(observable, observer);
     }
 
-    addSubscribe(observable, observer) {
-        return `${observable}.subscribe(${observer})`;
-    }
 
-    // [sub templates]
-
-    // unsubscribe?
 }

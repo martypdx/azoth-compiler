@@ -7,19 +7,25 @@ describe('binder targets', () => {
 
     it('text', () => {
         assert.equal(text.html, '<text-node></text-node>');
-        assert.equal(text.import, '__textBinder');
-        assert.equal(text.init({ index: 2 }), 2);
+        assert.deepEqual(
+            text.init({ index: 2 }), 
+            { name: '__textBinder', arg: 2 }
+        );
     });
 
     it('block', () => {
         assert.equal(block.html, '<block-node></block-node>');
-        assert.equal(block.import, '__blockBinder');
-        assert.equal(block.init({ index: 2 }), 2);
+        assert.deepEqual(
+            block.init({ index: 2 }), 
+            { name: '__blockBinder', arg: 2 }
+        );
     });
 
     it('attribute', () => {
         assert.equal(attribute.html, '""');
-        assert.equal(attribute.import, '__attrBinder');
-        assert.equal(attribute.init({ name: 'name' }), 'name');
+        assert.deepEqual(
+            attribute.init({ name: 'name' }), 
+            { name: '__attrBinder', arg: 'name' }
+        );
     });
 });

@@ -21,6 +21,9 @@ export class Module {
         
         this.scope = null;
         this.functionScope = null;
+        
+        let ref = 0;
+        this.getRef = () => `__ref${ref++}`;
     }
 
     addDeclarations(body) {
@@ -39,12 +42,10 @@ export class Module {
 
     addBinder(binder) {
         this.imports.addBinder(binder);
-        
-        const name = binder.writeImport();
-        const arg = binder.writeInit();
-        const value = { name, arg };
-        const unique = JSON.stringify(value);
-        return this.binders.add(unique, value);
+
+        const { declaration } = binder;
+        const unique = JSON.stringify(declaration);
+        return this.binders.add(unique, declaration);
     }
 
     makeTemplate(node) {

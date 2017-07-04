@@ -107,7 +107,7 @@ export default function parseTemplate({ expressions, quasis }) {
             ast: expressions[i]
         });
 
-        parser.write(binder.writeHtml());
+        parser.write(binder.html);
         handler.add(binder);
     });
 

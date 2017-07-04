@@ -1,13 +1,11 @@
-import getBinder, { ChildBinder, AttributeBinder } from '../../src/binders/binder-factory';
+import getBinder from '../../src/binders/binder-factory';
 import { text, block, attribute } from '../../src/binders/targets';
-
-import chai from 'chai';
-const assert = chai.assert;
+import { assert } from 'chai';
 
 describe('binder factory', () => {
 
     describe('binding type', () => {
-        it('passes thru', () => {
+        it('passes thru options', () => {
             const binder = getBinder({ inAttributes: false, block: false, type: 'value' });
             assert.equal(binder.type, 'value');
         });
@@ -16,13 +14,11 @@ describe('binder factory', () => {
     describe('element child', () => {
         it('text binder', () => {
             const binder = getBinder({ inAttributes: false, block: false });
-            assert.instanceOf(binder, ChildBinder);
             assert.equal(binder.target, text);
         });
 
         it('block binder', () => {
             const binder = getBinder({ inAttributes: false, block: true });
-            assert.instanceOf(binder, ChildBinder);
             assert.equal(binder.target, block);
         });
     });  
@@ -30,7 +26,6 @@ describe('binder factory', () => {
     describe('element attribute', () => {
         it('attribute binder', () => {
             const binder = getBinder({ inAttributes: true, block: false });
-            assert.instanceOf(binder, AttributeBinder);
             assert.equal(binder.target, attribute);
         });
 

@@ -26,9 +26,9 @@ const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
 
 /*eslint no-unused-vars: off */
 /* globals _, _1, _2 $ */
-describe('compiler', () => {
+describe('scope', () => {
 
-    it('no import', done => {
+    it('no observables', done => {
         function source() {
             const template = name => _``;
         }
@@ -109,7 +109,7 @@ describe('compiler', () => {
         });
     });
 
-    it('inner variable masks outer scope', () => {
+    it.skip('inner variable masks outer scope', () => {
         function source() {
             const { name=$ } = item;
             const one = (name) => {

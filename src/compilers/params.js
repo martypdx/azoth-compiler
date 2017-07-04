@@ -1,5 +1,4 @@
 import { recursive, base as defaultBase } from 'acorn/dist/walk.es';
-// import { generate } from 'astring';
 import { 
     blockStatement,
     callExpression,
@@ -11,10 +10,7 @@ import {
 
 const IDENTIFIER = '$';
 
-
-export function params(fn) {
-    let ref = 0;
-    const getRef = () => `__ref${ref++}`;
+export function params(fn, getRef) {
     const identifiers = new Set();
     const statements = [];
     
@@ -26,8 +22,10 @@ export function params(fn) {
         statements
     };
     
+    fn.params = fn.params.map(node => {
+        return paramWalk(node, state);
+    });
 
-    fn.params = fn.params.map(node => paramWalk(node, state));
     if(statements.length) {
         let { body } = fn;
         if(body.type === 'BlockStatement') {
@@ -42,6 +40,33 @@ export function params(fn) {
         }
     }
     return [...state.identifiers];
+}
+
+//TODO
+export function variables(declarator, getRef) {
+    const { id } = declarator;
+    const { type } = id;
+    const isObject = type === 'ObjectPattern';
+    const isArray = type === 'ArrayPattern';
+
+    if(!(isObject || isArray)) return;
+
+
+
+    const identifiers = new Set();
+    const statements = [];
+    
+    const state = {
+        key: null,
+        ref: null,
+        getRef,
+        identifiers,
+        statements
+    };
+
+    paramWalk(declarator.id, state);
+
+    console.log(statements);
 }
 
 // function make(funcs, base = defaultBase) {
@@ -71,6 +96,8 @@ function destructure({ name, ref, arg }) {
 }
 
 function paramWalk(ast, state) {
+    if(ast.type !== 'AssignmentPattern') return ast;
+
     recursive(ast, state, {
         AssignmentPattern(node, state, c) {
             if(node.right.name !== IDENTIFIER || node !== ast) return;

@@ -1,4 +1,5 @@
 import { base } from 'acorn/dist/walk.es';
+import { params } from './params';
 const IDENTIFIER = '$';
 
 function vars(nodes, state, c, elseFn) {
@@ -22,10 +23,11 @@ export const Observable = (node, { scope, functionScope, declaration }) => {
 // modification of acorn's "Function" base visitor.
 // https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
 export const Function = (node, state, c) => {
-    const { scope, functionScope } = state;
-    state.scope = state.functionScope = Object.create(scope);
+    const { scope, functionScope, getRef } = state;
+    const newScope = state.scope = state.functionScope = Object.create(scope);
 
-    node.params = vars(node.params, state, c, node => c(node, state, 'Pattern'));
+    const observables = params(node, getRef);
+    observables.forEach(o => newScope[o] = true);
 
     c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
 
@@ -36,6 +38,7 @@ export const Function = (node, state, c) => {
 export const BlockStatement = (node, state, c) => {
     const { scope } = state;
     state.scope = Object.create(scope);
+    state.__block = node.body;
     base.BlockStatement(node, state, c);
     state.scope = scope;
 };

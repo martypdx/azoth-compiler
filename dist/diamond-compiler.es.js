@@ -1,8 +1,8 @@
 import { base, recursive } from 'acorn/dist/walk.es';
-import { parse } from 'acorn';
-import { generate } from 'astring';
 import htmlparser from 'htmlparser2';
+import { generate } from 'astring';
 import undeclared from 'undeclared';
+import { parse } from 'acorn';
 
 class UniqueStrings {
     constructor() {
@@ -12,13 +12,10 @@ class UniqueStrings {
     add(string, value = {}) {
         const { map } = this;
         if(map.has(string)) return map.get(string).index;
+
         const index = value.index = map.size;
         map.set(string, value);
         return index;
-    }
-
-    set(string, value) {
-        this.map.set(string, value);
     }
 
     get all() {
@@ -30,53 +27,374 @@ class UniqueStrings {
     }
 }
 
-const TAG = '_';
+const BINDER = '__bind';
+const FRAGMENT = '__fragment';
+const NODES = '__nodes';
+const RENDER = '__render';
+const SUB = '__sub';
+const MAP_OPERATOR = '__map';
+const COMBINE_OPERATOR = '__combine';
 
-class State {
-    constructor() {
-        this._imports = new UniqueStrings();
-        this._binders = new UniqueStrings();
-        this._fragments = new UniqueStrings();
-        this.tag = TAG;
-        this.specifiers = null;
-        this.scope = null;
-        this.functionScope = null;
-    }
+const RENDERER_IMPORT = 'renderer';
+const MAKE_FRAGMENT_IMPORT = 'makeFragment';
 
-    get imports() { return this._imports.all; }
-    get binders() { return this._binders.values; }
-    get fragments() { return this._fragments.all; }
-
-    addFragment(html) {
-        return this._fragments.add(html);
-    }
-
-    addBinder(binder) {
-        const name = binder.writeImport();
-        this._imports.add(name);
-        
-        const typeImport = binder.typeImport;
-        if(typeImport) this._imports.add(typeImport);
-
-        const arg = binder.writeInit();
-        const value = { name, arg };
-        const unique = JSON.stringify(value);
-        return this._binders.add(unique, value);
-    }
+function declareConst({ name, init }) {
+    return {
+        type: 'VariableDeclaration',
+        declarations: [{
+            type: 'VariableDeclarator',
+            id: identifier(name),
+            init
+        }],
+        kind: 'const'
+    };
 }
 
-const DEFAULTS = {
-    ecmaVersion: 8,
-    sourceType: 'module'
+
+function identifier(name) {
+    return { type: 'Identifier', name };
+}
+
+const from = value => typeof value === 'string' ? `"${value}"` : `${value}`;
+
+function literal({ value, raw = from(value) }) {
+    return { type: 'Literal', value, raw };
+}
+
+function blockStatement({ body = [] }) {
+    return {
+        type: 'BlockStatement',
+        body
+    };
+}
+
+function returnStatement({ arg }) {
+    return {
+        type: 'ReturnStatement',
+        argument: arg
+    };
+}
+
+function arrayExpression({ elements }) {
+    return {
+        type: 'ArrayExpression',
+        elements
+    };
+}
+
+function memberExpression({ name, object, property, computed = false }) {
+    if(name) object = identifier(name);
+    return {
+        type: 'MemberExpression',
+        object,
+        property,
+        computed
+    };
+}
+
+// <callee>(<args>)
+function callExpression({ callee, name, args = [] }) {
+    if(name) callee = identifier(name);
+    return {
+        type: 'CallExpression',
+        callee,
+        arguments: args
+    };
+}
+
+// (() => {<body>}())
+const arrowFunctionExpression = ({ body, block, params = [] }) => {
+    if(block) { body = { type: 'BlockStatement', body: block }; }
+
+    return {
+        type: 'ArrowFunctionExpression',
+        id: null,
+        generator: false,
+        expression: false,
+        params,
+        body
+    };
 };
 
-function ast(source, options) {
-    return parse(source, Object.assign({}, DEFAULTS, options));
+// importMe
+const specifier = name => ({
+    type: 'Import Specifier',
+    imported: identifier(name),
+    local: identifier(name)
+});
+
+const SPECIFIER_NAME = 'html';
+const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
+const baseSpecifiers = baseNames.map(specifier);
+
+class Imports {
+    constructor({ tag }) {
+        this.names = new Set(baseNames);
+        this.ast = [];
+        this.tag = tag;
+    }
+
+    addBinder({ declaration: { name }, typeImport }) {
+        this.addName(name);
+        if(typeImport) this.addName(typeImport);     
+    }
+
+    addName(name) {
+        const { ast, names } = this;
+        if(!ast || names.has(name)) return;
+        names.add(name);
+        this.ast.push(specifier(name));
+    }
+
+    set specifiers(specifiers) {
+        this.ast = specifiers;
+        const index = specifiers.findIndex(({ imported }) => imported.name === SPECIFIER_NAME); 
+        if(index > -1) {
+            this.tag = specifiers[index].local.name;
+            specifiers.splice(index, 1);
+        }
+        specifiers.push(...baseSpecifiers.slice());
+    }
 }
+
+const renderer = (html, index) =>{
+    return declareConst({ 
+        name: `${RENDER}${index}`, 
+        init: callExpression({ 
+            name: RENDERER_IMPORT,
+            args: [
+                callExpression({
+                    name: MAKE_FRAGMENT_IMPORT,
+                    args: [literal({
+                        value: html,
+                        raw: `\`${html}\``
+                    })]
+                })
+            ]
+        })
+    });  
+};
+
+// __nodes.length
+const NODES_LENGTH = memberExpression({
+    name: NODES, 
+    property: identifier('length')
+});
+
+// NOTE: because we add fragment to NodeList manually,
+// length is actually off by one. hence NOT [<NODES_LENGTH> - 1]
+// __nodes[<NODES_LENGTH>]
+const LAST_NODE = memberExpression({
+    name: NODES, 
+    property: NODES_LENGTH,
+    computed: true
+}); 
+
+// const __fragment = __nodes[__nodes.length - 1];
+const DECLARE_FRAGMENT = declareConst({
+    name: FRAGMENT, 
+    init: LAST_NODE
+});  
+
+// return __fragment;
+const RETURN_FRAGMENT = {
+    type: 'ReturnStatement',
+    argument: identifier(FRAGMENT)
+};
+
+// return __nodes[__nodes.length - 1];
+const DIRECT_RETURN = {
+    type: 'ReturnStatement',
+    argument: LAST_NODE
+};
+
+// __sub${index}.unsubscribe();
+const unsubscribe = index => {
+    const callee = memberExpression({
+        name: `${SUB}${index}`, 
+        property: identifier('unsubscribe')
+    });
+
+    return {
+        type: 'ExpressionStatement',
+        expression: callExpression({ callee })
+    };
+};
+
+const unsubscribes = binders => {
+    return binders
+        // map first because we need to 
+        // preserve original index as subscriber 
+        // index, i.e. __sub0
+        .map((binder, i) => {
+            if (!binder.isSubscriber) return;
+            return unsubscribe(i);
+        })
+        .filter(unsub => unsub);
+};
+
+
+// __fragment.unsubscribe = () => {
+//     ${unsubscribes}
+// };
+const fragmentUnsubscribe = unsubscribes => {
+    return   {
+        type: 'ExpressionStatement',
+        expression: {
+            type: 'AssignmentExpression',
+            operator: '=',
+            left: memberExpression({
+                name: FRAGMENT,
+                property: identifier('unsubscribe')
+            }),
+            right: arrowFunctionExpression({ block: unsubscribes })
+        }
+    };
+};
+
+var fragment = binders => {
+    const unsubs = unsubscribes(binders);
+    if(!unsubs.length) return [DIRECT_RETURN];
+    return [
+        DECLARE_FRAGMENT,
+        fragmentUnsubscribe(unsubs),
+        RETURN_FRAGMENT
+    ];
+};
 
 const VALUE = Symbol('value');
 const MAP = Symbol('map');
 const SUBSCRIBE = Symbol('subscribe');
+
+// __bind${moduleIndex}(__nodes[${elementIndex}])
+function nodeBinding(moduleIndex, elementIndex) {
+    return callExpression({
+        callee: identifier(`${BINDER}${moduleIndex}`), 
+        args: [memberExpression({
+            name: NODES, 
+            property: literal({ value: elementIndex }), 
+            computed: true
+        })]
+    });
+}
+
+// <nodeBinding>(<ast>);
+const valueBinding = binder => {
+    const { ast, moduleIndex, elIndex } = binder;
+
+    return {
+        type: 'ExpressionStatement',
+        expression: callExpression({
+            callee: nodeBinding(moduleIndex, elIndex),
+            args: [ast]
+        })
+    };
+};
+
+const subscription = (index, init) => {
+    return declareConst({
+        name: `${SUB}${index}`, 
+        init
+    });
+};
+
+// const __sub${binderIndex} = (<ast>).subscribe(<nodeBinding>);
+const subscribeBinding = (binder, index) => {
+    const { ast, moduleIndex, elIndex } = binder;
+
+    return subscription(
+        index, 
+        callExpression({
+            callee: memberExpression({ 
+                object: ast, 
+                property: identifier('subscribe')
+            }),
+            args: [nodeBinding(moduleIndex, elIndex)]
+        }) 
+    );
+};
+
+const expressionBinding = (binder, index) => {
+    switch(binder.observables.length) {
+        case 0:
+            return valueBinding(binder, index);
+        case 1:
+            return mapBinding(binder, index);
+        default:
+            return combineBinding(binder, index);
+    }
+};
+
+// const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding>);
+const mapBinding = (binder, binderIndex) => {
+    const { ast } = binder;
+    if(ast.type === 'Identifier') return subscribeBinding(binder, binderIndex);
+    
+    const { moduleIndex, elIndex, observables: [ name ] } = binder;
+    const observable = identifier(name);
+    return subscription(
+        binderIndex, 
+        callExpression({
+            name: MAP_OPERATOR,
+            args: [
+                observable, 
+                arrowFunctionExpression({ 
+                    body: ast,
+                    params: [observable]
+                }),
+                nodeBinding(moduleIndex, elIndex)
+            ]
+        }) 
+    );
+};
+
+
+// const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding>);
+const combineBinding = (binder, binderIndex) => {
+    const { ast, moduleIndex, elIndex, observables } = binder;
+    const params = observables.map(identifier);
+    return subscription(
+        binderIndex, 
+        callExpression({
+            name: COMBINE_OPERATOR,
+            args: [
+                arrayExpression({ elements: params }), 
+                arrowFunctionExpression({ 
+                    body: ast,
+                    params
+                }),
+                nodeBinding(moduleIndex, elIndex)
+            ]
+        }) 
+    );
+};
+
+var binding = (binder, i) => {
+    const { type } = binder;
+
+    switch(type) {
+        case VALUE:
+            return valueBinding(binder, i);
+        case SUBSCRIBE:
+            return subscribeBinding(binder, i);
+        case MAP:
+            return expressionBinding(binder, i);
+        default:
+            throw new Error(`Unsupported binding type ${type}`);
+    }
+};
+
+const initBinder = ({ name, arg, index }) => {
+    return declareConst({
+        name: `${BINDER}${index}`,
+        init: callExpression({
+            name,
+            args: [
+                literal({ value: arg })
+            ]
+        })
+    });
+};
 
 const types = {
     '*': MAP,
@@ -144,9 +462,11 @@ function getObservables(ast, scope) {
     if(ast.type === 'Identifier') {
         return scope[ast.name] ? [ast.name] : [];
     }
+
+    const undeclareds = undeclared(ast).values();
     
     return Array
-        .from(undeclared(ast).values())
+        .from(undeclareds)
         .filter(name => scope[name]);
 }
 
@@ -178,16 +498,12 @@ class Binder {
         this.observables = getObservables(this.ast, scope);
     }
 
-    writeHtml() {
+    get html() {
         return this.target.html;
     }
 
-    writeInit() {
+    get declaration() {
         return this.target.init(this);
-    }
-
-    writeImport() {
-        return this.target.import;
     }
 
     get typeImport() {
@@ -244,84 +560,47 @@ class Binder {
         return this.addSubscribe(observable, observer);
     }
 
-    addSubscribe(observable, observer) {
-        return `${observable}.subscribe(${observer})`;
-    }
 
-    // [sub templates]
-
-    // unsubscribe?
-}
-
-class ChildNodeBinder extends Binder {
-
-    constructor(options, target) { 
-        super(options, target);
-        this.index = -1;
-    }
-
-    // init(el) {
-    //     this.index = el.childIndex;
-    // }
-}
-
-// const attrPattern = /\s*?([a-zA-Z0-9\-]+?)=$/;
-
-// const specials = {
-//     on: 'event',
-//     class: 'class'
-// };
-
-class AttributeBinder extends Binder {
-    
-    constructor(options, target) {
-        super(options, target);
-        this.name = '';
-    }
-
-    // init(el, attr) {
-    //     // if (parts.length > 1 && (type = specials[parts[0]])) {
-    //     //     delete currentEl.attributes[name];
-    //     // }
-    //     this.name = attr;
-    // }
 }
 
 const childNode = (name, html) => ({
-    import: name,
     html,
     init(binder) {
-        return binder.index;
+        return {
+            name: name,
+            arg: binder.index
+        };
     }
 });
 
 const text = childNode('__textBinder', '<text-node></text-node>');
 const block = childNode('__blockBinder', '<block-node></block-node>');
+
 const attribute = {
-    import: '__attrBinder',
     html: '""',
     init(binder) {
-        return binder.name;
+        return { 
+            name: '__attrBinder',
+            arg: binder.name
+        };
     }
 };
 
 function getBinder(options) {
 
-    let Type = null, target = null;
+    let target = null;
     
     if (options.inAttributes) {
-        Type = AttributeBinder;
         if (options.block) {
             throw new Error('Attribute Blocks not yet supported');
         }
         target = attribute;
     }
     else {
-        Type = ChildNodeBinder;
         target = options.block ? block : text;
     }
 
-    return new Type(options, target);
+    return new Binder(options, target);
 }
 
 var voidElements = {
@@ -451,7 +730,7 @@ function parseTemplate({ expressions, quasis }) {
             ast: expressions[i]
         });
 
-        parser.write(binder.writeHtml());
+        parser.write(binder.html);
         handler.add(binder);
     });
 
@@ -469,302 +748,6 @@ function parseTemplate({ expressions, quasis }) {
     };
 }
 
-function declareConst({ name, init }) {
-    return {
-        type: 'VariableDeclaration',
-        declarations: [{
-            type: 'VariableDeclarator',
-            id: identifier(name),
-            init
-        }],
-        kind: 'const'
-    };
-}
-
-function identifier(name) {
-    return { type: 'Identifier', name };
-}
-
-function arrayExpression({ elements }) {
-    return {
-        type: 'ArrayExpression',
-        elements
-    };
-}
-
-function memberExpression({ name, object, property, computed = false }) {
-    if(name) object = identifier(name);
-    return {
-        type: 'MemberExpression',
-        object,
-        property,
-        computed
-    };
-}
-
-// <callee>(<args>)
-function callExpression({ callee, name, args = [] }) {
-    if(name) callee = identifier(name);
-    return {
-        type: 'CallExpression',
-        callee,
-        arguments: args
-    };
-}
-
-// (() => {<body>}())
-const arrowFunctionExpression = ({ body, block, params = [] }) => {
-    if(block) { body = { type: 'BlockStatement', body: block }; }
-
-    return {
-        type: 'ArrowFunctionExpression',
-        id: null,
-        generator: false,
-        expression: false,
-        params,
-        body
-    };
-};
-
-// importMe
-const specifier = name => ({
-    type: 'Import Specifier',
-    imported: identifier(name),
-    local: identifier(name)
-});
-
-const BINDER = '__bind';
-const FRAGMENT = '__fragment';
-const NODES = '__nodes';
-const RENDER = '__render';
-const SUB = '__sub';
-
-const RENDERER_IMPORT = 'renderer';
-const MAKE_FRAGMENT_IMPORT = 'makeFragment';
-
-// __nodes.length
-const NODES_LENGTH = memberExpression({
-    name: NODES, 
-    property: identifier('length')
-});
-
-// NOTE: because we add fragment to NodeList manually,
-// length is actually off by one. hence NOT [<NODES_LENGTH> - 1]
-// __nodes[<NODES_LENGTH>]
-const LAST_NODE = memberExpression({
-    name: NODES, 
-    property: NODES_LENGTH,
-    computed: true
-}); 
-
-// const __fragment = __nodes[__nodes.length - 1];
-const DECLARE_FRAGMENT = declareConst({
-    name: FRAGMENT, 
-    init: LAST_NODE
-});  
-
-// return __fragment;
-const RETURN_FRAGMENT = {
-    type: 'ReturnStatement',
-    argument: identifier(FRAGMENT)
-};
-
-// return __nodes[__nodes.length - 1];
-const DIRECT_RETURN = {
-    type: 'ReturnStatement',
-    argument: LAST_NODE
-};
-
-// __sub${index}.unsubscribe();
-const unsubscribe = index => {
-    const callee = memberExpression({
-        name: `${SUB}${index}`, 
-        property: identifier('unsubscribe')
-    });
-
-    return {
-        type: 'ExpressionStatement',
-        expression: callExpression({ callee })
-    };
-};
-
-const unsubscribes = binders => {
-    return binders
-        // map first because we need to 
-        // preserve original index as subscriber 
-        // index, i.e. __sub0
-        .map((binder, i) => {
-            if (!binder.isSubscriber) return;
-            return unsubscribe(i);
-        })
-        .filter(unsub => unsub);
-};
-
-
-// __fragment.unsubscribe = () => {
-//     ${unsubscribes}
-// };
-const fragmentUnsubscribe = unsubscribes => {
-    return   {
-        type: 'ExpressionStatement',
-        expression: {
-            type: 'AssignmentExpression',
-            operator: '=',
-            left: memberExpression({
-                name: FRAGMENT,
-                property: identifier('unsubscribe')
-            }),
-            right: arrowFunctionExpression({ block: unsubscribes })
-        }
-    };
-};
-
-var fragment = binders => {
-    const unsubs = unsubscribes(binders);
-    if(!unsubs.length) return [DIRECT_RETURN];
-    return [
-        DECLARE_FRAGMENT,
-        fragmentUnsubscribe(unsubs),
-        RETURN_FRAGMENT
-    ];
-};
-
-// __bind${moduleIndex}(__nodes[${elementIndex}])
-function nodeBinding(moduleIndex, elementIndex) {
-    return callExpression({
-        callee: identifier(`${BINDER}${moduleIndex}`), 
-        args: [memberExpression({
-            name: NODES, 
-            property: {
-                type: 'Literal',
-                value: elementIndex,
-                raw: `${elementIndex}`
-            }, 
-            computed: true
-        })]
-    });
-}
-
-// <nodeBinding>(<ast>);
-const valueBinding = binder => {
-    const { ast, moduleIndex, elIndex } = binder;
-
-    return {
-        type: 'ExpressionStatement',
-        expression: callExpression({
-            callee: nodeBinding(moduleIndex, elIndex),
-            args: [ast]
-        })
-    };
-};
-
-const subscription = (index, init) => {
-    return declareConst({
-        name: `${SUB}${index}`, 
-        init
-    });
-};
-
-// const __sub${binderIndex} = (<ast>).subscribe(<nodeBinding>);
-const subscribeBinding = (binder, index) => {
-    const { ast, moduleIndex, elIndex } = binder;
-
-    return subscription(
-        index, 
-        callExpression({
-            callee: memberExpression({ 
-                object: ast, 
-                property: identifier('subscribe')
-            }),
-            args: [nodeBinding(moduleIndex, elIndex)]
-        }) 
-    );
-};
-
-const expressionBinding = (binder, index) => {
-    switch(binder.observables.length) {
-        case 0:
-            return valueBinding(binder, index);
-        case 1:
-            return mapBinding(binder, index);
-        default:
-            return combineBinding(binder, index);
-    }
-};
-
-// const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding>);
-const mapBinding = (binder, binderIndex) => {
-    const { ast } = binder;
-    if(ast.type === 'Identifier') return subscribeBinding(binder, binderIndex);
-    
-    const { moduleIndex, elIndex, observables: [ name ] } = binder;
-    const observable = identifier(name);
-    return subscription(
-        binderIndex, 
-        callExpression({
-            name: '__map',
-            args: [
-                observable, 
-                arrowFunctionExpression({ 
-                    body: ast,
-                    params: [observable]
-                }),
-                nodeBinding(moduleIndex, elIndex)
-            ]
-        }) 
-    );
-};
-
-
-// const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding>);
-const combineBinding = (binder, binderIndex) => {
-    const { ast, moduleIndex, elIndex, observables } = binder;
-    const params = observables.map(identifier);
-    return subscription(
-        binderIndex, 
-        callExpression({
-            name: '__combine',
-            args: [
-                arrayExpression({ elements: params }), 
-                arrowFunctionExpression({ 
-                    body: ast,
-                    params
-                }),
-                nodeBinding(moduleIndex, elIndex)
-            ]
-        }) 
-    );
-};
-
-var binding = (binder, i) => {
-    const { type } = binder;
-
-    switch(type) {
-        case VALUE:
-            return valueBinding(binder, i);
-        case SUBSCRIBE:
-            return subscribeBinding(binder, i);
-        case MAP:
-            return expressionBinding(binder, i);
-        default:
-            throw new Error(`Unsupported binding type ${type}`);
-    }
-};
-
-const initBinder = ({ name, arg, index }) => {
-    return declareConst({
-        name: `${BINDER}${index}`,
-        init: callExpression({
-            name,
-            args: [{
-                type: 'Literal',
-                value: arg,
-                raw: typeof arg === 'string' ? `"${arg}"` : `${arg}`
-            }]
-        })
-    });
-};
-
 // const __nodes = __render${index}();
 const renderNodes = index => {
     return declareConst({ 
@@ -773,6 +756,11 @@ const renderNodes = index => {
             callee: identifier(`${RENDER}${index}`)
         })
     });
+};
+
+const templateToFunction = (node, options) => {
+    const newAst = templateAFE(options);
+    TTEtoAFE(node, newAst);
 };
 
 const templateAFE = ({ binders, index }) => {
@@ -790,75 +778,86 @@ const TTEtoAFE = (node, AFE) => {
     node.callee = AFE;
 };
 
-const renderer = (html, index) =>{
-    return declareConst({ 
-        name: `${RENDER}${index}`, 
-        init: callExpression({ 
-            name: RENDERER_IMPORT,
-            args: [
-                callExpression({
-                    name: MAKE_FRAGMENT_IMPORT,
-                    args: [{
-                        type: 'Literal',
-                        value: html,
-                        raw: `\`${html}\``
-                    }]
-                })
-            ]
-        })
-    });  
-};
-
+const TAG = '_';
 const MODULE_NAME = 'diamond';
-const SPECIFIER_NAME = 'html';
 
-const TaggedTemplateExpression = (node, state, c) => {
-    base.TaggedTemplateExpression(node, state, c);
+class Module {
+    constructor({ tag = TAG } = {}) {
+        this.name = MODULE_NAME;
+        // TODO: tag comes back from imports
+        // because may be aliased
+        this.tag = tag;
+        this.imports = new Imports({ tag });
 
-    if (node.tag.name !== state.tag) return;
-    const { html, binders } = parseTemplate(node.quasi);
-    const index = state.addFragment(html);
+        this.fragments = new UniqueStrings();
+        this.binders = new UniqueStrings();
+        
+        this.scope = null;
+        this.functionScope = null;
+        
+        let ref = 0;
+        this.getRef = () => `__ref${ref++}`;
+    }
 
-    binders.forEach(b => {
-        b.matchObservables(state.scope);
-        b.moduleIndex = state.addBinder(b);
-    });
-    
-    const newAst = templateAFE({ binders, index });
-    TTEtoAFE(node, newAst);
+    addDeclarations(body) {
+        const { fragments, binders } = this;
+
+        body.splice(0, 0, 
+            // TODO: rename: all --> keys
+            ...fragments.all.map(renderer), 
+            ...binders.values.map(initBinder)
+        );
+    }
+
+    addFragment(html) {
+        return this.fragments.add(html);
+    }
+
+    addBinder(binder) {
+        this.imports.addBinder(binder);
+
+        const { declaration } = binder;
+        const unique = JSON.stringify(declaration);
+        return this.binders.add(unique, declaration);
+    }
+
+    makeTemplate(node) {
+        const { html, binders } = parseTemplate(node.quasi);
+
+        const index = this.addFragment(html);
+        binders.forEach(b => {
+            b.matchObservables(this.scope);
+            b.moduleIndex = this.addBinder(b);
+        });
+        
+        templateToFunction(node, { binders, index });
+    }
+}
+
+const DEFAULTS = {
+    ecmaVersion: 8,
+    sourceType: 'module'
 };
 
-const Program = (node, state, c) => {
-    base.Program(node, state, c);
+function ast(source, options) {
+    return parse(source, Object.assign({}, DEFAULTS, options));
+}
 
-    const { body } = node;
-    const { fragments, binders, imports, specifiers } = state;
+const TaggedTemplateExpression = (node, module, c) => {
+    base.TaggedTemplateExpression(node, module, c);
 
-    body.splice(0, 0, 
-        ...fragments.map(renderer), 
-        ...binders.map(initBinder));
-
-    if(specifiers) {
-        const binderImports = imports.map(name => specifier(name));
-        specifiers.push(...binderImports);
-    }
+    if (node.tag.name !== module.tag) return;
+    module.makeTemplate(node);
 };
 
-const ImportDeclaration = (node, state, c) => {
-    base.ImportDeclaration(node, state, c);
-    
-    const { source, specifiers } = node;
-    if(!source.value.endsWith(MODULE_NAME)) return;
-    
-    state.specifiers = specifiers;
-    const imports = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT].map(specifier);
-    specifiers.push(...imports);
-    
-    const index = specifiers.findIndex(({ imported }) => imported.name === SPECIFIER_NAME); 
-    if(index > -1) {
-        state.tag = specifiers[index].local.name;
-        specifiers.splice(index, 1);
-    }
+const Program = (node, module, c) => {
+    base.Program(node, module, c);
+    module.addDeclarations(node.body);
+};
+
+const ImportDeclaration = ({ source, specifiers }, { name, imports }) => {
+    if(!source.value.endsWith(name)) return;
+    imports.specifiers = specifiers;
 };
 
 var templates = Object.freeze({
@@ -866,6 +865,137 @@ var templates = Object.freeze({
 	Program: Program,
 	ImportDeclaration: ImportDeclaration
 });
+
+const IDENTIFIER$1 = '$';
+
+function params(fn, getRef) {
+    const identifiers = new Set();
+    const statements = [];
+    
+    const state = {
+        key: null,
+        ref: null,
+        getRef,
+        identifiers,
+        statements
+    };
+    
+    fn.params = fn.params.map(node => {
+        return paramWalk(node, state);
+    });
+
+    if(statements.length) {
+        let { body } = fn;
+        if(body.type === 'BlockStatement') {
+            body.body.splice(0, 0, ...state.statements);
+        } else {
+            fn.body = blockStatement({ 
+                body: [
+                    ...statements,
+                    returnStatement({ arg: body })
+                ] 
+            });
+        }
+    }
+    return [...state.identifiers];
+}
+
+//TODO
+
+
+// function make(funcs, base = defaultBase) {
+//     return funcs ? Object.assign({}, base, funcs) : base;
+// }
+
+// function recursive2(node, state, funcs, base, override) {
+//     let visitor = make(funcs, base);
+//     (function c(node, st, override) {
+//         console.log(override || node.type, generate(node));
+//         visitor[override || node.type](node, st, c);
+//     })(node, state, override);
+// }
+
+// const <name> = <ref>.child('<name>');
+function destructure({ name, ref, arg }) {
+    return declareConst({
+        name,
+        init: callExpression({
+            callee: memberExpression({ 
+                object: ref, 
+                property: identifier('child')
+            }),
+            args: [arg]
+        })
+    });
+}
+
+function paramWalk(ast, state) {
+    if(ast.type !== 'AssignmentPattern') return ast;
+
+    recursive(ast, state, {
+        AssignmentPattern(node, state, c) {
+            if(node.right.name !== IDENTIFIER$1 || node !== ast) return;
+            ast = node.left;
+            base.Pattern(node.left, state, c);
+        },
+        Identifier(node, { identifiers }) {
+            identifiers.add(node.name);
+        },
+        VariablePattern({ name }, { key, ref, identifiers, statements }) {
+            identifiers.add(name);
+            if(!ref) return;
+            const statement = destructure({ name, ref, arg: key });
+            statements.push(statement);
+        },
+        ObjectPattern(node, state, c) {
+            const { ref: parentRef, getRef, statements } = state;
+            const ref = state.ref = identifier(getRef());
+            if(!parentRef) ast = ref;
+            else {
+                const statement = destructure({ 
+                    name: ref.name, 
+                    ref: parentRef, 
+                    arg: state.key
+                });
+                statements.push(statement);
+            }
+            
+            for (let prop of node.properties) {
+                const oldKey = state.key;
+                state.key = literal({ value: prop.key.name });
+                c(prop.value, state, 'Pattern');
+                state.key = oldKey;
+            }
+
+            state.ref = parentRef;
+        },
+        ArrayPattern(node, state, c) {
+            const { ref: parentRef, getRef, statements } = state;
+            const ref = state.ref = identifier(getRef());
+            if(!parentRef) ast = ref;
+            else {
+                const statement = destructure({ 
+                    name: ref.name, 
+                    ref: parentRef, 
+                    arg: state.key
+                });
+                statements.push(statement);
+            }
+            
+            node.elements.forEach((element, i) => {
+                if(!element) return;
+                const oldKey = state.key;
+                state.key = literal({ value: i });
+                c(element, state, 'Pattern');
+                state.key = oldKey;
+            });
+
+            state.ref = parentRef;
+        }
+    });
+
+    return ast;
+}
 
 const IDENTIFIER = '$';
 
@@ -887,13 +1017,14 @@ const Observable = (node, { scope, functionScope, declaration }) => {
     return addTo[node.left.name] = true;
 };
 
-    // modification of acorn's Function walk.
-    // https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
+// modification of acorn's "Function" base visitor.
+// https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
 const Function = (node, state, c) => {
-    const { scope, functionScope } = state;
-    state.scope = state.functionScope = Object.create(scope);
+    const { scope, functionScope, getRef } = state;
+    const newScope = state.scope = state.functionScope = Object.create(scope);
 
-    node.params = vars(node.params, state, c, node => c(node, state, 'Pattern'));
+    const observables = params(node, getRef);
+    observables.forEach(o => newScope[o] = true);
 
     c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
 
@@ -904,6 +1035,7 @@ const Function = (node, state, c) => {
 const BlockStatement = (node, state, c) => {
     const { scope } = state;
     state.scope = Object.create(scope);
+    state.__block = node.body;
     base.BlockStatement(node, state, c);
     state.scope = scope;
 };
@@ -937,12 +1069,14 @@ var observables = Object.freeze({
 
 function compile$1(source) {
     const ast$$1 = ast(source);
-
-    const handlers = Object.assign({}, templates, observables);
-
-    recursive(ast$$1, new State(), handlers);
-
+    astTransform(ast$$1);
     return generate(ast$$1);
+}
+
+const handlers = Object.assign({}, templates, observables);
+
+function astTransform(ast$$1) {
+    recursive(ast$$1, new Module(), handlers);
 }
 
 export default compile$1;

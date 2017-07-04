@@ -7,7 +7,7 @@ import {
     literal, 
     memberExpression } from './common';
 import { SUBSCRIBE, VALUE, MAP } from '../binders/binding-types';
-import { BINDER, NODES, SUB } from './identifiers';
+import { BINDER, NODES, SUB, MAP_OPERATOR, COMBINE_OPERATOR } from './identifiers';
 
 // __bind${moduleIndex}(__nodes[${elementIndex}])
 function nodeBinding(moduleIndex, elementIndex) {
@@ -78,7 +78,7 @@ const mapBinding = (binder, binderIndex) => {
     return subscription(
         binderIndex, 
         callExpression({
-            name: '__map',
+            name: MAP_OPERATOR,
             args: [
                 observable, 
                 arrowFunctionExpression({ 
@@ -99,7 +99,7 @@ const combineBinding = (binder, binderIndex) => {
     return subscription(
         binderIndex, 
         callExpression({
-            name: '__combine',
+            name: COMBINE_OPERATOR,
             args: [
                 arrayExpression({ elements: params }), 
                 arrowFunctionExpression({ 

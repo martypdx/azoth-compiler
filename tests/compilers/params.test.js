@@ -1,17 +1,19 @@
-import { recursive, simple, base as defaultBase } from 'acorn/dist/walk.es';
+import { params } from '../../src/compilers/params';
+import { recursive } from 'acorn/dist/walk.es';
 import { assert } from 'chai';
 import codeEqual from '../helpers/code-equal';
-import { generate } from 'astring';
-import { params } from '../../src/compilers/param-prop';
 
 function compile(ast) {
+    let ref = 0;
+    const getRef = () => `__ref${ref++}`;
     const state = { observables: null };
+    
     recursive(ast, state, {
         Function(node, state, c) {
-            state.observables = params(node);
+            state.observables = params(node, getRef);
         }
     });
-    return { identifiers: state.observables };
+    return state.observables;
 }
 
 /*eslint no-unused-vars: off, quotes: off */
@@ -23,8 +25,8 @@ describe('params', () => {
             (name=$) => {};
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
-        assert.deepEqual(identifiers, ['name']);
+        const observables = compile(ast);
+        assert.deepEqual(observables, ['name']);
 
         codeEqual(ast, expected);
         function expected() {
@@ -37,9 +39,9 @@ describe('params', () => {
             ({ name }=$) => { const x = 0; };
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['name']);
+        assert.deepEqual(observables, ['name']);
 
         codeEqual(ast, expected);
 
@@ -56,9 +58,9 @@ describe('params', () => {
             ([ name ]=$) => {};
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['name']);
+        assert.deepEqual(observables, ['name']);
 
         codeEqual(ast, expected);
 
@@ -74,9 +76,9 @@ describe('params', () => {
             ([, name ]=$) => {};
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['name']);
+        assert.deepEqual(observables, ['name']);
 
         codeEqual(ast, expected);
 
@@ -92,9 +94,9 @@ describe('params', () => {
             ({ x }=$) => x*x;
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['x']);
+        assert.deepEqual(observables, ['x']);
 
         codeEqual(ast, expected);
 
@@ -111,9 +113,9 @@ describe('params', () => {
             ({ foo, bar }=$) => {};
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['foo', 'bar']);
+        assert.deepEqual(observables, ['foo', 'bar']);
 
         codeEqual(ast, expected);
 
@@ -130,9 +132,9 @@ describe('params', () => {
             ({ foo: bar }=$) => {};
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['bar']);
+        assert.deepEqual(observables, ['bar']);
 
         codeEqual(ast, expected);
 
@@ -148,9 +150,9 @@ describe('params', () => {
             ({ foo: { bar: { qux } } }=$) => {};
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['qux']);
+        assert.deepEqual(observables, ['qux']);
 
         codeEqual(ast, expected);
 
@@ -168,9 +170,9 @@ describe('params', () => {
             ({ one, two: { five: { six: seven, eight: nine, ten } }, three: four }=$) => {};
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['one', 'seven', 'nine', 'ten', 'four']);
+        assert.deepEqual(observables, ['one', 'seven', 'nine', 'ten', 'four']);
 
         codeEqual(ast, expected);
 
@@ -192,9 +194,9 @@ describe('params', () => {
             ({ foo: [ { bar } ] }=$) => {};
         }
         const ast = source.toAst();
-        const { identifiers } = compile(ast);
+        const observables = compile(ast);
 
-        assert.deepEqual(identifiers, ['bar']);
+        assert.deepEqual(observables, ['bar']);
 
         codeEqual(ast, expected);
 
