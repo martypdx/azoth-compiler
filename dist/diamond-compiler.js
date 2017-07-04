@@ -127,7 +127,7 @@ const specifier = name => ({
     local: identifier(name)
 });
 
-const SPECIFIER_NAME = 'html';
+const SPECIFIER_NAME = /html|_/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
 
@@ -152,7 +152,7 @@ class Imports {
 
     set specifiers(specifiers) {
         this.ast = specifiers;
-        const index = specifiers.findIndex(({ imported }) => imported.name === SPECIFIER_NAME); 
+        const index = specifiers.findIndex(({ imported }) => SPECIFIER_NAME.test(imported.name)); 
         if(index > -1) {
             this.tag = specifiers[index].local.name;
             specifiers.splice(index, 1);
@@ -712,7 +712,7 @@ function parseTemplate({ expressions, quasis }) {
     var parser = new htmlparser.Parser(handler);
 
     quasis.forEach((quasi, i) => {
-        // quasi is one more than expression
+        // quasi length is one more than expression
         if(i === expressions.length) return parser.write(quasi.value.raw);
 
         const { type, text } = getBindingType(quasi.value.raw);
@@ -849,7 +849,6 @@ function ast(source, options) {
 
 const TaggedTemplateExpression = (node, module, c) => {
     acorn_dist_walk.base.TaggedTemplateExpression(node, module, c);
-
     if (node.tag.name !== module.tag) return;
     module.makeTemplate(node);
 };
