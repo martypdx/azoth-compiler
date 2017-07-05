@@ -1,6 +1,6 @@
 {
   "name": "diamond-compiler",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "compiler for diamond templates",
   "main": "dist/diamond-compiler.js",
   "module": "dist/diamond-compiler.es.js",
@@ -11,10 +11,10 @@
     "prebuild": "eslint src",
     "build": "rollup -c rollup/rollup.config.cjs.js && rollup -c rollup/rollup.config.es.js",
     "pretest": "rollup -c rollup/rollup.config.tests.js",
-    "start": "npm run test:watch:nodemon",
     "test:watch:nodemon": "nodemon --watch src --watch tests --exec 'npm test'",
     "test:watch": "npm test -- -w",
     "test": "mocha build/tests-bundle.js --reporter mocha-better-spec-reporter",
+    "start": "npm run test:watch:nodemon",
     "prepublish": "npm run build && npm test"
   },
   "author": "Marty Nelson <marty@martypdx.com> (@martypdx)",
