@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "//prebuild": "eslint src",
+    "prebuild": "eslint src",
     "build": "rollup -c rollup/rollup.config.cjs.js && rollup -c rollup/rollup.config.es.js",
     "pretest": "rollup -c rollup/rollup.config.tests.js",
     "start": "npm run test:watch:nodemon",
@@ -24,6 +24,7 @@
     "eslint": "^3.19.0",
     "mocha": "^3.4.2",
     "mocha-better-spec-reporter": "^3.1.0",
+    "nodemon": "^1.11.0",
     "rollup": "^0.43.0",
     "rollup-plugin-json": "^2.3.0",
     "rollup-plugin-multi-entry": "^2.0.1",
@@ -36,7 +37,6 @@
     "astring": "^1.0.2",
     "htmlparser2": "^3.9.2",
     "magic-string": "^0.19.1",
-    "nodemon": "^1.11.0",
     "undeclared": "^1.0.6"
   }
 }
