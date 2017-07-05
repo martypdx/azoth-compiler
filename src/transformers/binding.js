@@ -6,8 +6,37 @@ import {
     identifier,
     literal, 
     memberExpression } from './common';
-import { SUBSCRIBE, VALUE, MAP } from '../binders/binding-types';
-import { BINDER, NODES, SUB, MAP_OPERATOR, COMBINE_OPERATOR } from './identifiers';
+import { MAP, SUBSCRIBE, VALUE } from '../binders/binding-types';
+import { BINDER, NODES, SUB, FIRST_OPERATOR, MAP_OPERATOR, COMBINE_OPERATOR } from './identifiers';
+
+export function initBinder({ name, arg, index }) {
+    return declareConst({
+        name: `${BINDER}${index}`,
+        init: callExpression({
+            name,
+            args: [
+                literal({ value: arg })
+            ]
+        })
+    });
+}
+
+export default function binding(binder, i) {
+    const { type, ast, observables } = binder;
+    const isIdentifier = ast.type === 'Identifier';
+    const observablesCount = observables.length;
+
+    const binding = getBinding(type, isIdentifier, observablesCount);
+    return binding(binder, i);
+}
+
+function getBinding(type, isIdentifier, observablesCount) {
+    if(!observablesCount) return valueBinding;
+    if(type === SUBSCRIBE) return subscribeBinding;
+    if(isIdentifier) return type === MAP ? subscribeBinding : firstBinding;
+    if(observablesCount === 1) return mapBinding;
+    return combineBinding;
+}
 
 // __bind${moduleIndex}(__nodes[${elementIndex}])
 function nodeBinding(moduleIndex, elementIndex) {
@@ -22,7 +51,7 @@ function nodeBinding(moduleIndex, elementIndex) {
 }
 
 // <nodeBinding>(<ast>);
-const valueBinding = binder => {
+function valueBinding(binder) {
     const { ast, moduleIndex, elIndex } = binder;
 
     return {
@@ -32,17 +61,18 @@ const valueBinding = binder => {
             args: [ast]
         })
     };
-};
+}
 
-const subscription = (index, init) => {
+// const __sub${index} = <init>
+function subscription(index, init) {
     return declareConst({
         name: `${SUB}${index}`, 
         init
     });
-};
+}
 
 // const __sub${binderIndex} = (<ast>).subscribe(<nodeBinding>);
-const subscribeBinding = (binder, index) => {
+function subscribeBinding(binder, index) {
     const { ast, moduleIndex, elIndex } = binder;
 
     return subscription(
@@ -55,86 +85,73 @@ const subscribeBinding = (binder, index) => {
             args: [nodeBinding(moduleIndex, elIndex)]
         }) 
     );
-};
+}
 
-const expressionBinding = (binder, index) => {
-    switch(binder.observables.length) {
-        case 0:
-            return valueBinding(binder, index);
-        case 1:
-            return mapBinding(binder, index);
-        default:
-            return combineBinding(binder, index);
-    }
-};
-
-// const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding>);
-const mapBinding = (binder, binderIndex) => {
-    const { ast } = binder;
-    if(ast.type === 'Identifier') return subscribeBinding(binder, binderIndex);
-    
+// const __sub${binderIndex} = __first(observable, <nodeBinding>);
+function firstBinding(binder, binderIndex) {
     const { moduleIndex, elIndex, observables: [ name ] } = binder;
     const observable = identifier(name);
+    const args = [
+        observable, 
+        nodeBinding(moduleIndex, elIndex)
+    ];
+
+    return subscription(
+        binderIndex, 
+        callExpression({
+            name: FIRST_OPERATOR,
+            args
+        }) 
+    );
+}
+
+function addOnceFlagIfValue(type, args) {
+    if(type === VALUE) args.push(literal({ value: true }));
+}
+
+// const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding> [, true]);
+function mapBinding(binder, binderIndex) {
+    const { ast, type, moduleIndex, elIndex, observables: [ name ] } = binder;
+    const observable = identifier(name);
+    const args = [
+        observable, 
+        arrowFunctionExpression({ 
+            body: ast,
+            params: [observable]
+        }),
+        nodeBinding(moduleIndex, elIndex)
+    ];
+    addOnceFlagIfValue(type, args);
+
     return subscription(
         binderIndex, 
         callExpression({
             name: MAP_OPERATOR,
-            args: [
-                observable, 
-                arrowFunctionExpression({ 
-                    body: ast,
-                    params: [observable]
-                }),
-                nodeBinding(moduleIndex, elIndex)
-            ]
+            args
         }) 
     );
-};
+}
 
 
-// const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding>);
-const combineBinding = (binder, binderIndex) => {
-    const { ast, moduleIndex, elIndex, observables } = binder;
+// const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding> [, true]);
+function combineBinding(binder, binderIndex) {
+    const { ast, type, moduleIndex, elIndex, observables } = binder;
     const params = observables.map(identifier);
+    const args =  [
+        arrayExpression({ elements: params }), 
+        arrowFunctionExpression({ 
+            body: ast,
+            params
+        }),
+        nodeBinding(moduleIndex, elIndex)
+    ];
+    addOnceFlagIfValue(type, args);
+
     return subscription(
         binderIndex, 
         callExpression({
             name: COMBINE_OPERATOR,
-            args: [
-                arrayExpression({ elements: params }), 
-                arrowFunctionExpression({ 
-                    body: ast,
-                    params
-                }),
-                nodeBinding(moduleIndex, elIndex)
-            ]
+            args
         }) 
     );
-};
-
-export default (binder, i) => {
-    const { type } = binder;
-
-    switch(type) {
-        case VALUE:
-            return valueBinding(binder, i);
-        case SUBSCRIBE:
-            return subscribeBinding(binder, i);
-        case MAP:
-            return expressionBinding(binder, i);
-        default:
-            throw new Error(`Unsupported binding type ${type}`);
-    }
-};
-
-export const initBinder = ({ name, arg, index }) => {
-    return declareConst({
-        name: `${BINDER}${index}`,
-        init: callExpression({
-            name,
-            args: [
-                literal({ value: arg })
-            ]
-        })
-    });
-};
+}

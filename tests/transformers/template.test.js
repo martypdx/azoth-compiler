@@ -17,6 +17,8 @@ describe('transform - template', () => {
         getBinder({ ast: (() => two).toExpr(), type: VALUE }, { module: 1, element: 0 }),
         getBinder({ ast: (() => three).toExpr(), type: SUBSCRIBE }, { module: 1, element: 1 }),
     ];
+    const scope = { one: true, three: true };
+    binders.forEach(b => b.matchObservables(scope));
 
     it('no bindings', () => {
         const ast = templateAFE({ binders: [], index: 1 });

@@ -26,7 +26,6 @@ export default class Binder {
     }
 
     matchObservables(scope) {
-        if(this.type === SUBSCRIBE) return;
         this.observables = matchObservables(this.ast, scope);
     }
 

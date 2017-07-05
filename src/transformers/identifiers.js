@@ -3,6 +3,8 @@ export const FRAGMENT = '__fragment';
 export const NODES = '__nodes';
 export const RENDER = '__render';
 export const SUB = '__sub';
+
+export const FIRST_OPERATOR = '__first';
 export const MAP_OPERATOR = '__map';
 export const COMBINE_OPERATOR = '__combine';
 

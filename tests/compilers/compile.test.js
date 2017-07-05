@@ -105,6 +105,32 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
+    it('hello world once observable', () => {
+        const source = `
+            import { html as _ } from 'diamond';
+            const template = (name=$) => _\`<span>Hello \${name}</span>\`;
+        `;
+
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
+            const __bind0 = __textBinder(1);
+            import { renderer, makeFragment, __textBinder } from 'diamond';
+            const template = name => (() => {
+                const __nodes = __render0();
+                const __sub0 = __first(name, __bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
+                };
+                return __fragment;
+            })();
+        `;
+
+        codeEqual(compiled, expected);
+    }); 
+
     it('mapped observable expression', () => {
         const source = `
             import { html as _ } from 'diamond';
