@@ -1,8 +1,8 @@
 import { base, recursive } from 'acorn/dist/walk.es';
 import htmlparser from 'htmlparser2';
-import { generate } from 'astring';
 import undeclared from 'undeclared';
 import { parse } from 'acorn';
+import { generate } from 'astring';
 
 class UniqueStrings {
     constructor() {
@@ -39,6 +39,14 @@ const COMBINE_OPERATOR = '__combine';
 
 const RENDERER_IMPORT = 'renderer';
 const MAKE_FRAGMENT_IMPORT = 'makeFragment';
+
+const COMBINE = Symbol('combine');
+const COMBINE_FIRST = Symbol('combine-first');
+const FIRST = Symbol('first');
+const MAP = Symbol('map');
+const MAP_FIRST = Symbol('map-first');
+const SUBSCRIBE = Symbol('subscribe');
+const VALUE = Symbol('value');
 
 function declareConst({ name, init }) {
     return {
@@ -105,6 +113,7 @@ function callExpression({ callee, name, args = [] }) {
 }
 
 // (() => {<body>}())
+// () => {<body>}  ???
 const arrowFunctionExpression = ({ body, block, params = [] }) => {
     if(block) { body = { type: 'BlockStatement', body: block }; }
 
@@ -129,6 +138,19 @@ const SPECIFIER_NAME = /html|_/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
 
+function getImport(type) {
+    switch(type) {
+        case MAP:
+            return '__map';
+        case COMBINE:
+            return '__combine';
+        case FIRST:
+            return '__first';
+        default: 
+            return null;
+    }
+}
+
 class Imports {
     constructor({ tag }) {
         this.names = new Set(baseNames);
@@ -136,8 +158,9 @@ class Imports {
         this.tag = tag;
     }
 
-    addBinder({ declaration: { name }, typeImport }) {
+    addBinder({ declaration: { name }, type }) {
         this.addName(name);
+        const typeImport = getImport(type);
         if(typeImport) this.addName(typeImport);     
     }
 
@@ -229,7 +252,7 @@ const unsubscribes = binders => {
         // preserve original index as subscriber 
         // index, i.e. __sub0
         .map((binder, i) => {
-            if (!binder.isSubscriber) return;
+            if (binder.type === VALUE) return;
             return unsubscribe(i);
         })
         .filter(unsub => unsub);
@@ -264,10 +287,6 @@ var fragment = binders => {
     ];
 };
 
-const VALUE = Symbol('value');
-const MAP = Symbol('map');
-const SUBSCRIBE = Symbol('subscribe');
-
 function initBinder({ name, arg, index }) {
     return declareConst({
         name: `${BINDER}${index}`,
@@ -280,21 +299,19 @@ function initBinder({ name, arg, index }) {
     });
 }
 
+const bindings = {
+    [COMBINE]: combineBinding,
+    [COMBINE_FIRST]: combineFirstBinding,
+    [FIRST]: firstBinding,
+    [MAP]: mapBinding,
+    [MAP_FIRST]: mapFirstBinding,
+    [SUBSCRIBE]: subscribeBinding,
+    [VALUE]: valueBinding,
+};
+
 function binding(binder, i) {
-    const { type, ast, observables } = binder;
-    const isIdentifier = ast.type === 'Identifier';
-    const observablesCount = observables.length;
-
-    const binding = getBinding(type, isIdentifier, observablesCount);
+    const binding = bindings[binder.type];
     return binding(binder, i);
-}
-
-function getBinding(type, isIdentifier, observablesCount) {
-    if(type === SUBSCRIBE) return subscribeBinding;
-    if(!observablesCount) return valueBinding;
-    if(isIdentifier) return type === MAP ? subscribeBinding : firstBinding;
-    if(observablesCount === 1) return mapBinding;
-    return combineBinding;
 }
 
 // __bind${moduleIndex}(__nodes[${elementIndex}])
@@ -364,13 +381,17 @@ function firstBinding(binder, binderIndex) {
     );
 }
 
-function addOnceFlagIfValue(type, args) {
-    if(type === VALUE) args.push(literal({ value: true }));
+function addOnce(args) {
+    args.push(literal({ value: true }));
+}
+
+function mapFirstBinding(binder, binderIndex) {
+    return mapBinding(binder, binderIndex, true);
 }
 
 // const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding> [, true]);
-function mapBinding(binder, binderIndex) {
-    const { ast, type, moduleIndex, elIndex, observables: [ name ] } = binder;
+function mapBinding(binder, binderIndex, firstValue = false) {
+    const { ast, moduleIndex, elIndex, observables: [ name ] } = binder;
     const observable = identifier(name);
     const args = [
         observable, 
@@ -380,7 +401,7 @@ function mapBinding(binder, binderIndex) {
         }),
         nodeBinding(moduleIndex, elIndex)
     ];
-    addOnceFlagIfValue(type, args);
+    if(firstValue) addOnce(args);
 
     return subscription(
         binderIndex, 
@@ -391,10 +412,13 @@ function mapBinding(binder, binderIndex) {
     );
 }
 
+function combineFirstBinding(binder, binderIndex) {
+    return combineBinding(binder, binderIndex, true);
+}
 
 // const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding> [, true]);
-function combineBinding(binder, binderIndex) {
-    const { ast, type, moduleIndex, elIndex, observables } = binder;
+function combineBinding(binder, binderIndex, firstValue = false) {
+    const { ast, moduleIndex, elIndex, observables } = binder;
     const params = observables.map(identifier);
     const args =  [
         arrayExpression({ elements: params }), 
@@ -404,7 +428,7 @@ function combineBinding(binder, binderIndex) {
         }),
         nodeBinding(moduleIndex, elIndex)
     ];
-    addOnceFlagIfValue(type, args);
+    if(firstValue) addOnce(args);
 
     return subscription(
         binderIndex, 
@@ -415,9 +439,14 @@ function combineBinding(binder, binderIndex) {
     );
 }
 
-const types = {
-    '*': MAP,
-    '@': SUBSCRIBE
+const NONE = Symbol('none');
+const STAR = Symbol('*');
+const AT = Symbol('@');
+
+const typeMap = {
+    '': NONE,
+    '*': STAR,
+    '@': AT
 };
 
 const escapedBindingMatch = /\\[*@]$/;
@@ -434,16 +463,16 @@ function getBindingType(text) {
         return escaped;
     };
 
-    let type = VALUE;
+    let sigil = NONE;
 
-    if(tryEscaped()) return { type, text };
+    if(tryEscaped()) return { sigil, text };
 
     text = text.replace(bindingMatch, m => {
-        type = types[m];
+        sigil = typeMap[m];
         return '';
     });
 
-    return { type, text };
+    return { sigil, text };
 }
 
 const escapedBlockMatch = /^\\#/;
@@ -477,7 +506,7 @@ function getBlock(text) {
     return { block, text };
 }
 
-function getObservables(ast, scope) {
+function match(ast, scope) {
     if(ast.type === 'Identifier') {
         return scope[ast.name] ? [ast.name] : [];
     }
@@ -491,18 +520,15 @@ function getObservables(ast, scope) {
 
 class Binder {
 
-    constructor({ type = VALUE, ast = null } = {}, target) {        
-        this.type = type;
+    constructor({ sigil = NONE, ast = null } = {}, target) {        
+        this.sigil = sigil;
         this.ast = ast;
-        this.undeclareds = null;
-        this.observables = [];
-
-        this.elIndex = -1;
-        this.templates = null;
-        
-        this.moduleIndex = -1;
         this.target = target;
-
+        
+        this.observables = [];
+        this.elIndex = -1;
+        this.moduleIndex = -1;
+        
         this.index = -1;
         this.name = '';        
     }
@@ -510,10 +536,6 @@ class Binder {
     init(el, attr) {
         this.index = el.childIndex;
         this.name = attr;
-    }
-
-    matchObservables(scope) {
-        this.observables = getObservables(this.ast, scope);
     }
 
     get html() {
@@ -524,69 +546,30 @@ class Binder {
         return this.target.init(this);
     }
 
-    get typeImport() {
-        if(this.type !== MAP || this.ast.type === 'Identifier') return;
-        
-        switch(this.observables.length) {
-            case 0:
-                return;
-            case 1:
-                return '__map';
-            default:
-                return '__combine';
-        }
+    matchObservables(scope) {
+        this.observables = match(this.ast, scope);
     }
 
-    get isSubscriber() {
-        const { type, observables } = this;
-        return (type === SUBSCRIBE || (!!observables && observables.length > 0));
-    }
-
-    writeBinding(observer) { 
-        const { ast, observables, type } = this;
+    get type() {
+        const { sigil, ast, observables } = this;
         const isIdentifier = ast.type === 'Identifier';
+        const count = observables.length;
+        const isTrueMap = sigil === STAR;
 
-        const expr = isIdentifier ? ast.name : generate(ast);
-        if ((!observables || !observables.length) && type !== SUBSCRIBE) {
-            return `${observer}(${expr})`;
-        }
-
-        let observable = '';
-
-        if(isIdentifier) {
-            observable = expr;
-        }
-        else {
-            if (type === SUBSCRIBE) {
-                observable = `(${expr})`;
-            }
-            else {
-                observable = observables.join();
-                const map = `(${observable}) => (${expr})`;
-
-                if (observables.length > 1) {
-                    observable = `combineLatest(${observable}, ${map})`;
-                }
-                else {
-                    observable += `.map(${map})`;
-                }
-            }
-        }
-
-        if(type === VALUE) observable += `.first()`;
-
-        return this.addSubscribe(observable, observer);
+        if(sigil === AT) return SUBSCRIBE;
+        if(!count) return VALUE;
+        if(isIdentifier) return isTrueMap ? SUBSCRIBE : FIRST;
+        if(count === 1) return isTrueMap ? MAP : MAP_FIRST;
+        return isTrueMap ? COMBINE : COMBINE_FIRST;
     }
-
-
 }
 
 const childNode = (name, html) => ({
     html,
-    init(binder) {
+    init({ index }) {
         return {
             name: name,
-            arg: binder.index
+            arg: index
         };
     }
 });
@@ -596,10 +579,10 @@ const block = childNode('__blockBinder', '<block-node></block-node>');
 
 const attribute = {
     html: '""',
-    init(binder) {
+    init({ name }) {
         return { 
             name: '__attrBinder',
-            arg: binder.name
+            arg: name
         };
     }
 };
@@ -644,6 +627,9 @@ var voidElements = {
     wbr: true
 };
 
+// these are from htmlparser2
+// TODO: add in SVG?
+
 const getEl = (name = 'root') => ({
     name, 
     attributes: {}, 
@@ -657,6 +643,7 @@ function parseTemplate({ expressions, quasis }) {
     const fragment = getEl();
     const html = [];
     const stack = [];
+
     let currentEl = fragment;
     let inAttributes = false;
     let currentAttr = null;
@@ -709,6 +696,11 @@ function parseTemplate({ expressions, quasis }) {
             const el = currentEl;
             currentEl = stack.pop();
 
+            //Notice array of arrays. 
+            //Binders from each el are being pushed.
+            //Order matters as well because this is how we get 
+            //element binding index in right order.
+
             if(el.binders.length > 0) {
                 html[el.htmlIndex] = ` data-bind`;
                 currentEl.childBinders.push(el.binders);
@@ -726,10 +718,10 @@ function parseTemplate({ expressions, quasis }) {
     var parser = new htmlparser.Parser(handler);
 
     quasis.forEach((quasi, i) => {
-        // quasi length is one more than expression
+        // quasis length is one more than expressions
         if(i === expressions.length) return parser.write(quasi.value.raw);
 
-        const { type, text } = getBindingType(quasi.value.raw);
+        const { sigil, text } = getBindingType(quasi.value.raw);
 
         parser.write(text);
 
@@ -743,7 +735,7 @@ function parseTemplate({ expressions, quasis }) {
         
         const binder = getBinder({
             block,
-            type,
+            sigil,
             inAttributes,
             ast: expressions[i]
         });
@@ -777,8 +769,8 @@ const renderNodes = index => {
 };
 
 const templateToFunction = (node, options) => {
-    const newAst = templateAFE(options);
-    TTEtoAFE(node, newAst);
+    const ast = templateAFE(options);
+    Object.assign(node, ast);
 };
 
 const templateAFE = ({ binders, index }) => {
@@ -789,11 +781,6 @@ const templateAFE = ({ binders, index }) => {
         ...fragment(binders)
     ];
     return arrowFunctionExpression({ block: statements });
-};
-
-const TTEtoAFE = (node, AFE) => {
-    node.type = 'CallExpression',
-    node.callee = AFE;
 };
 
 const TAG = '_';
@@ -1058,11 +1045,11 @@ const BlockStatement = (node, state, c) => {
 };
 
 const VariableDeclarator = ({ id, init }, state, c) => {
-    if (id && id.type === 'ObjectPattern') {
+    if(id && id.type === 'ObjectPattern') {
         const newValues = vars(id.properties.map(p => p.value), state, c);
         id.properties.forEach((p, i) => p.value = newValues[i]);
     }
-    if (init) c(init, state, 'Expression');
+    if(init) c(init, state, 'Expression');
 };
 
 const VariableDeclaration = (node, state, c) => {
@@ -1072,7 +1059,7 @@ const VariableDeclaration = (node, state, c) => {
 };
 
 const VariablePattern = ({ name }, { scope }) => {
-    if (scope[name]) scope[name] = false;
+    if(scope[name]) scope[name] = false;
 };
 
 var observables = Object.freeze({
