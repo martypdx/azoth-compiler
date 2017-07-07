@@ -1,13 +1,11 @@
 import { recursive, base as defaultBase } from 'acorn/dist/walk.es';
 import { 
     addStatementsToFunction,
-    blockStatement,
     callExpression,
     declareConst, 
     identifier,
     literal,
-    memberExpression,
-    returnStatement } from '../transformers/common';
+    memberExpression } from '../transformers/common';
 
 const IDENTIFIER = '$';
 
