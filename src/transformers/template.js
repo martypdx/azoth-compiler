@@ -18,8 +18,8 @@ const renderNodes = index => {
 };
 
 export const templateToFunction = (node, options) => {
-    const newAst = templateAFE(options);
-    TTEtoAFE(node, newAst);
+    const ast = templateAFE(options);
+    Object.assign(node, ast);
 };
 
 export const templateAFE = ({ binders, index }) => {
@@ -30,10 +30,4 @@ export const templateAFE = ({ binders, index }) => {
         ...fragment(binders)
     ];
     return arrowFunctionExpression({ block: statements });
-};
-
-export const TTEtoAFE = (node, AFE) => {
-    Object.assign(node, AFE);
-    // node.type = 'CallExpression',
-    // node.callee = AFE;
 };

@@ -9,7 +9,7 @@ import '../helpers/to-code';
 import codeEqual from '../helpers/code-equal';
 import parse from '../../src/ast';
 
-import { templateAFE, TTEtoAFE } from '../../src/transformers/template';
+import { templateAFE } from '../../src/transformers/template';
 
 describe('transform - template', () => {
     const binders = [
@@ -55,26 +55,4 @@ describe('transform - template', () => {
             } // eslint-disable-line
         }
     });
-
-    it('TTE to AFE', () => {
-        const AFE = templateAFE({ binders: [], index: 0 });
-        const source = () => {
-            const template = _``;
-        };
-        const ast = source.toAst();
-
-        const TTE = ast.body[0].declarations[0].init;
-        TTEtoAFE(TTE, AFE);
-        
-        const code = generate(ast);
-        codeEqual(code, expected);
-
-        function expected() {
-            const template = (() => {
-                const __nodes = __render0();
-                return __nodes[__nodes.length];
-            })();
-        }
-    });
-
 });
