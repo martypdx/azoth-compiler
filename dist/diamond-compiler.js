@@ -138,6 +138,16 @@ const specifier = name => ({
     local: identifier(name)
 });
 
+function addStatementsToFunction({ fn, statements, returnBody = false })  {
+    let { body } = fn;
+    if(body.type === 'BlockStatement') {
+        body.body.splice(0, 0, ...statements);
+    } else {
+        if(returnBody) statements.push(returnStatement({ arg: body }));
+        fn.body = blockStatement({ body: statements });
+    }
+}
+
 const SPECIFIER_NAME = /html|_/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
@@ -773,18 +783,32 @@ const renderNodes = index => {
 };
 
 const templateToFunction = (node, options) => {
-    const ast = templateAFE(options);
+    const statements = templateStatements(options);
+    const { fn, returnStatement: returnStatement$$1 } = options;
+    if(fn) {
+        if(fn.body === node) {
+            addStatementsToFunction({ fn, statements });
+            return;
+        }
+        if(returnStatement$$1 && returnStatement$$1.argument === node) {
+            const block = fn.body.body;
+            const index = block.findIndex(n => n === returnStatement$$1);
+            block.splice(index, 1, ...statements);
+            return;
+        }
+    } 
+
+    const ast = arrowFunctionExpression({ block: statements });
     Object.assign(node, ast);
 };
 
-const templateAFE = ({ binders, index }) => {
+const templateStatements = ({ binders, index }) => {
     const bindings = binders.map(binding);
-    const statements = [
+    return [
         renderNodes(index),
         ...bindings,
         ...fragment(binders)
     ];
-    return arrowFunctionExpression({ block: statements });
 };
 
 const TAG = '_';
@@ -794,16 +818,21 @@ class Module {
     constructor({ tag = TAG } = {}) {
         this.name = MODULE_NAME;
         // TODO: tag comes back from imports
-        // because may be aliased
+        // and may be aliased so this needs
+        // to account for that
         this.tag = tag;
         this.imports = new Imports({ tag });
-
         this.fragments = new UniqueStrings();
         this.binders = new UniqueStrings();
         
+        // track scope and current function
         this.scope = null;
         this.functionScope = null;
+        this.fn = null;
+        this.returnStatement = null;
         
+        // all purpose module-wide 
+        // ref counter for destructuring
         let ref = 0;
         this.getRef = () => `__ref${ref++}`;
     }
@@ -839,7 +868,15 @@ class Module {
             b.moduleIndex = this.addBinder(b);
         });
         
-        templateToFunction(node, { binders, index });
+        // TODO: fn gets set by the observables handlers,
+        // which makes this cross those set of handlers.
+        // Probably should combine into one set.
+        templateToFunction(node, { 
+            binders, 
+            index,
+            fn: this.fn,
+            returnStatement: this.returnStatement
+        });
     }
 }
 
@@ -868,10 +905,18 @@ const ImportDeclaration = ({ source, specifiers }, { name, imports }) => {
     imports.specifiers = specifiers;
 };
 
+const ReturnStatement = (node, module, c) => {
+    const prior = module.returnStatement;
+    module.returnStatement = node;
+    acorn_dist_walk.base.ReturnStatement(node, module, c);
+    module.returnStatement = prior;
+};
+
 var templates = Object.freeze({
 	TaggedTemplateExpression: TaggedTemplateExpression,
 	Program: Program,
-	ImportDeclaration: ImportDeclaration
+	ImportDeclaration: ImportDeclaration,
+	ReturnStatement: ReturnStatement
 });
 
 const IDENTIFIER$1 = '$';
@@ -893,35 +938,13 @@ function params(fn, getRef) {
     });
 
     if(statements.length) {
-        let { body } = fn;
-        if(body.type === 'BlockStatement') {
-            body.body.splice(0, 0, ...state.statements);
-        } else {
-            fn.body = blockStatement({ 
-                body: [
-                    ...statements,
-                    returnStatement({ arg: body })
-                ] 
-            });
-        }
+        addStatementsToFunction({ fn, statements, returnBody: true });
     }
     return [...state.identifiers];
 }
 
-//TODO
+//TODO: get variables working
 
-
-// function make(funcs, base = defaultBase) {
-//     return funcs ? Object.assign({}, base, funcs) : base;
-// }
-
-// function recursive2(node, state, funcs, base, override) {
-//     let visitor = make(funcs, base);
-//     (function c(node, st, override) {
-//         console.log(override || node.type, generate(node));
-//         visitor[override || node.type](node, st, c);
-//     })(node, state, override);
-// }
 
 // const <name> = <ref>.child('<name>');
 function destructure({ name, ref, arg }) {
@@ -1031,11 +1054,18 @@ const Function = (node, state, c) => {
     const { scope, functionScope, getRef } = state;
     const newScope = state.scope = state.functionScope = Object.create(scope);
 
+    // this call may mutate the function by creating a
+    // BlockStatement if params are destructured and 
+    // function was arrow with implicit return
     const observables = params(node, getRef);
     observables.forEach(o => newScope[o] = true);
 
-    c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
+    const priorFn = state.fn;
+    state.fn = node;
 
+    c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
+    
+    state.fn = priorFn;
     state.scope = scope;
     state.functionScope = functionScope;
 };
