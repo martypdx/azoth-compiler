@@ -1,6 +1,6 @@
 import undeclared from 'undeclared';
 
-export default function getObservables(ast, scope) {
+export default function match(ast, scope) {
     if(ast.type === 'Identifier') {
         return scope[ast.name] ? [ast.name] : [];
     }

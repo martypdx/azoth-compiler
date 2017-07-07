@@ -33,6 +33,7 @@ export const templateAFE = ({ binders, index }) => {
 };
 
 export const TTEtoAFE = (node, AFE) => {
+    // Object.assign(node, AFE)
     node.type = 'CallExpression',
     node.callee = AFE;
 };

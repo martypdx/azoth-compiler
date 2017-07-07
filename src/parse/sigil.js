@@ -1,9 +1,4 @@
-import { VALUE, MAP, SUBSCRIBE } from '../binders/binding-types';
-
-const types = {
-    '*': MAP,
-    '@': SUBSCRIBE
-};
+import { NONE, typeMap } from './sigil-types';
 
 const escapedBindingMatch = /\\[*@]$/;
 const bindingMatch = /[\*@]$/;
@@ -19,16 +14,16 @@ export function getBindingType(text) {
         return escaped;
     };
 
-    let type = VALUE;
+    let sigil = NONE;
 
-    if(tryEscaped()) return { type, text };
+    if(tryEscaped()) return { sigil, text };
 
     text = text.replace(bindingMatch, m => {
-        type = types[m];
+        sigil = typeMap[m];
         return '';
     });
 
-    return { type, text };
+    return { sigil, text };
 }
 
 const escapedBlockMatch = /^\\#/;

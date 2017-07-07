@@ -12,6 +12,7 @@ import {
     RENDER,
     RENDERER_IMPORT, 
     MAKE_FRAGMENT_IMPORT } from './identifiers';
+import { VALUE } from '../binders/binding-types';
 
 
 export const renderer = (html, index) =>{
@@ -84,7 +85,7 @@ const unsubscribes = binders => {
         // preserve original index as subscriber 
         // index, i.e. __sub0
         .map((binder, i) => {
-            if (!binder.isSubscriber) return;
+            if (binder.type === VALUE) return;
             return unsubscribe(i);
         })
         .filter(unsub => unsub);

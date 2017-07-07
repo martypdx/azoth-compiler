@@ -1,7 +1,7 @@
 import chai from 'chai';
 const assert = chai.assert;
 import { getBindingType, getBlock } from '../../src/parse/sigil';
-import { VALUE, MAP, SUBSCRIBE } from '../../src/binders/binding-types';
+import { NONE, STAR, AT } from '../../src/parse/sigil-types';
 
 
 describe('sigils', () => {
@@ -13,31 +13,31 @@ describe('sigils', () => {
         }
 
         it('empty string okay', () => {
-            test('', { type: VALUE, text: ''});
+            test('', { sigil: NONE, text: ''});
         });
 
         it('value', () => {
-            test('text', { type: VALUE, text: 'text' });
+            test('text', { sigil: NONE, text: 'text' });
         });
 
         it('map observer', () => {
-            test('text*', { type: MAP, text: 'text'});
+            test('text*', { sigil: STAR, text: 'text'});
         });
 
         it('subscribe', () => {
-            test('text@', { type: SUBSCRIBE, text: 'text'});
+            test('text@', { sigil: AT, text: 'text'});
         });
 
         it('is end of string', () => {
-            test('* ', { type: VALUE, text: '* '});
+            test('* ', { sigil: NONE, text: '* '});
         });
 
         it('escaped *', () => {
-            test('text\\*', { type: VALUE, text: 'text*' });
+            test('text\\*', { sigil: NONE, text: 'text*' });
         });
 
         it('escaped @', () => {
-            test('text\\@', { type: VALUE, text: 'text@' });
+            test('text\\@', { sigil: NONE, text: 'text@' });
         });
     });
 

@@ -51,8 +51,6 @@ export function variables(declarator, getRef) {
 
     if(!(isObject || isArray)) return;
 
-
-
     const identifiers = new Set();
     const statements = [];
     

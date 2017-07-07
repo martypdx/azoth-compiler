@@ -1,10 +1,9 @@
-
 const childNode = (name, html) => ({
     html,
-    init(binder) {
+    init({ index }) {
         return {
             name: name,
-            arg: binder.index
+            arg: index
         };
     }
 });
@@ -14,10 +13,10 @@ export const block = childNode('__blockBinder', '<block-node></block-node>');
 
 export const attribute = {
     html: '""',
-    init(binder) {
+    init({ name }) {
         return { 
             name: '__attrBinder',
-            arg: binder.name
+            arg: name
         };
     }
 };

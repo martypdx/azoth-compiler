@@ -63,6 +63,7 @@ export function callExpression({ callee, name, args = [] }) {
 }
 
 // (() => {<body>}())
+// () => {<body>}  ???
 export const arrowFunctionExpression = ({ body, block, params = [] }) => {
     if(block) { body = { type: 'BlockStatement', body: block }; }
 

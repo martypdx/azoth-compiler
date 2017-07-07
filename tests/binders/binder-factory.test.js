@@ -6,8 +6,8 @@ describe('binder factory', () => {
 
     describe('binding type', () => {
         it('passes thru options', () => {
-            const binder = getBinder({ inAttributes: false, block: false, type: 'value' });
-            assert.equal(binder.type, 'value');
+            const binder = getBinder({ inAttributes: false, block: false, sigil: 'value' });
+            assert.equal(binder.sigil, 'value');
         });
     });
 

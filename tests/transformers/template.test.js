@@ -2,7 +2,7 @@
 
 import { generate } from 'astring';
 import getBinder from './getBinder';
-import { VALUE, SUBSCRIBE } from '../../src/binders/binding-types';
+import { NONE, AT } from '../../src/parse/sigil-types';
 
 import { assert } from 'chai';
 import '../helpers/to-code';
@@ -13,9 +13,9 @@ import { templateAFE, TTEtoAFE } from '../../src/transformers/template';
 
 describe('transform - template', () => {
     const binders = [
-        getBinder({ ast: (() => one).toExpr(), type: SUBSCRIBE }, { module: 0, element: 0 }),
-        getBinder({ ast: (() => two).toExpr(), type: VALUE }, { module: 1, element: 0 }),
-        getBinder({ ast: (() => three).toExpr(), type: SUBSCRIBE }, { module: 1, element: 1 }),
+        getBinder({ ast: (() => one).toExpr(), sigil: AT }, { module: 0, element: 0 }),
+        getBinder({ ast: (() => two).toExpr(), sigil: NONE }, { module: 1, element: 0 }),
+        getBinder({ ast: (() => three).toExpr(), sigil: AT }, { module: 1, element: 1 }),
     ];
     const scope = { one: true, three: true };
     binders.forEach(b => b.matchObservables(scope));

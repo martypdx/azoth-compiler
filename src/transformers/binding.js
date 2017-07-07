@@ -6,7 +6,7 @@ import {
     identifier,
     literal, 
     memberExpression } from './common';
-import { MAP, SUBSCRIBE, VALUE } from '../binders/binding-types';
+import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from '../binders/binding-types';
 import { BINDER, NODES, SUB, FIRST_OPERATOR, MAP_OPERATOR, COMBINE_OPERATOR } from './identifiers';
 
 export function initBinder({ name, arg, index }) {
@@ -21,21 +21,19 @@ export function initBinder({ name, arg, index }) {
     });
 }
 
+const bindings = {
+    [COMBINE]: combineBinding,
+    [COMBINE_FIRST]: combineFirstBinding,
+    [FIRST]: firstBinding,
+    [MAP]: mapBinding,
+    [MAP_FIRST]: mapFirstBinding,
+    [SUBSCRIBE]: subscribeBinding,
+    [VALUE]: valueBinding,
+};
+
 export default function binding(binder, i) {
-    const { type, ast, observables } = binder;
-    const isIdentifier = ast.type === 'Identifier';
-    const observablesCount = observables.length;
-
-    const binding = getBinding(type, isIdentifier, observablesCount);
+    const binding = bindings[binder.type];
     return binding(binder, i);
-}
-
-function getBinding(type, isIdentifier, observablesCount) {
-    if(!observablesCount) return valueBinding;
-    if(type === SUBSCRIBE) return subscribeBinding;
-    if(isIdentifier) return type === MAP ? subscribeBinding : firstBinding;
-    if(observablesCount === 1) return mapBinding;
-    return combineBinding;
 }
 
 // __bind${moduleIndex}(__nodes[${elementIndex}])
@@ -105,13 +103,17 @@ function firstBinding(binder, binderIndex) {
     );
 }
 
-function addOnceFlagIfValue(type, args) {
-    if(type === VALUE) args.push(literal({ value: true }));
+function addOnce(args) {
+    args.push(literal({ value: true }));
+}
+
+function mapFirstBinding(binder, binderIndex) {
+    return mapBinding(binder, binderIndex, true);
 }
 
 // const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding> [, true]);
-function mapBinding(binder, binderIndex) {
-    const { ast, type, moduleIndex, elIndex, observables: [ name ] } = binder;
+function mapBinding(binder, binderIndex, firstValue = false) {
+    const { ast, moduleIndex, elIndex, observables: [ name ] } = binder;
     const observable = identifier(name);
     const args = [
         observable, 
@@ -121,7 +123,7 @@ function mapBinding(binder, binderIndex) {
         }),
         nodeBinding(moduleIndex, elIndex)
     ];
-    addOnceFlagIfValue(type, args);
+    if(firstValue) addOnce(args);
 
     return subscription(
         binderIndex, 
@@ -132,10 +134,13 @@ function mapBinding(binder, binderIndex) {
     );
 }
 
+function combineFirstBinding(binder, binderIndex) {
+    return combineBinding(binder, binderIndex, true);
+}
 
 // const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding> [, true]);
-function combineBinding(binder, binderIndex) {
-    const { ast, type, moduleIndex, elIndex, observables } = binder;
+function combineBinding(binder, binderIndex, firstValue = false) {
+    const { ast, moduleIndex, elIndex, observables } = binder;
     const params = observables.map(identifier);
     const args =  [
         arrayExpression({ elements: params }), 
@@ -145,7 +150,7 @@ function combineBinding(binder, binderIndex) {
         }),
         nodeBinding(moduleIndex, elIndex)
     ];
-    addOnceFlagIfValue(type, args);
+    if(firstValue) addOnce(args);
 
     return subscription(
         binderIndex, 

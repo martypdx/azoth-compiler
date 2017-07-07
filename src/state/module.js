@@ -2,11 +2,11 @@ import { UniqueStrings } from './unique-strings';
 import { Imports } from './imports';
 import { renderer } from '../transformers/fragment';
 import { initBinder } from '../transformers/binding';
-import parseTemplate from '../parse/parse-template';
+import parse from '../parse/template';
 import { templateToFunction } from '../transformers/template';
 
 const TAG = '_';
-const MODULE_NAME = 'diamond';
+const MODULE_NAME = 'diamond-ui';
 
 export class Module {
     constructor({ tag = TAG } = {}) {
@@ -49,7 +49,7 @@ export class Module {
     }
 
     makeTemplate(node) {
-        const { html, binders } = parseTemplate(node.quasi);
+        const { html, binders } = parse(node.quasi);
 
         const index = this.addFragment(html);
         binders.forEach(b => {

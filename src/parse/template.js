@@ -16,6 +16,7 @@ export default function parseTemplate({ expressions, quasis }) {
     const fragment = getEl();
     const html = [];
     const stack = [];
+
     let currentEl = fragment;
     let inAttributes = false;
     let currentAttr = null;
@@ -68,6 +69,11 @@ export default function parseTemplate({ expressions, quasis }) {
             const el = currentEl;
             currentEl = stack.pop();
 
+            //Notice array of arrays. 
+            //Binders from each el are being pushed.
+            //Order matters as well because this is how we get 
+            //element binding index in right order.
+
             if(el.binders.length > 0) {
                 html[el.htmlIndex] = ` data-bind`;
                 currentEl.childBinders.push(el.binders);
@@ -85,10 +91,10 @@ export default function parseTemplate({ expressions, quasis }) {
     var parser = new htmlparser.Parser(handler);
 
     quasis.forEach((quasi, i) => {
-        // quasi length is one more than expression
+        // quasis length is one more than expressions
         if(i === expressions.length) return parser.write(quasi.value.raw);
 
-        const { type, text } = getBindingType(quasi.value.raw);
+        const { sigil, text } = getBindingType(quasi.value.raw);
 
         parser.write(text);
 
@@ -102,7 +108,7 @@ export default function parseTemplate({ expressions, quasis }) {
         
         const binder = getBinder({
             block,
-            type,
+            sigil,
             inAttributes,
             ast: expressions[i]
         });

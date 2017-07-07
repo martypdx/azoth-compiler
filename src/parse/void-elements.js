@@ -20,3 +20,6 @@ export default {
     track: true,
     wbr: true
 };
+
+// these are from htmlparser2
+// TODO: add in SVG?

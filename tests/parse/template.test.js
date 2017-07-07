@@ -1,7 +1,7 @@
 /*eslint no-unused-vars: off */
 /* globals _ */
-import { VALUE, MAP, SUBSCRIBE } from '../../src/binders/binding-types';
-import parseTemplate from '../../src/parse/parse-template';
+import { NONE, STAR, AT } from '../../src/parse/sigil-types';
+import template from '../../src/parse/template';
 import chai from 'chai';
 const assert = chai.assert;
 import { recursive } from 'acorn/dist/walk.es';
@@ -24,7 +24,7 @@ function findTemplates(ast) {
 
 const parseSource = source => {
     const { quasi } = findTemplates(source.toAst());
-    return parseTemplate(quasi);
+    return template(quasi);
 };
 
 describe('parse template', () => {
@@ -41,18 +41,20 @@ describe('parse template', () => {
             moduleIndex = -1,
             index = 0,
             name = '',
-            type = MAP,
+            sigil = STAR,
             ref = '',
-            observables = [],
-            templates = null,
-            undeclareds = null
+            observables = []
         } = {}) {
             const { name: astName, type: astType } = binder.ast;
             assert.equal(astType, 'Identifier');
             assert.equal(astName, ref);
             delete binder.ast;
             delete binder.target;
-            assert.deepEqual(binder, { elIndex, moduleIndex, index, name, type, observables, templates, undeclareds }, `ref: ${ref}`);
+            assert.deepEqual(
+                binder, 
+                { elIndex, moduleIndex, index, name, sigil, observables }, 
+                `ref: ${ref}`
+            );
         }
 
         it('stand-alone text node', () => {
@@ -70,7 +72,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<text-node></text-node>');
-            testFirst(binders, { ref: 'foo', type: VALUE });
+            testFirst(binders, { ref: 'foo', sigil: NONE });
         });
 
         it('block text node', () => {
@@ -79,7 +81,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<block-node></block-node>');
-            testFirst(binders, { ref: 'foo', type: VALUE });
+            testFirst(binders, { ref: 'foo', sigil: NONE });
         });
 
         it('block observer text node', () => {
@@ -201,11 +203,9 @@ describe('parse template', () => {
             moduleIndex = -1,
             name = '',
             index = -1,
-            type = VALUE,
+            sigil = NONE,
             ref = '',
-            observables = [],
-            templates = null,
-            undeclareds = null
+            observables = []
         } = {}) {
             assert.ok(binder, 'binder does not exist');
             const { ast } = binder;
@@ -213,7 +213,11 @@ describe('parse template', () => {
             assert.equal(ast.name, ref);
             delete binder.ast;
             delete binder.target;
-            assert.deepEqual(binder, { elIndex, moduleIndex, name, index, type, observables, undeclareds, templates }, `name: ${name}`);
+            assert.deepEqual(
+                binder, 
+                { elIndex, moduleIndex, name, index, sigil, observables }, 
+                `name: ${name}`
+            );
         }
 
         it('simple', () => {
@@ -265,9 +269,9 @@ describe('parse template', () => {
             const { html, binders } = parseSource(source);
             assert.equal(html, '<span one="" two="" three="" data-bind></span>');
             assert.equal(binders.length, 3);
-            testAttr(binders[0], { type: VALUE, name: 'one', ref: 'one' });
-            testAttr(binders[1], { type: MAP, name: 'two', ref: 'two' });
-            testAttr(binders[2], { type: SUBSCRIBE, name: 'three', ref: 'three' });
+            testAttr(binders[0], { sigil: NONE, name: 'one', ref: 'one' });
+            testAttr(binders[1], { sigil: STAR, name: 'two', ref: 'two' });
+            testAttr(binders[2], { sigil: AT, name: 'three', ref: 'three' });
         });
     });
 

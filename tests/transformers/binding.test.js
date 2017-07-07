@@ -1,7 +1,7 @@
 /*eslint no-undef: off */
 import { generate } from 'astring';
 import getBinder from './getBinder';
-import { MAP, SUBSCRIBE, VALUE } from '../../src/binders/binding-types';
+import { STAR, AT, NONE } from '../../src/parse/sigil-types';
 
 import { assert } from 'chai';
 
@@ -11,7 +11,7 @@ describe('transform - binding', () => {
 
     it('value', () => {
         const binder = getBinder(
-            { ast: (() => foo).toExpr(), type: VALUE },
+            { ast: (() => foo).toExpr(), sigil: NONE },
             { module: 1, element: 2 }
         );
         const ast = binding(binder, 0);
@@ -21,7 +21,7 @@ describe('transform - binding', () => {
 
     it('subscribe', () => {
         const binder = getBinder(
-            { ast: (() => foo).toExpr(), type: SUBSCRIBE },
+            { ast: (() => foo).toExpr(), sigil: AT },
             { module: 1, element: 3 }
         );
         binder.observables = ['foo'];
@@ -32,7 +32,7 @@ describe('transform - binding', () => {
 
     it('map', () => {
         const binder = getBinder(
-            { ast: (() => x + 1).toExpr(), type: MAP },
+            { ast: (() => x + 1).toExpr(), sigil: STAR },
             { module: 1, element: 3 }
         );
         binder.observables = ['x'];
@@ -43,7 +43,7 @@ describe('transform - binding', () => {
 
     it('combine', () => {
         const binder = getBinder(
-            { ast: (() => x + y).toExpr(), type: MAP },
+            { ast: (() => x + y).toExpr(), sigil: STAR },
             { module: 1, element: 3 }
         );
         binder.observables = ['x', 'y'];
@@ -54,7 +54,7 @@ describe('transform - binding', () => {
     
     it('map first', () => {
         const binder = getBinder(
-            { ast: (() => x + 1).toExpr(), type: VALUE },
+            { ast: (() => x + 1).toExpr(), sigil: NONE },
             { module: 1, element: 3 }
         );
         binder.observables = ['x'];
@@ -65,7 +65,7 @@ describe('transform - binding', () => {
 
     it('combine first', () => {
         const binder = getBinder(
-            { ast: (() => x + y).toExpr(), type: VALUE },
+            { ast: (() => x + y).toExpr(), sigil: NONE },
             { module: 1, element: 3 }
         );
         binder.observables = ['x', 'y'];
@@ -76,7 +76,7 @@ describe('transform - binding', () => {
 
     it('first value', () => {
         const binder = getBinder(
-            { ast: (() => x).toExpr(), type: VALUE },
+            { ast: (() => x).toExpr(), sigil: NONE },
             { module: 1, element: 3 }
         );
         binder.observables = ['x'];

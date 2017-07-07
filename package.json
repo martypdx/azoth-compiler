@@ -1,6 +1,6 @@
 {
   "name": "diamond-compiler",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "description": "compiler for diamond templates",
   "main": "dist/diamond-compiler.js",
   "module": "dist/diamond-compiler.es.js",

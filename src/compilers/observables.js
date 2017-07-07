@@ -44,11 +44,11 @@ export const BlockStatement = (node, state, c) => {
 };
 
 export const VariableDeclarator = ({ id, init }, state, c) => {
-    if (id && id.type === 'ObjectPattern') {
+    if(id && id.type === 'ObjectPattern') {
         const newValues = vars(id.properties.map(p => p.value), state, c);
         id.properties.forEach((p, i) => p.value = newValues[i]);
     }
-    if (init) c(init, state, 'Expression');
+    if(init) c(init, state, 'Expression');
 };
 
 export const VariableDeclaration = (node, state, c) => {
@@ -58,5 +58,5 @@ export const VariableDeclaration = (node, state, c) => {
 };
 
 export const VariablePattern = ({ name }, { scope }) => {
-    if (scope[name]) scope[name] = false;
+    if(scope[name]) scope[name] = false;
 };

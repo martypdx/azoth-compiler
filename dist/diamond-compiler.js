@@ -294,8 +294,8 @@ function binding(binder, i) {
 }
 
 function getBinding(type, isIdentifier, observablesCount) {
-    if(!observablesCount) return valueBinding;
     if(type === SUBSCRIBE) return subscribeBinding;
+    if(!observablesCount) return valueBinding;
     if(isIdentifier) return type === MAP ? subscribeBinding : firstBinding;
     if(observablesCount === 1) return mapBinding;
     return combineBinding;
@@ -801,7 +801,7 @@ const TTEtoAFE = (node, AFE) => {
 };
 
 const TAG = '_';
-const MODULE_NAME = 'diamond';
+const MODULE_NAME = 'diamond-ui';
 
 class Module {
     constructor({ tag = TAG } = {}) {
