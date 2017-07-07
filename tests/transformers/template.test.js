@@ -9,7 +9,13 @@ import '../helpers/to-code';
 import codeEqual from '../helpers/code-equal';
 import parse from '../../src/ast';
 
-// import { templateAFE } from '../../src/transformers/template';
+// TODO: add templateToFunction tests
+import { 
+    blockStatement,
+    arrowFunctionExpression } from '../../src/transformers/common';
+import { templateStatements } from '../../src/transformers/template';
+
+// TODO: there are trailing ";\n" issues in comparisons :(
 
 describe.skip('transform - template', () => {
     const binders = [
@@ -21,8 +27,8 @@ describe.skip('transform - template', () => {
     binders.forEach(b => b.matchObservables(scope));
 
     it('no bindings', () => {
-        const ast = templateAFE({ binders: [], index: 1 });
-        const code = generate(ast);
+        const body = templateStatements({ binders: [], index: 1 });
+        const code = arrowFunctionExpression({ body: blockStatement({ body }) });
 
         codeEqual(code, expected);
 
@@ -35,8 +41,8 @@ describe.skip('transform - template', () => {
     });
 
     it('with bindings', () => {
-        const ast = templateAFE({ binders, index: 2 });
-        const code = generate(ast);
+        const body = templateStatements({ binders, index: 2 });
+        const code = arrowFunctionExpression({ body: blockStatement({ body }) });
 
         codeEqual(code, expected);
 
