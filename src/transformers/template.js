@@ -1,4 +1,5 @@
 import { 
+    addStatementsToFunction,
     arrowFunctionExpression,
     callExpression, 
     declareConst, 
@@ -18,16 +19,30 @@ const renderNodes = index => {
 };
 
 export const templateToFunction = (node, options) => {
-    const ast = templateAFE(options);
+    const statements = templateStatements(options);
+    const { fn, returnStatement } = options;
+    if(fn) {
+        if(fn.body === node) {
+            addStatementsToFunction({ fn, statements });
+            return;
+        }
+        if(returnStatement && returnStatement.argument === node) {
+            const block = fn.body.body;
+            const index = block.findIndex(n => n === returnStatement);
+            block.splice(index, 1, ...statements);
+            return;
+        }
+    } 
+
+    const ast = arrowFunctionExpression({ block: statements });
     Object.assign(node, ast);
 };
 
-export const templateAFE = ({ binders, index }) => {
+export const templateStatements = ({ binders, index }) => {
     const bindings = binders.map(binding);
-    const statements = [
+    return [
         renderNodes(index),
         ...bindings,
         ...fragment(binders)
     ];
-    return arrowFunctionExpression({ block: statements });
 };

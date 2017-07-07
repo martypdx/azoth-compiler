@@ -15,3 +15,10 @@ export const ImportDeclaration = ({ source, specifiers }, { name, imports }) => 
     if(!source.value.endsWith(name)) return;
     imports.specifiers = specifiers;
 };
+
+export const ReturnStatement = (node, module, c) => {
+    const prior = module.returnStatement;
+    module.returnStatement = node;
+    base.ReturnStatement(node, module, c);
+    module.returnStatement = prior;
+};

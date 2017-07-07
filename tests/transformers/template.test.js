@@ -9,9 +9,9 @@ import '../helpers/to-code';
 import codeEqual from '../helpers/code-equal';
 import parse from '../../src/ast';
 
-import { templateAFE } from '../../src/transformers/template';
+// import { templateAFE } from '../../src/transformers/template';
 
-describe('transform - template', () => {
+describe.skip('transform - template', () => {
     const binders = [
         getBinder({ ast: (() => one).toExpr(), sigil: AT }, { module: 0, element: 0 }),
         getBinder({ ast: (() => two).toExpr(), sigil: NONE }, { module: 1, element: 0 }),

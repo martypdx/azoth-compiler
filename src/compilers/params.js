@@ -1,5 +1,6 @@
 import { recursive, base as defaultBase } from 'acorn/dist/walk.es';
 import { 
+    addStatementsToFunction,
     blockStatement,
     callExpression,
     declareConst, 
@@ -27,22 +28,12 @@ export function params(fn, getRef) {
     });
 
     if(statements.length) {
-        let { body } = fn;
-        if(body.type === 'BlockStatement') {
-            body.body.splice(0, 0, ...state.statements);
-        } else {
-            fn.body = blockStatement({ 
-                body: [
-                    ...statements,
-                    returnStatement({ arg: body })
-                ] 
-            });
-        }
+        addStatementsToFunction({ fn, statements, returnBody: true });
     }
     return [...state.identifiers];
 }
 
-//TODO
+//TODO: get variables working
 export function variables(declarator, getRef) {
     const { id } = declarator;
     const { type } = id;
@@ -66,18 +57,6 @@ export function variables(declarator, getRef) {
 
     console.log(statements);
 }
-
-// function make(funcs, base = defaultBase) {
-//     return funcs ? Object.assign({}, base, funcs) : base;
-// }
-
-// function recursive2(node, state, funcs, base, override) {
-//     let visitor = make(funcs, base);
-//     (function c(node, st, override) {
-//         console.log(override || node.type, generate(node));
-//         visitor[override || node.type](node, st, c);
-//     })(node, state, override);
-// }
 
 // const <name> = <ref>.child('<name>');
 function destructure({ name, ref, arg }) {

@@ -12,16 +12,21 @@ export class Module {
     constructor({ tag = TAG } = {}) {
         this.name = MODULE_NAME;
         // TODO: tag comes back from imports
-        // because may be aliased
+        // and may be aliased so this needs
+        // to account for that
         this.tag = tag;
         this.imports = new Imports({ tag });
-
         this.fragments = new UniqueStrings();
         this.binders = new UniqueStrings();
         
+        // track scope and current function
         this.scope = null;
         this.functionScope = null;
+        this.fn = null;
+        this.returnStatement = null;
         
+        // all purpose module-wide 
+        // ref counter for destructuring
         let ref = 0;
         this.getRef = () => `__ref${ref++}`;
     }
@@ -57,6 +62,14 @@ export class Module {
             b.moduleIndex = this.addBinder(b);
         });
         
-        templateToFunction(node, { binders, index });
+        // TODO: fn gets set by the observables handlers,
+        // which makes this cross those set of handlers.
+        // Probably should combine into one set.
+        templateToFunction(node, { 
+            binders, 
+            index,
+            fn: this.fn,
+            returnStatement: this.returnStatement
+        });
     }
 }

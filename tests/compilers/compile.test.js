@@ -15,7 +15,7 @@ describe('compiler', () => {
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
             import { renderer, makeFragment, __textBinder } from 'diamond-ui';
-            const template = name => () => {
+            const template = name => {
                 const __nodes = __render0();
                 __bind0(__nodes[0])(name);
                 return __nodes[__nodes.length];
@@ -37,7 +37,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
-            const template = name => () => {
+            const template = name => {
                 const __nodes = __render0();
                 __bind0(__nodes[0])(name);
                 return __nodes[__nodes.length];
@@ -61,7 +61,7 @@ describe('compiler', () => {
             const __bind0 = __textBinder(1);
             const __bind1 = __textBinder(0);
             import { renderer, makeFragment, __textBinder } from 'diamond-ui';
-            const template = (foo, bar) => () => {
+            const template = (foo, bar) => {
                 const __nodes = __render2();
                 __bind1(__nodes[0])(foo ? () => {
                     const __nodes = __render0();
@@ -91,7 +91,7 @@ describe('compiler', () => {
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
             import { renderer, makeFragment, __textBinder } from 'diamond-ui';
-            const template = name => () => {
+            const template = name => {
                 const __nodes = __render0();
                 const __sub0 = name.subscribe(__bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
@@ -117,7 +117,7 @@ describe('compiler', () => {
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
             import { renderer, makeFragment, __textBinder, __first } from 'diamond-ui';
-            const template = name => () => {
+            const template = name => {
                 const __nodes = __render0();
                 const __sub0 = __first(name, __bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
@@ -143,7 +143,7 @@ describe('compiler', () => {
             const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
             import { renderer, makeFragment, __textBinder, __map } from 'diamond-ui';
-            const template = x => () => {
+            const template = x => {
                 const __nodes = __render0();
                 const __sub0 = __map(x, x => (x * x), __bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
@@ -172,15 +172,13 @@ describe('compiler', () => {
             import {renderer, makeFragment, __textBinder} from 'diamond-ui';
             const template = __ref0 => {
                 const name = __ref0.child("name");
-                return () => {
-                    const __nodes = __render0();
-                    const __sub0 = name.subscribe(__bind0(__nodes[0]));
-                    const __fragment = __nodes[__nodes.length];
-                    __fragment.unsubscribe = () => {
-                        __sub0.unsubscribe();
-                    };
-                    return __fragment;
+                const __nodes = __render0();
+                const __sub0 = name.subscribe(__bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
                 };
+                return __fragment;
             };
         `;
 
@@ -199,7 +197,7 @@ describe('compiler', () => {
             const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
             import { renderer, makeFragment, __textBinder, __combine } from 'diamond-ui';
-            const template = (x, y) => () => {
+            const template = (x, y) => {
                 const __nodes = __render0();
                 const __sub0 = __combine([x, y], (x, y) => (x + y), __bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];

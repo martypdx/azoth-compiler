@@ -83,3 +83,13 @@ export const specifier = name => ({
     imported: identifier(name),
     local: identifier(name)
 });
+
+export function addStatementsToFunction({ fn, statements, returnBody = false })  {
+    let { body } = fn;
+    if(body.type === 'BlockStatement') {
+        body.body.splice(0, 0, ...statements);
+    } else {
+        if(returnBody) statements.push(returnStatement({ arg: body }));
+        fn.body = blockStatement({ body: statements });
+    }
+}
