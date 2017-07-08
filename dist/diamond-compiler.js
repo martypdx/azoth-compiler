@@ -37,9 +37,9 @@ const NODES = '__nodes';
 const RENDER = '__render';
 const SUB = '__sub';
 
-const FIRST_OPERATOR = '__first';
-const MAP_OPERATOR = '__map';
-const COMBINE_OPERATOR = '__combine';
+const FIRST_IMPORT = '__first';
+const MAP_IMPORT = '__map';
+const COMBINE_IMPORT = '__combine';
 
 const RENDERER_IMPORT = 'renderer';
 const MAKE_FRAGMENT_IMPORT = 'makeFragment';
@@ -152,18 +152,15 @@ const SPECIFIER_NAME = /html|_/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
 
-function getImport(type) {
-    switch(type) {
-        case MAP:
-            return '__map';
-        case COMBINE:
-            return '__combine';
-        case FIRST:
-            return '__first';
-        default: 
-            return null;
-    }
-}
+const importSpecifiers = {
+    [COMBINE]: COMBINE_IMPORT,
+    [COMBINE_FIRST]: COMBINE_IMPORT,
+    [FIRST]: FIRST_IMPORT,
+    [MAP]: MAP_IMPORT,
+    [MAP_FIRST]: MAP_IMPORT,
+    [SUBSCRIBE]: null,
+    [VALUE]: null,
+};
 
 class Imports {
     constructor({ tag }) {
@@ -174,7 +171,7 @@ class Imports {
 
     addBinder({ declaration: { name }, type }) {
         this.addName(name);
-        const typeImport = getImport(type);
+        const typeImport = importSpecifiers[type];
         if(typeImport) this.addName(typeImport);     
     }
 
@@ -389,7 +386,7 @@ function firstBinding(binder, binderIndex) {
     return subscription(
         binderIndex, 
         callExpression({
-            name: FIRST_OPERATOR,
+            name: FIRST_IMPORT,
             args
         }) 
     );
@@ -420,7 +417,7 @@ function mapBinding(binder, binderIndex, firstValue = false) {
     return subscription(
         binderIndex, 
         callExpression({
-            name: MAP_OPERATOR,
+            name: MAP_IMPORT,
             args
         }) 
     );
@@ -447,7 +444,7 @@ function combineBinding(binder, binderIndex, firstValue = false) {
     return subscription(
         binderIndex, 
         callExpression({
-            name: COMBINE_OPERATOR,
+            name: COMBINE_IMPORT,
             args
         }) 
     );
@@ -880,13 +877,31 @@ class Module {
     }
 }
 
-const DEFAULTS = {
+const ACORN_DEFAULTS = {
     ecmaVersion: 8,
     sourceType: 'module'
 };
 
-function ast(source, options) {
-    return acorn.parse(source, Object.assign({}, DEFAULTS, options));
+function parse$1(source, options) {
+    return acorn.parse(source, Object.assign({}, ACORN_DEFAULTS, options));
+}
+
+// work around for https://github.com/davidbonnet/astring/issues/21
+const generator = Object.assign({}, astring.baseGenerator, {
+    ArrowFunctionExpression: function(node, state) {
+        state.write('(');
+        astring.baseGenerator.ArrowFunctionExpression(node, state);
+        state.write(')');
+    }
+});
+
+const ASTRING_DEFAULTS = { 
+    ident: '    ',
+    generator 
+};
+
+function generate$1(ast, options) {
+    return astring.generate(ast, Object.assign({}, ASTRING_DEFAULTS, options));
 }
 
 const TaggedTemplateExpression = (node, module, c) => {
@@ -1106,15 +1121,15 @@ var observables = Object.freeze({
 });
 
 function compile$1(source) {
-    const ast$$1 = ast(source);
-    astTransform(ast$$1);
-    return astring.generate(ast$$1);
+    const ast = parse$1(source);
+    astTransform(ast);
+    return generate$1(ast);
 }
 
 const handlers = Object.assign({}, templates, observables);
 
-function astTransform(ast$$1) {
-    acorn_dist_walk.recursive(ast$$1, new Module(), handlers);
+function astTransform(ast) {
+    acorn_dist_walk.recursive(ast, new Module(), handlers);
 }
 
 module.exports = compile$1;
