@@ -1,23 +1,32 @@
-import { RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT } from '../transformers/identifiers';
-import { MAP, COMBINE, FIRST } from '../binders/binding-types';
+import { 
+    RENDERER_IMPORT, 
+    MAKE_FRAGMENT_IMPORT,
+    FIRST_IMPORT,
+    MAP_IMPORT,
+    COMBINE_IMPORT
+} from '../transformers/identifiers';
+
+import { 
+    COMBINE, COMBINE_FIRST, 
+    FIRST, 
+    MAP, MAP_FIRST, 
+    SUBSCRIBE, 
+    VALUE } from '../binders/binding-types';
 import { specifier } from '../transformers/common';
 
 const SPECIFIER_NAME = /html|_/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
 
-function getImport(type) {
-    switch(type) {
-        case MAP:
-            return '__map';
-        case COMBINE:
-            return '__combine';
-        case FIRST:
-            return '__first';
-        default: 
-            return null;
-    }
-}
+const importSpecifiers = {
+    [COMBINE]: COMBINE_IMPORT,
+    [COMBINE_FIRST]: COMBINE_IMPORT,
+    [FIRST]: FIRST_IMPORT,
+    [MAP]: MAP_IMPORT,
+    [MAP_FIRST]: MAP_IMPORT,
+    [SUBSCRIBE]: null,
+    [VALUE]: null,
+};
 
 export class Imports {
     constructor({ tag }) {
@@ -28,7 +37,7 @@ export class Imports {
 
     addBinder({ declaration: { name }, type }) {
         this.addName(name);
-        const typeImport = getImport(type);
+        const typeImport = importSpecifiers[type];
         if(typeImport) this.addName(typeImport);     
     }
 

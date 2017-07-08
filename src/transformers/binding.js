@@ -7,7 +7,7 @@ import {
     literal, 
     memberExpression } from './common';
 import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from '../binders/binding-types';
-import { BINDER, NODES, SUB, FIRST_OPERATOR, MAP_OPERATOR, COMBINE_OPERATOR } from './identifiers';
+import { BINDER, NODES, SUB, FIRST_IMPORT, MAP_IMPORT, COMBINE_IMPORT } from './identifiers';
 
 export function initBinder({ name, arg, index }) {
     return declareConst({
@@ -97,7 +97,7 @@ function firstBinding(binder, binderIndex) {
     return subscription(
         binderIndex, 
         callExpression({
-            name: FIRST_OPERATOR,
+            name: FIRST_IMPORT,
             args
         }) 
     );
@@ -128,7 +128,7 @@ function mapBinding(binder, binderIndex, firstValue = false) {
     return subscription(
         binderIndex, 
         callExpression({
-            name: MAP_OPERATOR,
+            name: MAP_IMPORT,
             args
         }) 
     );
@@ -155,7 +155,7 @@ function combineBinding(binder, binderIndex, firstValue = false) {
     return subscription(
         binderIndex, 
         callExpression({
-            name: COMBINE_OPERATOR,
+            name: COMBINE_IMPORT,
             args
         }) 
     );
