@@ -1,7 +1,6 @@
 import { recursive } from 'acorn/dist/walk.es';
 import { Module } from '../state/module';
-import parse from '../ast';
-import { generate } from 'astring';
+import { parse, generate } from '../ast';
 import * as templates from './templates';
 import * as observables from './observables';
 

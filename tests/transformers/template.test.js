@@ -7,7 +7,7 @@ import { NONE, AT } from '../../src/parse/sigil-types';
 import { assert } from 'chai';
 import '../helpers/to-code';
 import codeEqual from '../helpers/code-equal';
-import parse from '../../src/ast';
+import { parse } from '../../src/ast';
 
 // TODO: add templateToFunction tests
 import { 

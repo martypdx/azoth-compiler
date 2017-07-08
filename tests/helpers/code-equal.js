@@ -1,5 +1,4 @@
-import parse from '../../src/ast';
-import { generate } from 'astring';
+import { parse, generate } from '../../src/ast';
 import { assert } from 'chai';
 
 const stripParse = code => {

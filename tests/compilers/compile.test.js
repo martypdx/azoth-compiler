@@ -1,3 +1,5 @@
+/*eslint no-unused-vars: off */
+/* globals _, $, renderer, makeFragment, __textBinder, __map */
 import codeEqual from '../helpers/code-equal';
 import compile from '../../src/compilers/compile';
 
@@ -25,8 +27,6 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
-    /*eslint no-unused-vars: off */
-    /* globals _ */
     it('no import', () => {
         function source() {
             const template = name => _`<span>Hello ${name}</span>`;
@@ -207,6 +207,34 @@ describe('compiler', () => {
                 return __fragment;
             };
         `;
+
+        codeEqual(compiled, expected);
+    }); 
+
+    // https://github.com/davidbonnet/astring/issues/21
+    it('working for afe expressions case', () => {
+        function source() {
+            const template = (foo=$) => _`${foo && _`bar`}`;
+        }
+
+        const compiled = compile(source.toCode());
+
+        function expected() {
+            const __render0 = renderer(makeFragment(`bar`));
+            const __render1 = renderer(makeFragment(`<text-node></text-node>`));
+            const __bind0 = __textBinder(0);
+            const template = foo => {
+                const __nodes = __render1();
+                const __sub0 = __map(foo, foo => foo && (() => {
+                    const __nodes = __render0();
+                    return __nodes[__nodes.length];
+                }), __bind0(__nodes[0]), true);const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
+                };
+                return __fragment;
+            };
+        }
 
         codeEqual(compiled, expected);
     }); 

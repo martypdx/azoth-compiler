@@ -1,4 +1,4 @@
-import parse from '../../src/ast';
+import { parse } from '../../src/ast';
 
 Function.prototype.toCode = function() {
     const trimmed = this.toString().trim();
