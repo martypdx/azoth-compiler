@@ -50,17 +50,17 @@ describe('compiler', () => {
     it('nested', () => {
         const source = `
             import { html as _ } from 'diamond-ui';
-            const template = (foo , bar) => _\`<div>\${ foo ? _\`<span>Hello \${bar}</span>\` : _\`<span>Goodbye \${bar}</span>\`}</div>\`;
+            const template = (foo , bar) => _\`<div>\${ foo ? _\`<span>Hello \${bar}</span>\` : _\`<span>Goodbye \${bar}</span>\`}#</div>\`;
         `;
         const compiled = compile(source);
 
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __render1 = renderer(makeFragment(\`<span data-bind>Goodbye <text-node></text-node></span>\`));
-            const __render2 = renderer(makeFragment(\`<div data-bind><text-node></text-node></div>\`));
+            const __render2 = renderer(makeFragment(\`<div data-bind><block-node></block-node></div>\`));
             const __bind0 = __textBinder(1);
-            const __bind1 = __textBinder(0);
-            import { renderer, makeFragment, __textBinder } from 'diamond-ui';
+            const __bind1 = __blockBinder(0);
+            import { renderer, makeFragment, __textBinder, __blockBinder } from 'diamond-ui';
             const template = (foo, bar) => {
                 const __nodes = __render2();
                 __bind1(__nodes[0])(foo ? () => {
