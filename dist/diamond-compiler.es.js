@@ -446,18 +446,21 @@ function combineBinding(binder, binderIndex, firstValue = false) {
     );
 }
 
+const AT = Symbol('@');
+const DOLLAR = Symbol('$');
 const NONE = Symbol('none');
 const STAR = Symbol('*');
-const AT = Symbol('@');
 
 const typeMap = {
+    '@': AT,
+    '$': DOLLAR,
     '': NONE,
     '*': STAR,
-    '@': AT
 };
 
-const escapedBindingMatch = /\\[*@]$/;
-const bindingMatch = /[\*@]$/;
+// TODO: get the values *@$ from sigil types
+const escapedBindingMatch = /\\[*@$]$/;
+const bindingMatch = /[\*@$]$/;
 
 function getBindingType(text) {
 
@@ -561,13 +564,17 @@ class Binder {
         const { sigil, ast, observables } = this;
         const isIdentifier = ast.type === 'Identifier';
         const count = observables.length;
-        const isTrueMap = sigil === STAR;
 
         if(sigil === AT) return SUBSCRIBE;
-        if(!count) return VALUE;
-        if(isIdentifier) return isTrueMap ? SUBSCRIBE : FIRST;
-        if(count === 1) return isTrueMap ? MAP : MAP_FIRST;
-        return isTrueMap ? COMBINE : COMBINE_FIRST;
+        if(sigil === NONE || count === 0) return VALUE;
+        if(sigil === DOLLAR) {
+            if(isIdentifier) return FIRST;
+            return (count === 1) ? MAP_FIRST : COMBINE_FIRST;
+        }
+        if(sigil === STAR) {
+            if(isIdentifier) return SUBSCRIBE;
+            return (count === 1) ? MAP : COMBINE;
+        }
     }
 }
 

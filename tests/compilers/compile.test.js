@@ -93,7 +93,7 @@ describe('compiler', () => {
             import { renderer, makeFragment, __textBinder } from 'diamond-ui';
             const template = name => {
                 const __nodes = __render0();
-                const __sub0 = name.subscribe(__bind0(__nodes[0]));
+                const __sub0 =  name.subscribe(__bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
@@ -108,7 +108,7 @@ describe('compiler', () => {
     it('hello world once observable', () => {
         const source = `
             import { html as _ } from 'diamond-ui';
-            const template = (name=$) => _\`<span>Hello \${name}</span>\`;
+            const template = (name=$) => _\`<span>Hello $\${name}</span>\`;
         `;
 
         const compiled = compile(source);
@@ -214,7 +214,7 @@ describe('compiler', () => {
     // https://github.com/davidbonnet/astring/issues/21
     it('working for afe expressions case', () => {
         function source() {
-            const template = (foo=$) => _`${foo && _`bar`}`;
+            const template = (foo=$) => _`$${foo && _`bar`}`;
         }
 
         const compiled = compile(source.toCode());

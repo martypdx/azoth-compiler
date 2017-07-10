@@ -1,7 +1,7 @@
 /*eslint no-undef: off */
 import { generate } from 'astring';
 import getBinder from './getBinder';
-import { STAR, AT, NONE } from '../../src/parse/sigil-types';
+import { AT, DOLLAR, STAR, NONE } from '../../src/parse/sigil-types';
 
 import { assert } from 'chai';
 
@@ -66,7 +66,7 @@ describe('transform - binding', () => {
 
     it('first map', () => {
         const binder = getBinder(
-            { ast: (() => x + 1).toExpr(), sigil: NONE },
+            { ast: (() => x + 1).toExpr(), sigil: DOLLAR },
             { module: 1, element: 3 }
         );
         binder.observables = ['x'];
@@ -77,7 +77,7 @@ describe('transform - binding', () => {
 
     it('first combine', () => {
         const binder = getBinder(
-            { ast: (() => x + y).toExpr(), sigil: NONE },
+            { ast: (() => x + y).toExpr(), sigil: DOLLAR },
             { module: 1, element: 3 }
         );
         binder.observables = ['x', 'y'];

@@ -6,13 +6,14 @@ import {
     MAP, MAP_FIRST, 
     SUBSCRIBE, 
     VALUE } from '../../src/binders/binding-types';
-import { AT, NONE, STAR } from '../../src/parse/sigil-types';
+import { AT, DOLLAR, NONE, STAR } from '../../src/parse/sigil-types';
 
 import { assert } from 'chai';
 
 describe('Binder', () => {
 
-    it('elIndex and moduleIndex default to -1', () => {
+    it('defaults', () => {
+        assert.equal(new Binder().sigil, NONE);
         assert.equal(new Binder().elIndex, -1);
         assert.equal(new Binder().moduleIndex, -1);
     });
@@ -50,13 +51,6 @@ describe('Binder', () => {
             return binder;
         };
 
-        it('VALUE', () => {
-            const binder = getBinder({
-                expr: () => foo.length
-            });
-            assert.equal(binder.type, VALUE);
-        }); 
-
         it('SUBSCRIBE', () => {
             const binder = getBinder({
                 expr: () => foo.length,
@@ -65,12 +59,20 @@ describe('Binder', () => {
             assert.equal(binder.type, SUBSCRIBE);
         }); 
 
-        it('MAP_FIRST', () => {
+        it('no sigil is VALUE', () => {
+            const binder = getBinder({
+                expr: () => foo.length,
+                observables: ['foo']
+            });
+            assert.equal(binder.type, VALUE);
+        }); 
+
+        it('no observables is VALUE', () => {
             const binder = getBinder({
                 expr: () => foo.length, 
-                observables:['foo']
+                sigil: STAR
             });
-            assert.equal(binder.type, MAP_FIRST);
+            assert.equal(binder.type, VALUE);
         });        
         
         it('MAP', () => {
@@ -80,6 +82,15 @@ describe('Binder', () => {
                 observables:['foo'],
             });
             assert.equal(binder.type, MAP);
+        }); 
+
+        it('MAP_FIRST', () => {
+            const binder = getBinder({
+                expr: () => foo.length, 
+                sigil: DOLLAR,
+                observables:['foo'],
+            });
+            assert.equal(binder.type, MAP_FIRST);
         });   
 
         it('MAP no observables is VALUE', () => {
@@ -102,7 +113,8 @@ describe('Binder', () => {
         it('FIRST', () => {
             const binder = getBinder({
                 expr: () => foo,
-                observables:['foo']
+                observables:['foo'],
+                sigil: DOLLAR
             });
             assert.equal(binder.type, FIRST);
         });      
@@ -110,7 +122,8 @@ describe('Binder', () => {
         it('COMBINE_FIRST', () => {
             const binder = getBinder({
                 expr: () => x + y, 
-                observables:['x', 'y']
+                observables:['x', 'y'],
+                sigil: DOLLAR
             });
             assert.equal(binder.type, COMBINE_FIRST);
         });        

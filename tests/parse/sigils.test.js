@@ -1,7 +1,7 @@
 import chai from 'chai';
 const assert = chai.assert;
 import { getBindingType, getBlock } from '../../src/parse/sigil';
-import { NONE, STAR, AT } from '../../src/parse/sigil-types';
+import { AT, DOLLAR, NONE, STAR } from '../../src/parse/sigil-types';
 
 
 describe('sigils', () => {
@@ -16,16 +16,20 @@ describe('sigils', () => {
             test('', { sigil: NONE, text: ''});
         });
 
-        it('value', () => {
+        it('NONE', () => {
             test('text', { sigil: NONE, text: 'text' });
         });
 
-        it('map observer', () => {
+        it('STAR', () => {
             test('text*', { sigil: STAR, text: 'text'});
         });
 
-        it('subscribe', () => {
+        it('AT', () => {
             test('text@', { sigil: AT, text: 'text'});
+        });
+
+        it('DOLLAR', () => {
+            test('text$', { sigil: DOLLAR, text: 'text'});
         });
 
         it('is end of string', () => {
@@ -38,6 +42,10 @@ describe('sigils', () => {
 
         it('escaped @', () => {
             test('text\\@', { sigil: NONE, text: 'text@' });
+        });
+
+        it('escaped $', () => {
+            test('text\\$', { sigil: NONE, text: 'text$' });
         });
     });
 
