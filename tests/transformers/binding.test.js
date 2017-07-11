@@ -7,14 +7,14 @@ import { assert } from 'chai';
 
 import binding from '../../src/transformers/binding';
 
-describe('transform - binding', () => {
+describe.only('transform - binding', () => {
 
     it('value', () => {
         const binder = getBinder(
             { ast: (() => foo).toExpr(), sigil: NONE },
             { module: 1, element: 1 }
         );
-        const ast = binding(binder, 0);
+        const [ ast ] = binding(binder, 0);
         const code = generate(ast);
         assert.equal(code, '__bind1(__nodes[1])(foo);');
     });
@@ -25,7 +25,7 @@ describe('transform - binding', () => {
             { module: 1, element: 2 }
         );
         binder.observables = ['x', 'y'];
-        const ast = binding(binder, 1);
+        const [ ast ] = binding(binder, 1);
         const code = generate(ast);
         assert.equal(code, '__bind1(__nodes[2])(x + 1);');
     });
@@ -36,7 +36,7 @@ describe('transform - binding', () => {
             { module: 1, element: 3 }
         );
         binder.observables = ['x', 'y'];
-        const ast = binding(binder, 1);
+        const [ ast ] = binding(binder, 1);
         const code = generate(ast);
         assert.equal(code, '__bind1(__nodes[3])(x + y);');
     });
@@ -48,7 +48,7 @@ describe('transform - binding', () => {
             { module: 1, element: 3 }
         );
         binder.observables = ['foo'];
-        const ast = binding(binder, 1);
+        const [ ast ] = binding(binder, 1);
         const code = generate(ast);
         assert.equal(code, 'const __sub1 = foo.subscribe(__bind1(__nodes[3]));');
     });
@@ -59,7 +59,7 @@ describe('transform - binding', () => {
             { module: 1, element: 3 }
         );
         binder.observables = ['x'];
-        const ast = binding(binder, 1);
+        const [ ast ] = binding(binder, 1);
         const code = generate(ast);
         assert.equal(code, 'const __sub1 = __first(x, __bind1(__nodes[3]));');
     });
@@ -70,7 +70,7 @@ describe('transform - binding', () => {
             { module: 1, element: 3 }
         );
         binder.observables = ['x'];
-        const ast = binding(binder, 1);
+        const [ ast ] = binding(binder, 1);
         const code = generate(ast);
         assert.equal(code, 'const __sub1 = __map(x, x => x + 1, __bind1(__nodes[3]), true);');
     });
@@ -81,7 +81,7 @@ describe('transform - binding', () => {
             { module: 1, element: 3 }
         );
         binder.observables = ['x', 'y'];
-        const ast = binding(binder, 1);
+        const [ ast ] = binding(binder, 1);
         const code = generate(ast);
         assert.equal(code, 'const __sub1 = __combine([x, y], (x, y) => x + y, __bind1(__nodes[3]), true);');
     });
@@ -92,7 +92,7 @@ describe('transform - binding', () => {
             { module: 1, element: 3 }
         );
         binder.observables = ['x'];
-        const ast = binding(binder, 1);
+        const [ ast ] = binding(binder, 1);
         const code = generate(ast);
         assert.equal(code, 'const __sub1 = __map(x, x => x + 1, __bind1(__nodes[3]));');
     });
@@ -103,7 +103,7 @@ describe('transform - binding', () => {
             { module: 1, element: 3 }
         );
         binder.observables = ['x', 'y'];
-        const ast = binding(binder, 1);
+        const [ ast ] = binding(binder, 1);
         const code = generate(ast);
         assert.equal(code, 'const __sub1 = __combine([x, y], (x, y) => x + y, __bind1(__nodes[3]));');
     });

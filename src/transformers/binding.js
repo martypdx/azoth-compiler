@@ -33,7 +33,7 @@ const bindings = {
 
 export default function binding(binder, i) {
     const binding = bindings[binder.type];
-    return binding(binder, i);
+    return [binding(binder, i)];
 }
 
 // __bind${moduleIndex}(__nodes[${elementIndex}])
