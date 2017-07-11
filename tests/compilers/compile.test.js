@@ -63,7 +63,8 @@ describe('compiler', () => {
             import { renderer, makeFragment, __textBinder, __blockBinder } from 'diamond-ui';
             const template = (foo, bar) => {
                 const __nodes = __render2();
-                __bind1(__nodes[0])(foo ? () => {
+                const __sub0b = __bind1(__nodes[0]);
+                __sub0b.observer(foo ? () => {
                     const __nodes = __render0();
                     __bind0(__nodes[0])(bar);
                     return __nodes[__nodes.length];
@@ -72,7 +73,11 @@ describe('compiler', () => {
                     __bind0(__nodes[0])(bar);
                     return __nodes[__nodes.length];
                 });
-                return __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0b.unsubscribe();
+                };
+                return __fragment
             };
         `;
 

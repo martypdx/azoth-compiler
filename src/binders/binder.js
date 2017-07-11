@@ -1,10 +1,11 @@
 import { AT, DOLLAR, NONE, STAR } from '../parse/sigil-types';
+import { text } from './targets';
 import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from './binding-types';
 import matchObservables from './match-observables';
 
 export default class Binder {
 
-    constructor({ sigil = NONE, ast = null } = {}, target) {        
+    constructor({ sigil = NONE, ast = null, target = text } = {}) {        
         this.sigil = sigil;
         this.ast = ast;
         this.target = target;

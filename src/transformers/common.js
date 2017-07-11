@@ -1,9 +1,11 @@
-export function declareConst({ name, init }) {
+
+export function declareConst({ name, id, init }) {
+    if(name) id = identifier(name);
     return {
         type: 'VariableDeclaration',
         declarations: [{
             type: 'VariableDeclarator',
-            id: identifier(name),
+            id,
             init
         }],
         kind: 'const'

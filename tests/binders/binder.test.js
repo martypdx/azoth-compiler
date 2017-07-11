@@ -33,10 +33,10 @@ describe('Binder', () => {
         });
 
         it('declaration', () => {
-            const writer = {
+            const target = {
                 init: binder => binder.foo
             };
-            const binder = new Binder({}, writer);
+            const binder = new Binder({ target });
             binder.foo = 'FOO';
             assert.equal(binder.declaration, 'FOO');
         });

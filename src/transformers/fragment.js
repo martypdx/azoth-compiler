@@ -14,7 +14,6 @@ import {
     MAKE_FRAGMENT_IMPORT } from './identifiers';
 import { VALUE } from '../binders/binding-types';
 
-
 export const renderer = (html, index) =>{
     return declareConst({ 
         name: `${RENDER}${index}`, 
@@ -66,10 +65,10 @@ const DIRECT_RETURN = {
     argument: LAST_NODE
 };
 
-// __sub${index}.unsubscribe();
-const unsubscribe = index => {
+// __sub${index}${suffix}.unsubscribe();
+const unsubscribe = (index, suffix = '') => {
     const callee = memberExpression({
-        name: `${SUB}${index}`, 
+        name: `${SUB}${index}${suffix}`, 
         property: identifier('unsubscribe')
     });
 
@@ -80,15 +79,12 @@ const unsubscribe = index => {
 };
 
 const unsubscribes = binders => {
-    return binders
-        // map first because we need to 
-        // preserve original index as subscriber 
-        // index, i.e. __sub0
-        .map((binder, i) => {
-            if (binder.type === VALUE) return;
-            return unsubscribe(i);
-        })
-        .filter(unsub => unsub);
+    const unsubs = [];
+    binders.forEach((binder, i) => {
+        if(binder.type !== VALUE) unsubs.push(unsubscribe(i));
+        if(binder.target.isBlock) unsubs.push(unsubscribe(i, 'b')); 
+    });
+    return unsubs;
 };
 
 

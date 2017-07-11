@@ -1,4 +1,5 @@
-const childNode = (name, html) => ({
+const childNode = (name, html, isBlock) => ({
+    isBlock,
     html,
     init({ index }) {
         return {
@@ -8,10 +9,11 @@ const childNode = (name, html) => ({
     }
 });
 
-export const text = childNode('__textBinder', '<text-node></text-node>');
-export const block = childNode('__blockBinder', '<block-node></block-node>');
+export const text = childNode('__textBinder', '<text-node></text-node>', false);
+export const block = childNode('__blockBinder', '<block-node></block-node>', true);
 
 export const attribute = {
+    isBlock: false,
     html: '""',
     init({ name }) {
         return { 

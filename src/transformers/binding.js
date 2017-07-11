@@ -33,29 +33,45 @@ const bindings = {
 
 export default function binding(binder, i) {
     const binding = bindings[binder.type];
-    return [binding(binder, i)];
+    const statements = [];
+    let observer = nodeBinding(binder);
+
+    if(binder.target.isBlock) {
+        const id = identifier(`${SUB}${i}b`);
+        // const __sub${i}b = <nodeBinding>;
+        const declare = declareConst({ id, init: observer });
+        statements.push(declare);
+
+        observer = memberExpression({
+            object: id,
+            property: identifier('observer')
+        });
+    }
+
+    statements.push(binding(observer, binder, i));
+    return statements;
 }
 
-// __bind${moduleIndex}(__nodes[${elementIndex}])
-function nodeBinding(moduleIndex, elementIndex) {
+// __bind${moduleIndex}(__nodes[${elIndex}])
+function nodeBinding({ moduleIndex, elIndex }) {
     return callExpression({
         callee: identifier(`${BINDER}${moduleIndex}`), 
         args: [memberExpression({
             name: NODES, 
-            property: literal({ value: elementIndex }), 
+            property: literal({ value: elIndex }), 
             computed: true
         })]
     });
 }
 
 // <nodeBinding>(<ast>);
-function valueBinding(binder) {
-    const { ast, moduleIndex, elIndex } = binder;
+function valueBinding(nodeBinding, binder) {
+    const { ast } = binder;
 
     return {
         type: 'ExpressionStatement',
         expression: callExpression({
-            callee: nodeBinding(moduleIndex, elIndex),
+            callee: nodeBinding,
             args: [ast]
         })
     };
@@ -70,8 +86,8 @@ function subscription(index, init) {
 }
 
 // const __sub${binderIndex} = (<ast>).subscribe(<nodeBinding>);
-function subscribeBinding(binder, index) {
-    const { ast, moduleIndex, elIndex } = binder;
+function subscribeBinding(nodeBinding, binder, index) {
+    const { ast } = binder;
 
     return subscription(
         index, 
@@ -80,18 +96,18 @@ function subscribeBinding(binder, index) {
                 object: ast, 
                 property: identifier('subscribe')
             }),
-            args: [nodeBinding(moduleIndex, elIndex)]
+            args: [nodeBinding]
         }) 
     );
 }
 
 // const __sub${binderIndex} = __first(observable, <nodeBinding>);
-function firstBinding(binder, binderIndex) {
-    const { moduleIndex, elIndex, observables: [ name ] } = binder;
+function firstBinding(nodeBinding, binder, binderIndex) {
+    const { observables: [ name ] } = binder;
     const observable = identifier(name);
     const args = [
         observable, 
-        nodeBinding(moduleIndex, elIndex)
+        nodeBinding
     ];
 
     return subscription(
@@ -107,13 +123,13 @@ function addOnce(args) {
     args.push(literal({ value: true }));
 }
 
-function mapFirstBinding(binder, binderIndex) {
-    return mapBinding(binder, binderIndex, true);
+function mapFirstBinding(nodeBinding, binder, binderIndex) {
+    return mapBinding(nodeBinding, binder, binderIndex, true);
 }
 
 // const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding> [, true]);
-function mapBinding(binder, binderIndex, firstValue = false) {
-    const { ast, moduleIndex, elIndex, observables: [ name ] } = binder;
+function mapBinding(nodeBinding, binder, binderIndex, firstValue = false) {
+    const { ast, observables: [ name ] } = binder;
     const observable = identifier(name);
     const args = [
         observable, 
@@ -121,7 +137,7 @@ function mapBinding(binder, binderIndex, firstValue = false) {
             body: ast,
             params: [observable]
         }),
-        nodeBinding(moduleIndex, elIndex)
+        nodeBinding
     ];
     if(firstValue) addOnce(args);
 
@@ -134,13 +150,13 @@ function mapBinding(binder, binderIndex, firstValue = false) {
     );
 }
 
-function combineFirstBinding(binder, binderIndex) {
-    return combineBinding(binder, binderIndex, true);
+function combineFirstBinding(nodeBinding, binder, binderIndex) {
+    return combineBinding(nodeBinding, binder, binderIndex, true);
 }
 
 // const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding> [, true]);
-function combineBinding(binder, binderIndex, firstValue = false) {
-    const { ast, moduleIndex, elIndex, observables } = binder;
+function combineBinding(nodeBinding, binder, binderIndex, firstValue = false) {
+    const { ast, observables } = binder;
     const params = observables.map(identifier);
     const args =  [
         arrayExpression({ elements: params }), 
@@ -148,7 +164,7 @@ function combineBinding(binder, binderIndex, firstValue = false) {
             body: ast,
             params
         }),
-        nodeBinding(moduleIndex, elIndex)
+        nodeBinding
     ];
     if(firstValue) addOnce(args);
 

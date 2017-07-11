@@ -7,6 +7,7 @@ describe('binder targets', () => {
 
     it('text', () => {
         assert.equal(text.html, '<text-node></text-node>');
+        assert.strictEqual(text.isBlock, false);
         assert.deepEqual(
             text.init({ index: 2 }), 
             { name: '__textBinder', arg: 2 }
@@ -15,6 +16,7 @@ describe('binder targets', () => {
 
     it('block', () => {
         assert.equal(block.html, '<block-node></block-node>');
+        assert.strictEqual(block.isBlock, true);
         assert.deepEqual(
             block.init({ index: 2 }), 
             { name: '__blockBinder', arg: 2 }
@@ -23,6 +25,7 @@ describe('binder targets', () => {
 
     it('attribute', () => {
         assert.equal(attribute.html, '""');
+        assert.strictEqual(text.isBlock, false);
         assert.deepEqual(
             attribute.init({ name: 'name' }), 
             { name: '__attrBinder', arg: 'name' }
