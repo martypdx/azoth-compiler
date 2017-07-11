@@ -819,7 +819,7 @@ const templateToFunction = (node, options) => {
 const templateStatements = ({ binders, index }) => {
     const bindings = binders
         .map(binding)
-        .reduce((a, b) => a.concat(b));
+        .reduce((a, b) => a.concat(b), []);
         
     return [
         renderNodes(index),
