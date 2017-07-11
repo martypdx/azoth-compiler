@@ -2,7 +2,7 @@ import { base, recursive } from 'acorn/dist/walk.es';
 import htmlparser from 'htmlparser2';
 import undeclared from 'undeclared';
 import { parse } from 'acorn';
-import { baseGenerator, generate } from 'astring';
+import { generate } from 'astring';
 
 class UniqueStrings {
     constructor() {
@@ -48,12 +48,13 @@ const MAP_FIRST = Symbol('map-first');
 const SUBSCRIBE = Symbol('subscribe');
 const VALUE = Symbol('value');
 
-function declareConst({ name, init }) {
+function declareConst({ name, id, init }) {
+    if(name) id = identifier(name);
     return {
         type: 'VariableDeclaration',
         declarations: [{
             type: 'VariableDeclarator',
-            id: identifier(name),
+            id,
             init
         }],
         kind: 'const'
@@ -240,10 +241,10 @@ const DIRECT_RETURN = {
     argument: LAST_NODE
 };
 
-// __sub${index}.unsubscribe();
-const unsubscribe = index => {
+// __sub${index}${suffix}.unsubscribe();
+const unsubscribe = (index, suffix = '') => {
     const callee = memberExpression({
-        name: `${SUB}${index}`, 
+        name: `${SUB}${index}${suffix}`, 
         property: identifier('unsubscribe')
     });
 
@@ -254,15 +255,12 @@ const unsubscribe = index => {
 };
 
 const unsubscribes = binders => {
-    return binders
-        // map first because we need to 
-        // preserve original index as subscriber 
-        // index, i.e. __sub0
-        .map((binder, i) => {
-            if (binder.type === VALUE) return;
-            return unsubscribe(i);
-        })
-        .filter(unsub => unsub);
+    const unsubs = [];
+    binders.forEach((binder, i) => {
+        if(binder.type !== VALUE) unsubs.push(unsubscribe(i));
+        if(binder.target.isBlock) unsubs.push(unsubscribe(i, 'b')); 
+    });
+    return unsubs;
 };
 
 
@@ -318,29 +316,45 @@ const bindings = {
 
 function binding(binder, i) {
     const binding = bindings[binder.type];
-    return binding(binder, i);
+    const statements = [];
+    let observer = nodeBinding(binder);
+
+    if(binder.target.isBlock) {
+        const id = identifier(`${SUB}${i}b`);
+        // const __sub${i}b = <nodeBinding>;
+        const declare = declareConst({ id, init: observer });
+        statements.push(declare);
+
+        observer = memberExpression({
+            object: id,
+            property: identifier('observer')
+        });
+    }
+
+    statements.push(binding(observer, binder, i));
+    return statements;
 }
 
-// __bind${moduleIndex}(__nodes[${elementIndex}])
-function nodeBinding(moduleIndex, elementIndex) {
+// __bind${moduleIndex}(__nodes[${elIndex}])
+function nodeBinding({ moduleIndex, elIndex }) {
     return callExpression({
         callee: identifier(`${BINDER}${moduleIndex}`), 
         args: [memberExpression({
             name: NODES, 
-            property: literal({ value: elementIndex }), 
+            property: literal({ value: elIndex }), 
             computed: true
         })]
     });
 }
 
 // <nodeBinding>(<ast>);
-function valueBinding(binder) {
-    const { ast, moduleIndex, elIndex } = binder;
+function valueBinding(nodeBinding, binder) {
+    const { ast } = binder;
 
     return {
         type: 'ExpressionStatement',
         expression: callExpression({
-            callee: nodeBinding(moduleIndex, elIndex),
+            callee: nodeBinding,
             args: [ast]
         })
     };
@@ -355,8 +369,8 @@ function subscription(index, init) {
 }
 
 // const __sub${binderIndex} = (<ast>).subscribe(<nodeBinding>);
-function subscribeBinding(binder, index) {
-    const { ast, moduleIndex, elIndex } = binder;
+function subscribeBinding(nodeBinding, binder, index) {
+    const { ast } = binder;
 
     return subscription(
         index, 
@@ -365,18 +379,18 @@ function subscribeBinding(binder, index) {
                 object: ast, 
                 property: identifier('subscribe')
             }),
-            args: [nodeBinding(moduleIndex, elIndex)]
+            args: [nodeBinding]
         }) 
     );
 }
 
 // const __sub${binderIndex} = __first(observable, <nodeBinding>);
-function firstBinding(binder, binderIndex) {
-    const { moduleIndex, elIndex, observables: [ name ] } = binder;
+function firstBinding(nodeBinding, binder, binderIndex) {
+    const { observables: [ name ] } = binder;
     const observable = identifier(name);
     const args = [
         observable, 
-        nodeBinding(moduleIndex, elIndex)
+        nodeBinding
     ];
 
     return subscription(
@@ -392,13 +406,13 @@ function addOnce(args) {
     args.push(literal({ value: true }));
 }
 
-function mapFirstBinding(binder, binderIndex) {
-    return mapBinding(binder, binderIndex, true);
+function mapFirstBinding(nodeBinding, binder, binderIndex) {
+    return mapBinding(nodeBinding, binder, binderIndex, true);
 }
 
 // const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding> [, true]);
-function mapBinding(binder, binderIndex, firstValue = false) {
-    const { ast, moduleIndex, elIndex, observables: [ name ] } = binder;
+function mapBinding(nodeBinding, binder, binderIndex, firstValue = false) {
+    const { ast, observables: [ name ] } = binder;
     const observable = identifier(name);
     const args = [
         observable, 
@@ -406,7 +420,7 @@ function mapBinding(binder, binderIndex, firstValue = false) {
             body: ast,
             params: [observable]
         }),
-        nodeBinding(moduleIndex, elIndex)
+        nodeBinding
     ];
     if(firstValue) addOnce(args);
 
@@ -419,13 +433,13 @@ function mapBinding(binder, binderIndex, firstValue = false) {
     );
 }
 
-function combineFirstBinding(binder, binderIndex) {
-    return combineBinding(binder, binderIndex, true);
+function combineFirstBinding(nodeBinding, binder, binderIndex) {
+    return combineBinding(nodeBinding, binder, binderIndex, true);
 }
 
 // const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding> [, true]);
-function combineBinding(binder, binderIndex, firstValue = false) {
-    const { ast, moduleIndex, elIndex, observables } = binder;
+function combineBinding(nodeBinding, binder, binderIndex, firstValue = false) {
+    const { ast, observables } = binder;
     const params = observables.map(identifier);
     const args =  [
         arrayExpression({ elements: params }), 
@@ -433,7 +447,7 @@ function combineBinding(binder, binderIndex, firstValue = false) {
             body: ast,
             params
         }),
-        nodeBinding(moduleIndex, elIndex)
+        nodeBinding
     ];
     if(firstValue) addOnce(args);
 
@@ -516,6 +530,31 @@ function getBlock(text) {
     return { block, text };
 }
 
+const childNode = (name, html, isBlock) => ({
+    isBlock,
+    html,
+    init({ index }) {
+        return {
+            name: name,
+            arg: index
+        };
+    }
+});
+
+const text = childNode('__textBinder', '<text-node></text-node>', false);
+const block = childNode('__blockBinder', '<block-node></block-node>', true);
+
+const attribute = {
+    isBlock: false,
+    html: '""',
+    init({ name }) {
+        return { 
+            name: '__attrBinder',
+            arg: name
+        };
+    }
+};
+
 function match(ast, scope) {
     if(ast.type === 'Identifier') {
         return scope[ast.name] ? [ast.name] : [];
@@ -530,7 +569,7 @@ function match(ast, scope) {
 
 class Binder {
 
-    constructor({ sigil = NONE, ast = null } = {}, target) {        
+    constructor({ sigil = NONE, ast = null, target = text } = {}) {        
         this.sigil = sigil;
         this.ast = ast;
         this.target = target;
@@ -578,44 +617,19 @@ class Binder {
     }
 }
 
-const childNode = (name, html) => ({
-    html,
-    init({ index }) {
-        return {
-            name: name,
-            arg: index
-        };
-    }
-});
-
-const text = childNode('__textBinder', '<text-node></text-node>');
-const block = childNode('__blockBinder', '<block-node></block-node>');
-
-const attribute = {
-    html: '""',
-    init({ name }) {
-        return { 
-            name: '__attrBinder',
-            arg: name
-        };
-    }
-};
-
 function getBinder(options) {
 
-    let target = null;
-    
     if (options.inAttributes) {
         if (options.block) {
             throw new Error('Attribute Blocks not yet supported');
         }
-        target = attribute;
+        options.target = attribute;
     }
     else {
-        target = options.block ? block : text;
+        options.target = options.block ? block : text;
     }
 
-    return new Binder(options, target);
+    return new Binder(options);
 }
 
 var voidElements = {
@@ -803,7 +817,10 @@ const templateToFunction = (node, options) => {
 };
 
 const templateStatements = ({ binders, index }) => {
-    const bindings = binders.map(binding);
+    const bindings = binders
+        .map(binding)
+        .reduce((a, b) => a.concat(b));
+        
     return [
         renderNodes(index),
         ...bindings,
@@ -889,18 +906,8 @@ function parse$1(source, options) {
     return parse(source, Object.assign({}, ACORN_DEFAULTS, options));
 }
 
-// work around for https://github.com/davidbonnet/astring/issues/21
-const generator = Object.assign({}, baseGenerator, {
-    ArrowFunctionExpression: function(node, state) {
-        state.write('(');
-        baseGenerator.ArrowFunctionExpression(node, state);
-        state.write(')');
-    }
-});
-
 const ASTRING_DEFAULTS = { 
-    ident: '    ',
-    generator 
+    ident: '    '
 };
 
 function generate$1(ast, options) {

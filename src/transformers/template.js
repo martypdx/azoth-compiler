@@ -41,7 +41,7 @@ export const templateToFunction = (node, options) => {
 export const templateStatements = ({ binders, index }) => {
     const bindings = binders
         .map(binding)
-        .reduce((a, b) => a.concat(b));
+        .reduce((a, b) => a.concat(b), []);
         
     return [
         renderNodes(index),
