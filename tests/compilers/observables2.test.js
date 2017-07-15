@@ -27,7 +27,7 @@ function compile(ast) {
 
 /*eslint no-unused-vars: off, quotes: off */
 /* globals _, bar, qux, id $ */
-describe.only('observables', () => {
+describe('observables', () => {
 
     describe('parameters', () => {
 
