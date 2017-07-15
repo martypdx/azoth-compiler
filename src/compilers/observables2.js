@@ -11,23 +11,22 @@ function recursive(node, state, funcs, base = defaultBase, override) {
     return c(node, state, override);
 }
 
-const IDENTIFIER = '$';
-
-export function observables(ast, state) {
+export function observables(ast, state, sigil='$') {
     
     return recursive(ast, state, {
-        AssignmentPattern(node, state) {
+        AssignmentPattern(node, state, c) {
             const { left, right } = node;
             
-            if(right.name !== IDENTIFIER) {
-                return; // defaultBase.AssignmentPattern(node, state, c);
+            if(right.name !== sigil) {
+                return defaultBase.AssignmentPattern(node, state, c);
             }
 
             if(left.type === 'Identifier') {
                 state.observables.push(left.name);
                 return left;
             }
-            else if(left.type === 'ObjectPattern' || left.type === 'ArrayPattern') {
+            
+            if(left.type === 'ObjectPattern' || left.type === 'ArrayPattern') {
                 state.destructure = left;
                 return identifier(state.getRef());
             }

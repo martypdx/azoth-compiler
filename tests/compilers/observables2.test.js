@@ -19,7 +19,7 @@ function compile(ast) {
             node.params = node.params.map(node => observables(node, state));
         },
         VariableDeclarator(node, state, c) {
-            node.id = observables(node.id, state, c);
+            node.id = observables(node.id, state);
         }
     });
     return state;
@@ -362,23 +362,38 @@ describe.only('observables', () => {
 
     });
 
+    describe('normal and mixed assignment pattern', () => {
 
-    // describe('normal destructing intact', () => {
+        it('foo="BAR"', () => {
+            function source() {
+                (foo='BAR') => {};
+            }
+            const ast = source.toAst();
+            const { observables, destructure } = compile(ast);
+            assert.deepEqual(observables, []);
 
-    //     it('none', () => {
-    //         function source() {
-    //             foo => {};
-    //         }
-    //         const ast = source.toAst();
-    //         const { observables, destructure } = compile(ast);
-    //         assert.deepEqual(observables, []);
+            codeEqual(ast, expected);
+            function expected() {
+                (foo='BAR') => {};
+            }
 
-    //         codeEqual(ast, expected);
-    //         function expected() {
-    //             foo => {};
-    //         }
+            assert.equal(destructure, null);
+        });
 
-    //         assert.equal(destructure, null);
-    //     });
-    // });
+        it('{ foo=$ }={}', () => {
+            function source() {
+                ({ foo=$ }={}) => {};
+            }
+            const ast = source.toAst();
+            const { observables, destructure } = compile(ast);
+            assert.deepEqual(observables, ['foo']);
+
+            codeEqual(ast, expected);
+            function expected() {
+                ({ foo }={}) => {};
+            }
+
+            assert.equal(destructure, null);
+        });
+    });
 });
