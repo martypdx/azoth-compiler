@@ -1,5 +1,5 @@
-// import { variables } from '../../src/compilers/params';
-import { recursive, base } from 'acorn/dist/walk.es';
+import { params } from '../../src/compilers/params';
+import { recursive } from 'acorn/dist/walk.es';
 import { assert } from 'chai';
 import codeEqual from '../helpers/code-equal';
 
@@ -7,28 +7,36 @@ function compile(ast) {
     let ref = 0;
     const getRef = () => `__ref${ref++}`;
     const state = { observables: null };
-
+    
     recursive(ast, state, {
-        VariableDeclarator(node, state, c) {
-            state.observables = 0;//variables(node, getRef);
-        },
-        Program(node, state, c) {
-            state.scope = {
-                __block: node.body
-            };
-            base.Program(node, state, c);
+        Function(node, state, c) {
+            state.observables = params(node, getRef);
         }
     });
     return state.observables;
 }
 
 /*eslint no-unused-vars: off, quotes: off */
-/* globals $, item */
-describe.skip('variables', () => {
+/* globals _, _1, _2 $ */
+describe.only('params', () => {
+
+    it('no observables', () => {
+        function source() {
+            name => {};
+        }
+        const ast = source.toAst();
+        const observables = compile(ast);
+        assert.deepEqual(observables, []);
+
+        codeEqual(ast, expected);
+        function expected() {
+            name => {};
+        }
+    });
 
     it('direct identifier', () => {
         function source() {
-            const { name=$ } = item;
+            (name=$) => {};
         }
         const ast = source.toAst();
         const observables = compile(ast);
@@ -36,28 +44,28 @@ describe.skip('variables', () => {
 
         codeEqual(ast, expected);
         function expected() {
-            const name = item.child('name');
+            name => {};
         }
     });
 
-    // it('destructured object property (before other statements)', () => {
-    //     function source() {
-    //         ({ name }=$) => { const x = 0; };
-    //     }
-    //     const ast = source.toAst();
-    //     const observables = compile(ast);
+    it.only('destructured object property (before other statements)', () => {
+        function source() {
+            ({ name }=$) => { const x = 0; };
+        }
+        const ast = source.toAst();
+        const observables = compile(ast);
 
-    //     assert.deepEqual(observables, ['name']);
+        assert.deepEqual(observables, ['name']);
 
-    //     codeEqual(ast, expected);
+        codeEqual(ast, expected);
 
-    //     function expected() {
-    //         __ref0 => {
-    //             const name = __ref0.child("name");
-    //             const x = 0;
-    //         };
-    //     }
-    // });
+        function expected() {
+            __ref0 => {
+                const name = __ref0.child("name");
+                const x = 0;
+            };
+        }
+    });
 
     // it('destructured array property', () => {
     //     function source() {

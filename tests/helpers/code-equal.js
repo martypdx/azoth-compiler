@@ -19,7 +19,7 @@ const tryParse = (name, code) => {
 };
 
 export default function codeEqual(actual, expected) {
-    if(typeof expected !== 'string') expected = expected.toCode();
+    if(typeof expected === 'function') expected = expected.toCode();
     const parsedActual = typeof actual === 'string' ? tryParse('actual', actual) : generateCode(actual);
     const parsedExpected = tryParse('expected', expected);
     assert.equal(parsedActual, parsedExpected);

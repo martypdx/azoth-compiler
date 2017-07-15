@@ -44,6 +44,7 @@ export function variables(declarator, getRef) {
     const statements = [];
     
     const state = {
+        prop: null,
         key: null,
         ref: null,
         getRef,
@@ -71,17 +72,18 @@ function destructure({ name, ref, arg }) {
 }
 
 function paramWalk(ast, state) {
-    if(ast.type !== 'AssignmentPattern') return ast;
+    // if(ast.type !== 'AssignmentPattern') return ast;
 
     recursive(ast, state, {
         AssignmentPattern(node, state, c) {
-            if(node.right.name !== IDENTIFIER || node !== ast) return;
-            ast = node.left;
+            if(node.right.name !== IDENTIFIER /* || node !== ast */) return;
+            state.prop.value = node.left;
             defaultBase.Pattern(node.left, state, c);
         },
-        Identifier(node, { identifiers }) {
-            identifiers.add(node.name);
-        },
+        // Identifier(node, state) {
+        //     const { identifiers } = state;
+        //     identifiers.add(node.name);
+        // },
         VariablePattern({ name }, { key, ref, identifiers, statements }) {
             identifiers.add(name);
             if(!ref) return;
@@ -91,8 +93,20 @@ function paramWalk(ast, state) {
         ObjectPattern(node, state, c) {
             const { ref: parentRef, getRef, statements } = state;
             const ref = state.ref = identifier(getRef());
-            if(!parentRef) ast = ref;
-            else {
+            
+            for (let prop of node.properties) {
+                const oldKey = state.key;
+                const oldProp = state.prop;
+                state.prop = prop;
+                
+                state.key = literal({ value: prop.key.name });
+                c(prop.value, state, 'Pattern');
+                
+                state.key = oldKey;
+                state.prop = oldProp;
+            }
+
+            if(parentRef) {
                 const statement = destructure({ 
                     name: ref.name, 
                     ref: parentRef, 
@@ -100,13 +114,8 @@ function paramWalk(ast, state) {
                 });
                 statements.push(statement);
             }
-            
-            for (let prop of node.properties) {
-                const oldKey = state.key;
-                state.key = literal({ value: prop.key.name });
-                c(prop.value, state, 'Pattern');
-                state.key = oldKey;
-            }
+
+            if(!parentRef) ast = ref;
 
             state.ref = parentRef;
         },

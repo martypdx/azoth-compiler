@@ -30,6 +30,7 @@ export const Function = (node, state, c) => {
     // BlockStatement if params are destructured and 
     // function was arrow with implicit return
     const observables = params(node, getRef);
+    
     observables.forEach(o => newScope[o] = true);
 
     const priorFn = state.fn;
