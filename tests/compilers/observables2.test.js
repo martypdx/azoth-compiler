@@ -1,16 +1,46 @@
 import { observables } from '../../src/compilers/observables2';
+import { toStatements } from '../../src/compilers/destructured';
 import { recursive } from 'acorn/dist/walk.es';
 import { assert } from 'chai';
 import codeEqual from '../helpers/code-equal';
 import { generate } from '../../src/ast';
 
-function compile(ast) {
+
+function test({ 
+    source, 
+    observables: expectedObservables, 
+    expected: expectedAst, 
+    destructured: expectedDestructured,
+    statements: expectedStatements
+}) {
     let ref = 0;
     const getRef = () => `__ref${ref++}`;
+
+    const ast = source.toAst();
+    const { observables, destructured, statements } = compile(ast, getRef);
+    assert.deepEqual(observables, expectedObservables);
+
+    codeEqual(ast, expectedAst);
+
+    if(expectedDestructured) {
+        assert.equal(destructured.length, 1);
+        const [{ ref, node }] = destructured;
+        assert.equal(generate(node), expectedDestructured);
+        assert.equal(ref.name, '__ref0');
+
+        if(expectedStatements) {
+            codeEqual({ 
+                type: 'Program', 
+                body: toStatements(ref, node, getRef) 
+            }, expectedStatements);
+        }
+    } 
+}
+    
+function compile(ast, getRef) {
     const state = { 
         observables: [],
-        destructure: null,
-        params: null,
+        destructured: [],
         getRef
     };
     
@@ -22,378 +52,175 @@ function compile(ast) {
             node.id = observables(node.id, state);
         }
     });
+
     return state;
 }
 
+
 /*eslint no-unused-vars: off, quotes: off */
-/* globals _, bar, qux, id $ */
-describe('observables', () => {
+/* globals _, bar, qux, id, __ref0 $ */
+describe.only('observables', () => {
 
     describe('parameters', () => {
 
-        it('none', () => {
-            function source() {
-                foo => {};
+        it('none', () =>  test({
+            source: () => { foo => {}; },
+            observables: [],
+            expected: () => { foo => {}; }
+        }));
+
+        it('foo=$', () => test({
+            source: () => { (foo=$) => {}; },
+            observables: ['foo'],
+            expected: () => { foo => {}; }
+        }));
+
+        it('{ foo }=$', () => test({
+            source: () => { ({ foo }=$) => {}; },
+            observables: [],
+            expected: () => { __ref0 => {}; },
+            destructured: '{foo}',
+            statements: () => {
+                const foo = __ref0.child("foo");
             }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
+        }));
 
-            codeEqual(ast, expected);
-            function expected() {
-                foo => {};
+        it('{ foo=$ }', () => test({
+            source: () => { ({ foo=$ }) => {}; },
+            observables: ['foo'],
+            expected: () => { ({ foo }) => {}; }
+        }));
+
+        it('{ foo: { bar } }=$', () => test({
+            source: () => { ({ foo: { bar } }=$) => {}; },
+            observables: [],
+            expected: () => { __ref0 => {}; },
+            destructured: '{foo: {bar}}',
+            statements: () => {
+                const __ref1 = __ref0.child("foo");
+                const bar = __ref1.child("bar");
             }
+        }));
+       
+        it('{ foo: { bar=$ } }', () => test({
+            source: () => { ({ foo: { bar=$ } }) => {}; },
+            observables: ['bar'],
+            expected: () => { ({ foo: { bar } }) => {}; }
+        }));
 
-            assert.equal(destructure, null);
-        });
-
-        it('foo=$', () => {
-            function source() {
-                (foo=$) => {};
+        it('{ foo: { bar }=$ }', () => test({
+            source: () => { ({ foo: { bar }=$ }) => {}; },
+            observables: [],
+            expected: () => { ({ foo: __ref0 }) => {}; },
+            destructured: '{bar}',
+            statements: () => {
+                const bar = __ref0.child("bar");
             }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
+        }));
 
-            assert.deepEqual(observables, ['foo']);
-
-            codeEqual(ast, expected);
-            function expected() {
-                foo => {};
+        it('{ foo: bar=$ }', () => test({
+            source: () => { ({ foo: bar=$ }) => {}; },
+            observables: ['bar'],
+            expected: () => { ({ foo: bar }) => {}; }
+        }));
+        
+        it('[ foo ]=$', () => test({
+            source: () => { ([ foo ]=$) => {}; },
+            observables: [],
+            expected: () => { __ref0 => {}; },
+            destructured: '[foo]',
+            statements: () => {
+                const foo = __ref0.child(0);
             }
-
-            assert.equal(destructure, null);
-        });
-
-        it('{ foo }=$', () => {
-            function source() {
-                ({ foo }=$) => {};
+        }));
+        
+        it('[ [ foo ]=$ ]', () => test({
+            source: () => { ([ [ foo ]=$ ]) => {}; },
+            observables: [],
+            expected: () => { ([ __ref0 ]) => {}; },
+            destructured: '[foo]',
+            statements: () => {
+                const foo = __ref0.child(0);
             }
-            const ast = source.toAst();
+        }));
 
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
-
-            codeEqual(ast, expected);
-            function expected() {
-                __ref0 => {};
+        it('{ [id]: bar }=$', () => test({
+            source: () => { ({ [id]: bar }=$) => {}; },
+            observables: [],
+            expected: () => { __ref0 => {}; },
+            destructured: '{[id]: bar}',
+            statements: () => {
+                const bar = __ref0.child(id);
             }
-            
-            assert.equal(generate(destructure), '{foo}');
-        });
-
-        it('{ foo=$ }', () => {
-            function source() {
-                ({ foo=$ }) => {};
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['foo']);
-            codeEqual(ast, expected);
-
-            function expected() {
-                ({ foo }) => {};
-            }
-
-            assert.equal(destructure, null);
-            
-        });
-
-        it('{ foo: { bar } }=$', () => {
-            function source() {
-                ({ foo: { bar } }=$) => {};
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
-            codeEqual(ast, expected);
-
-            function expected() {
-                __ref0 => {};
-            }
-
-            assert.equal(generate(destructure), '{foo: {bar}}');
-            
-        });
-
-        it('{ foo: { bar=$ } }', () => {
-            function source() {
-                ({ foo: { bar=$ } }) => {};
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['bar']);
-            codeEqual(ast, expected);
-
-            function expected() {
-                ({ foo: { bar } }) => {};
-            }
-
-            assert.equal(destructure, null);
-            
-        });
-
-        it('{ foo: { bar }=$ }', () => {
-            function source() {
-                ({ foo: { bar }=$ }) => {};
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
-            codeEqual(ast, expected);
-
-            function expected() {
-                ({ foo: __ref0 }) => {};
-            }
-
-            assert.equal(generate(destructure), '{bar}');
-            
-        });
-
-        it('{ foo: bar=$ }', () => {
-            function source() {
-                ({ foo: bar=$ }) => {};
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['bar']);
-            codeEqual(ast, expected);
-
-            function expected() {
-                ({ foo: bar }) => {};
-            }
-
-            assert.equal(destructure, null);
-            
-        });
-
-        it('[ foo ]=$', () => {
-            function source() {
-                ([ foo ]=$) => {};
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
-
-            codeEqual(ast, expected);
-            function expected() {
-                __ref0 => {};
-            }
-            
-            assert.equal(generate(destructure), '[foo]');
-        });
-
-        it('[ [ foo ]=$ ]', () => {
-            function source() {
-                ([ [ foo ]=$ ]) => {};
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
-
-            codeEqual(ast, expected);
-            function expected() {
-                ([ __ref0 ]) => {};
-            }
-            
-            assert.equal(generate(destructure), '[foo]');
-        });
-
-        it('{ [id]: bar }=$', () => {
-            function source() {
-                ({ [id]: bar }=$) => {};
-            }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
-
-            codeEqual(ast, expected);
-            function expected() {
-                __ref0 => {};
-            }
-
-            assert.equal(generate(destructure), '{[id]: bar}');
-        });
-
-        it('{ foo: { bar: { qux=$ } } }', () => {
-            function source() {
-                ({ foo: { bar: { qux=$ } } }) => {};
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['qux']);
-            codeEqual(ast, expected);
-
-            function expected() {
-                ({ foo: { bar: { qux } } }) => {};
-            }
-
-            assert.equal(destructure, null);
-            
-        });
+        }));
+        
+        it('{ foo: { bar: { qux=$ } } }', () => test({
+            source: () => { ({ foo: { bar: { qux=$ } } }) => {}; },
+            observables: ['qux'],
+            expected: () => { ({ foo: { bar: { qux } } }) => {}; }
+        }));
+        
     });
 
     describe('variables', () => {
 
-        it('none', () => {
-            function source() {
-                const foo = qux;
-            }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
+        it('none', () => test({
+            source: () => { const foo = qux; },
+            observables: [],
+            expected: () => {const foo = qux; }
+        }));
 
-            codeEqual(ast, expected);
-            function expected() {
-                const foo = qux;
-            }
-
-            assert.equal(destructure, null);
-        });
-
-        it('{ foo=$ }', () => {
-            function source() {
-                const { foo=$ } = qux;
-            }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['foo']);
-            codeEqual(ast, expected);
-
-            function expected() {
-                const { foo } = qux;
-            }
-
-            assert.equal(destructure, null);
-            
-        });
-
-        it('{ foo: bar=$ }', () => {
-            function source() {
-                const { foo: bar=$ } = qux;
-            }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['bar']);
-            codeEqual(ast, expected);
-
-            function expected() {
-                const { foo: bar } = qux;
-            }
-
-            assert.equal(destructure, null);
-        });
-
-        it('{ foo: { bar=$ } }', () => {
-            function source() {
-                const { foo: { bar=$ } } = qux;
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['bar']);
-            codeEqual(ast, expected);
-
-            function expected() {
-                const { foo: { bar } } = qux;
-            }
-
-            assert.equal(destructure, null);
-            
-        });
-
-        it('{ foo: { bar }=$ }', () => {
-            function source() {
-                const { foo: { bar }=$ } = qux;
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
-            codeEqual(ast, expected);
-
-            function expected() {
-                const { foo: __ref0 } = qux;
-            }
-
-            assert.equal(generate(destructure), '{bar}');
-            
-        });
-
-        it('[ [ foo ]=$ ]', () => {
-            function source() {
-                const [ [ foo ]=$ ] = qux;
-            }
-            const ast = source.toAst();
-
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
-
-            codeEqual(ast, expected);
-            function expected() {
-                const [ __ref0 ] = qux;
-            }
-            
-            assert.equal(generate(destructure), '[foo]');
-        });
-
-        it('{ [id]: bar=$ }', () => {
-            function source() {
-                const { [id]: bar=$ } = qux;
-            }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['bar']);
-
-            codeEqual(ast, expected);
-            function expected() {
-                const { [id]: bar } = qux;
-            }
-
-            assert.equal(destructure, null);
-        });
-
+        it('{ foo=$ }', () => test({
+            source: () => { const { foo=$ } = qux; },
+            observables: ['foo'],
+            expected: () => { const { foo } = qux; }
+        }));
+        
+        it('{ foo: bar=$ }', () => test({
+            source: () => { const { foo: bar=$ } = qux; },
+            observables: ['bar'],
+            expected: () => { const { foo: bar } = qux; }
+        }));
+        
+        it('{ foo: { bar=$ } }', () => test({
+            source: () => { const { foo: { bar=$ } } = qux; },
+            observables: ['bar'],
+            expected: () => { const { foo: { bar } } = qux; }
+        }));
+        
+        it('{ foo: { bar }=$ }', () => test({
+            source: () => { const { foo: { bar }=$ } = qux; },
+            observables: [],
+            expected: () => { const { foo: __ref0 } = qux; },
+            destructured: '{bar}'
+        }));
+        
+        it('[ [ foo ]=$ ]', () => test({
+            source: () => { const [ [ foo ]=$ ] = qux; },
+            observables: [],
+            expected: () => { const [ __ref0 ] = qux; },
+            destructured: '[foo]'
+        }));
+        
+        it('{ [id]: bar=$ }', () => test({
+            source: () => { const { [id]: bar=$ } = qux; },
+            observables: ['bar'],
+            expected: () => { const { [id]: bar } = qux; }
+        }));
     });
 
     describe('normal and mixed assignment pattern', () => {
 
-        it('foo="BAR"', () => {
-            function source() {
-                (foo='BAR') => {};
-            }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, []);
+        it('foo="BAR"', () => test({
+            source: () => { (foo='BAR') => {}; },
+            observables: [],
+            expected: () => { (foo='BAR') => {}; }
+        }));
 
-            codeEqual(ast, expected);
-            function expected() {
-                (foo='BAR') => {};
-            }
-
-            assert.equal(destructure, null);
-        });
-
-        it('{ foo=$ }={}', () => {
-            function source() {
-                ({ foo=$ }={}) => {};
-            }
-            const ast = source.toAst();
-            const { observables, destructure } = compile(ast);
-            assert.deepEqual(observables, ['foo']);
-
-            codeEqual(ast, expected);
-            function expected() {
-                ({ foo }={}) => {};
-            }
-
-            assert.equal(destructure, null);
-        });
+        it('{ foo=$ }={}', () => test({
+            source: () => { ({ foo=$ }={}) => {}; },
+            observables: ['foo'],
+            expected: () => { ({ foo }={}) => {}; }
+        }));
     });
 });

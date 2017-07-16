@@ -57,7 +57,7 @@ export function variables(declarator, getRef) {
     console.log(statements);
 }
 
-// const <name> = <ref>.child('<name>');
+// const <name> = <ref>.child(<arg>);
 function destructure({ name, ref, arg }) {
     return declareConst({
         name,

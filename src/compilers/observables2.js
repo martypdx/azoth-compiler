@@ -27,8 +27,9 @@ export function observables(ast, state, sigil='$') {
             }
             
             if(left.type === 'ObjectPattern' || left.type === 'ArrayPattern') {
-                state.destructure = left;
-                return identifier(state.getRef());
+                const ref = identifier(state.getRef());
+                state.destructured.push({ ref, node: left });
+                return ref;
             }
         },
         Pattern(node, st, c) {
