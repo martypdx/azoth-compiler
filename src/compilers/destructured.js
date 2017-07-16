@@ -8,7 +8,7 @@ import {
 const property = identifier('child');
 const initChild = ({ ref: object, arg }) => callMethod({ object, property, arg });
 
-export function toStatements(ref, node, getRef, sigil='$') {
+export function toStatements(node, { ref, getRef, sigil='$' }={}) {
     const statements = [];
     const newRef = () => identifier(getRef());
 

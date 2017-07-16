@@ -5,6 +5,10 @@ import { assert } from 'chai';
 import codeEqual from '../helpers/code-equal';
 import { generate } from '../../src/ast';
 
+const makeRef = () => {
+    let counter = 0;
+    return () => `__ref${counter++}`;
+};
 
 function test({ 
     source, 
@@ -14,10 +18,8 @@ function test({
     statements: expectedStatements,
     shouldThrow = false
 }) {
-    let ref = 0;
-    const getRef = () => `__ref${ref++}`;
-
     const ast = source.toAst();
+    const getRef = makeRef();
     const { observables, destructured, statements } = compile(ast, getRef);
     assert.deepEqual(observables, expectedObservables);
 
@@ -31,7 +33,7 @@ function test({
 
         let body = null;
         try {
-            body = toStatements(ref, node, getRef);
+            body = toStatements(node, { ref, getRef });
         }
         catch(err) {
             if(shouldThrow) return;
@@ -45,16 +47,17 @@ function test({
 function compile(ast, getRef) {
     const state = { 
         observables: [],
-        destructured: [],
-        getRef
+        destructured: []
     };
     
+    const compileObservables = observables({ getRef });
+
     recursive(ast, state, {
         Function(node, state, c) {
-            node.params = node.params.map(node => observables(node, state));
+            node.params = node.params.map(node => compileObservables(node, state));
         },
         VariableDeclarator(node, state, c) {
-            node.id = observables(node.id, state);
+            node.id = compileObservables(node.id, state);
         }
     });
 
@@ -64,7 +67,7 @@ function compile(ast, getRef) {
 
 /*eslint no-unused-vars: off, quotes: off */
 /* globals _, bar, qux, id, __ref0 $ */
-describe('observables', () => {
+describe.only('observables', () => {
 
     describe('parameters', () => {
 
