@@ -64,6 +64,17 @@ export function callExpression({ callee, name, args = [] }) {
     };
 }
 
+// <object>.<property>(<arg>)
+export function callMethod({ object, property, arg }) {
+    return callExpression({
+        callee: memberExpression({ 
+            object, 
+            property
+        }),
+        args: [arg]
+    });
+}
+
 // (() => {<body>}())
 // () => {<body>}  ???
 export const arrowFunctionExpression = ({ body, block, params = [] }) => {

@@ -1,74 +1,51 @@
-import { recursive } from 'acorn/dist/walk.es';
+import { recursive, base } from 'acorn/dist/walk.es';
 import { 
-    callExpression,
+    callMethod,
     declareConst, 
     identifier,
-    literal,
-    memberExpression } from '../transformers/common';
+    literal } from '../transformers/common';
 
-export function toStatements(ref, node, getRef) {
+const property = identifier('child');
+const initChild = ({ ref: object, arg }) => callMethod({ object, property, arg });
+
+export function toStatements(ref, node, getRef, sigil='$') {
     const statements = [];
+    const newRef = () => identifier(getRef());
 
-    recursive(node, { statements, ref }, {
-        
-        ObjectPattern(node, state, c) {
-            node.properties.forEach(({ key, value, computed }) => {
-                const isIdentifier = value.type === 'Identifier';
-                const id = isIdentifier ? value : identifier(getRef());
-                statements.push(
-                    destructure({
-                        id,
-                        ref: state.ref,
-                        arg: computed ? key : literal({ value: key.name })
-                    })
-                );
-                if(!isIdentifier) {
-                    const oldRef = state.ref;
-                    state.ref = id;
-                    c(value, state);
-                    state.ref = oldRef;
-                }
-
-            });
-            return node;
+    recursive(node, { ref }, {
+        Property({ computed, key, value }, { ref }, c) {
+            const arg = computed ? key : literal({ value: key.name });
+            const init = initChild({ ref, arg });
+            c(value, { ref, init });
         },
-        ArrayPattern(node, state, c) {
-            node.elements.forEach((el, key) => {
-                const isIdentifier = el.type === 'Identifier';
-                const id = isIdentifier ? el : identifier(getRef());
-                statements.push(
-                    destructure({
-                        id,
-                        ref: state.ref,
-                        arg: literal({ value: key, raw: key })
-                    })
-                );
-                if(!isIdentifier) {
-                    const oldRef = state.ref;
-                    state.ref = id;
-                    c(el, state);
-                    state.ref = oldRef;
-                }
-
+        Identifier(node, { init }) {
+            statements.push(declareConst({ id: node, init }));
+        },
+        Ref(init) {
+            const ref = newRef();
+            this.Identifier(ref, { init });
+            return ref;
+        },
+        ObjectPattern(node, { ref, init }, c) {
+            if(init) ref = this.Ref(init);
+            for(let prop of node.properties) c(prop, { ref });
+        },
+        ArrayPattern(node, { ref, init }, c) {
+            if(init) ref = this.Ref(init);
+            node.elements.forEach((el, i) => {
+                if(!el) return;
+                const arg = literal({ value: i, raw: i });
+                const init = initChild({ ref, arg });
+                c(el, { ref, init });
             });
-            return node;
+        },
+        AssignmentPattern(node, state, c) {
+            if(node.right.name === sigil) {
+                throw new Error('Cannot assign $ as second time');
+            }
+            base.AssignmentPattern(node, state, c);
         }        
     });
 
     return statements;
-}
-
-// const <id> = <ref>.child(<arg>);
-function destructure({ id, ref, arg, name }) {
-    if(name) arg = literal({ value: arg.name });
-    return declareConst({
-        id,
-        init: callExpression({
-            callee: memberExpression({ 
-                object: ref, 
-                property: identifier('child')
-            }),
-            args: [arg]
-        })
-    });
 }
