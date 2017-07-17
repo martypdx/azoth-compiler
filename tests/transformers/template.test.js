@@ -30,7 +30,7 @@ describe.skip('transform - template', () => {
         const body = templateStatements({ binders: [], index: 1 });
         const code = arrowFunctionExpression({ body: blockStatement({ body }) });
 
-        codeEqual(code, expected);
+        codeEqual({ type: 'Program', body: [code] }, expected);
 
         function expected() {
             () => {

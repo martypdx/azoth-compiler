@@ -1,5 +1,4 @@
-import { observables } from '../../src/compilers/observables2';
-import { toStatements } from '../../src/compilers/destructured';
+import makeObservables from '../../src/compilers/observables-from';
 import { recursive } from 'acorn/dist/walk.es';
 import { assert } from 'chai';
 import codeEqual from '../helpers/code-equal';
@@ -10,47 +9,27 @@ const makeRef = () => {
     return () => `__ref${counter++}`;
 };
 
-function test({ 
-    source, 
-    observables: expectedObservables, 
-    expected: expectedAst, 
-    destructured: expectedDestructured,
-    statements: expectedStatements,
-    shouldThrow = false
-}) {
-    const ast = source.toAst();
+function test(expected) {
+    const ast = expected.source.toAst();
     const getRef = makeRef();
-    const { observables, destructured, statements } = compile(ast, getRef);
-    assert.deepEqual(observables, expectedObservables);
 
-    codeEqual(ast, expectedAst);
-
-    if(expectedDestructured) {
-        assert.equal(destructured.length, 1);
-        const [{ ref, node }] = destructured;
-        assert.equal(generate(node), expectedDestructured);
-        assert.equal(ref.name, '__ref0');
-
-        let body = null;
-        try {
-            body = toStatements(node, { ref, getRef });
-        }
-        catch(err) {
-            if(shouldThrow) return;
-            throw err;
-        }
-        if(shouldThrow) throw new Error('Expected Exception');
-        codeEqual({ type: 'Program', body }, expectedStatements);
-    } 
+    const { observables, statements } = compile(ast, getRef);
+    assert.deepEqual(observables, expected.observables);
+    codeEqual(ast, expected.ast);
+    if(expected.statements) {
+        codeEqual({ type: 'Program', body: statements }, expected.statements);
+    }
 }
     
 function compile(ast, getRef) {
+    const observables = [];
+    const statements = [];
     const state = { 
-        observables: [],
-        destructured: []
+        addObservable(o) { observables.push(o); },
+        addStatements(s) { statements.push(...s); }
     };
     
-    const compileObservables = observables({ getRef });
+    const compileObservables = makeObservables({ getRef });
 
     recursive(ast, state, {
         Function(node, state, c) {
@@ -61,24 +40,20 @@ function compile(ast, getRef) {
         }
     });
 
-    return state;
+    return { observables, statements };
 }
 
 
 /*eslint no-unused-vars: off, quotes: off */
 /* globals _, bar, qux, id, __ref0 $ */
-describe.only('observables', () => {
+describe('observables from', () => {
 
     describe('parameters', () => {
 
-        it('none', () =>  test({
-            source: () => { 
-                foo => {}; 
-            },
+        it('foo', () =>  test({
+            source: () => { foo => {}; },
             observables: [],
-            expected: () => { 
-                foo => {}; 
-            }
+            ast: () => { foo => {}; }
         }));
 
         it('foo=$', () => test({
@@ -86,16 +61,15 @@ describe.only('observables', () => {
                 (foo=$) => {}; 
             },
             observables: ['foo'],
-            expected: () => { 
+            ast: () => { 
                 foo => {}; 
             }
         }));
 
         it('{ foo }=$', () => test({
             source: () => { ({ foo }=$) => {}; },
-            observables: [],
-            expected: () => { __ref0 => {}; },
-            destructured: '{foo}',
+            observables: ['foo'],
+            ast: () => { __ref0 => {}; },
             statements: () => {
                 const foo = __ref0.child("foo");
             }
@@ -103,9 +77,8 @@ describe.only('observables', () => {
 
         it('{ foo: { bar } }=$', () => test({
             source: () => { ({ foo: { bar } }=$) => {}; },
-            observables: [],
-            expected: () => { __ref0 => {}; },
-            destructured: '{foo: {bar}}',
+            observables: ['bar'],
+            ast: () => { __ref0 => {}; },
             statements: () => {
                 const __ref1 = __ref0.child("foo");
                 const bar = __ref1.child("bar");
@@ -115,20 +88,25 @@ describe.only('observables', () => {
         it('{ foo=$ }', () => test({
             source: () => { ({ foo=$ }) => {}; },
             observables: ['foo'],
-            expected: () => { ({ foo }) => {}; }
+            ast: () => { ({ foo }) => {}; }
+        }));
+
+        it('{ foo=$, bar }', () => test({
+            source: () => { ({ foo=$, bar }) => {}; },
+            observables: ['foo'],
+            ast: () => { ({ foo, bar }) => {}; }
         }));
        
         it('{ foo: { bar=$ } }', () => test({
             source: () => { ({ foo: { bar=$ } }) => {}; },
             observables: ['bar'],
-            expected: () => { ({ foo: { bar } }) => {}; }
+            ast: () => { ({ foo: { bar } }) => {}; }
         }));
 
         it('{ foo: { bar }=$ }', () => test({
             source: () => { ({ foo: { bar }=$ }) => {}; },
-            observables: [],
-            expected: () => { ({ foo: __ref0 }) => {}; },
-            destructured: '{bar}',
+            observables: ['bar'],
+            ast: () => { ({ foo: __ref0 }) => {}; },
             statements: () => {
                 const bar = __ref0.child("bar");
             }
@@ -137,14 +115,13 @@ describe.only('observables', () => {
         it('{ foo: bar=$ }', () => test({
             source: () => { ({ foo: bar=$ }) => {}; },
             observables: ['bar'],
-            expected: () => { ({ foo: bar }) => {}; }
+            ast: () => { ({ foo: bar }) => {}; }
         }));
         
         it('[ foo ]=$', () => test({
             source: () => { ([ foo ]=$) => {}; },
-            observables: [],
-            expected: () => { __ref0 => {}; },
-            destructured: '[foo]',
+            observables: ['foo'],
+            ast: () => { __ref0 => {}; },
             statements: () => {
                 const foo = __ref0.child(0);
             }
@@ -152,9 +129,8 @@ describe.only('observables', () => {
         
         it('[, foo ]=$', () => test({
             source: () => { ([, foo ]=$) => {}; },
-            observables: [],
-            expected: () => { __ref0 => {}; },
-            destructured: '[, foo]',
+            observables: ['foo'],
+            ast: () => { __ref0 => {}; },
             statements: () => {
                 const foo = __ref0.child(1);
             }
@@ -162,9 +138,8 @@ describe.only('observables', () => {
         
         it('[ [ foo ]=$ ]', () => test({
             source: () => { ([ [ foo ]=$ ]) => {}; },
-            observables: [],
-            expected: () => { ([ __ref0 ]) => {}; },
-            destructured: '[foo]',
+            observables: ['foo'],
+            ast: () => { ([ __ref0 ]) => {}; },
             statements: () => {
                 const foo = __ref0.child(0);
             }
@@ -172,9 +147,8 @@ describe.only('observables', () => {
 
         it('{ [id]: bar }=$', () => test({
             source: () => { ({ [id]: bar }=$) => {}; },
-            observables: [],
-            expected: () => { __ref0 => {}; },
-            destructured: '{[id]: bar}',
+            observables: ['bar'],
+            ast: () => { __ref0 => {}; },
             statements: () => {
                 const bar = __ref0.child(id);
             }
@@ -183,46 +157,45 @@ describe.only('observables', () => {
         it('{ foo: { bar: { qux=$ } } }', () => test({
             source: () => { ({ foo: { bar: { qux=$ } } }) => {}; },
             observables: ['qux'],
-            expected: () => { ({ foo: { bar: { qux } } }) => {}; }
+            ast: () => { ({ foo: { bar: { qux } } }) => {}; }
         }));
         
     });
 
     describe('variables', () => {
 
-        it('none', () => test({
+        it('foo', () => test({
             source: () => { const foo = qux; },
             observables: [],
-            expected: () => {const foo = qux; }
+            ast: () => {const foo = qux; }
         }));
 
         it('{ foo=$ }', () => test({
             source: () => { const { foo=$ } = qux; },
             observables: ['foo'],
-            expected: () => { const { foo } = qux; }
+            ast: () => { const { foo } = qux; }
         }));
         
         it('{ foo: bar=$ }', () => test({
             source: () => { const { foo: bar=$ } = qux; },
             observables: ['bar'],
-            expected: () => { const { foo: bar } = qux; }
+            ast: () => { const { foo: bar } = qux; }
         }));
         
         it('{ foo: { bar=$ } }', () => test({
             source: () => { const { foo: { bar=$ } } = qux; },
             observables: ['bar'],
-            expected: () => { const { foo: { bar } } = qux; }
+            ast: () => { const { foo: { bar } } = qux; }
         }));
         
         it('{ foo: { bar }=$ }', () => test({
             source: () => { 
                 const { foo: { bar }=$ } = qux; 
             },
-            observables: [],
-            expected: () => { 
+            observables: ['bar'],
+            ast: () => { 
                 const { foo: __ref0 } = qux; 
             },
-            destructured: '{bar}',
             statements: () => {
                 const bar = __ref0.child("bar");
             }
@@ -230,9 +203,8 @@ describe.only('observables', () => {
         
         it('[ [ foo ]=$ ]', () => test({
             source: () => { const [ [ foo ]=$ ] = qux; },
-            observables: [],
-            expected: () => { const [ __ref0 ] = qux; },
-            destructured: '[foo]',
+            observables: ['foo'],
+            ast: () => { const [ __ref0 ] = qux; },
             statements: () => {
                 const foo = __ref0.child(0);
             }
@@ -241,7 +213,7 @@ describe.only('observables', () => {
         it('{ [id]: bar=$ }', () => test({
             source: () => { const { [id]: bar=$ } = qux; },
             observables: ['bar'],
-            expected: () => { const { [id]: bar } = qux; }
+            ast: () => { const { [id]: bar } = qux; }
         }));
     });
 
@@ -250,24 +222,39 @@ describe.only('observables', () => {
         it('foo="BAR"', () => test({
             source: () => { (foo='BAR') => {}; },
             observables: [],
-            expected: () => { (foo='BAR') => {}; }
+            ast: () => { (foo='BAR') => {}; }
+        }));
+        
+        it('{ foo="BAR" }', () => test({
+            source: () => { const { foo='BAR' } = qux; },
+            observables: [],
+            ast: () => { const { foo='BAR' } = qux; }
         }));
 
         it('{ foo=$ }={}', () => test({
             source: () => { ({ foo=$ }={}) => {}; },
             observables: ['foo'],
-            expected: () => { ({ foo }={}) => {}; }
+            ast: () => { ({ foo }={}) => {}; }
         }));
     });
 
     describe('disallowed destructuring', () => {
         
-        it('repeat =$ is error', () => test({
-            source: () => { ({ foo=$ }=$) => {}; },
-            observables: [],
-            expected: () => { __ref0 => {}; },
-            destructured: '{foo = $}',
-            shouldThrow: true
-        }));
+        it('repeat =$ is error', () => {
+            try {
+                test({
+                    source: () => { ({ foo=$ }=$) => {}; },
+                    observables: [],
+                    ast: () => { __ref0 => {}; }
+                });
+            }
+            catch(err) {
+                return;
+            }
+            throw new Error('Expected Exception'); 
+
+        });
+
+        // TODO: probably need to disallow RestSpread
     });
 });

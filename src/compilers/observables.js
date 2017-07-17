@@ -1,70 +1,93 @@
 import { base } from 'acorn/dist/walk.es';
-import { params } from './params';
-const IDENTIFIER = '$';
+import { addStatementsToFunction, identifier } from '../transformers/common';
+import makeObservablesFrom from './observables-from';
 
-function vars(nodes, state, c, elseFn) {
-    return nodes.map(node => {
-        if (node.type === 'AssignmentPattern' && node.right.name === IDENTIFIER) {
-            c(node, state, 'Observable');
-            return node.left;
-        }
-        else if(elseFn) elseFn(node);
-        
-        return node;
-        
-    });
+function setScope({ declaration, scope, functionScope }, key) {
+    scope[key] = true;
+    if(declaration === 'var' && functionScope !== scope) {
+        functionScope[key] = true; 
+    }
 }
 
-export const Observable = (node, { scope, functionScope, declaration }) => {
-    const addTo = declaration === 'var' ? functionScope : scope;
-    return addTo[node.left.name] = true;
-};
+export default function createHandlers({ getRef, sigil='$' }) {
+    const newRef = () => identifier(getRef());
+    const observablesFrom = makeObservablesFrom({ newRef, sigil });
 
-// modification of acorn's "Function" base visitor.
-// https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
-export const Function = (node, state, c) => {
-    const { scope, functionScope, getRef } = state;
-    const newScope = state.scope = state.functionScope = Object.create(scope);
+    return {
+        Observable(node, { scope, functionScope, declaration }) {
+            const addTo = declaration === 'var' ? functionScope : scope;
+            return addTo[node.left.name] = true;
+        },
 
-    // this call may mutate the function by creating a
-    // BlockStatement if params are destructured and 
-    // function was arrow with implicit return
-    const observables = params(node, getRef);
-    
-    observables.forEach(o => newScope[o] = true);
+        // modification of acorn's "Function" base visitor.
+        // https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
+        Function(node, state, c) {
+            const { scope, functionScope } = state;
+            const newScope = state.scope = state.functionScope = Object.create(scope);
 
-    const priorFn = state.fn;
-    state.fn = node;
+            const statements = [];
+            const options = {
+                addObservable: o => newScope[o] = true,
+                addStatements: s => statements.push(...s) 
+            };
 
-    c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
-    
-    state.fn = priorFn;
-    state.scope = scope;
-    state.functionScope = functionScope;
-};
+            node.params = node.params.map(node => {
+                const newNode = observablesFrom(node, options);
+                // process any scope changes
+                // TODO: figure this out. works for nested but ruins siblings
+                // c(node, state, 'Pattern');
+                return newNode;
+            });
+            
+            if(statements.length) {
+                // this call may mutate the function by creating a
+                // BlockStatement in lieu of AFE implicit return
+                addStatementsToFunction({ fn: node, statements, returnBody: true });
+            }
+            
+            const priorFn = state.fn;
+            state.fn = node;
 
-export const BlockStatement = (node, state, c) => {
-    const { scope } = state;
-    state.scope = Object.create(scope);
-    state.__block = node.body;
-    base.BlockStatement(node, state, c);
-    state.scope = scope;
-};
+            c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
+            
+            state.fn = priorFn;
+            state.scope = scope;
+            state.functionScope = functionScope;
+        },
 
-export const VariableDeclarator = ({ id, init }, state, c) => {
-    if(id && id.type === 'ObjectPattern') {
-        const newValues = vars(id.properties.map(p => p.value), state, c);
-        id.properties.forEach((p, i) => p.value = newValues[i]);
-    }
-    if(init) c(init, state, 'Expression');
-};
+        BlockStatement(node, state, c) {
+            const { scope } = state;
+            state.scope = Object.create(scope);
+            state.__block = node.body;
+            base.BlockStatement(node, state, c);
+            state.scope = scope;
+        },
 
-export const VariableDeclaration = (node, state, c) => {
-    state.declaration = node.kind;
-    base.VariableDeclaration(node, state, c);
-    state.declaration = null;
-};
+        VariableDeclaration(node, state, c) {
+            state.declaration = node.kind;
+            base.VariableDeclaration(node, state, c);
+            state.declaration = null;
+        },
 
-export const VariablePattern = ({ name }, { scope }) => {
-    if(scope[name]) scope[name] = false;
-};
+        VariableDeclarator(node, state, c) {
+
+            const statements = [];
+            const options = {
+                addObservable: o => setScope(state, o),
+                addStatements: s => statements.push(...s) 
+            };
+
+            node.id = observablesFrom(node.id, options);
+
+            if(statements.length) {
+                console.log(statements);
+            }
+
+            c(node.init, state);
+        },
+
+        VariablePattern({ name }, { scope }) {
+            if(scope[name]) scope[name] = false;
+        }
+    };
+}

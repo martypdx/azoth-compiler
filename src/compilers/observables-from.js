@@ -1,33 +1,42 @@
-import { base } from 'acorn/dist/walk.es';
+import makeDestructure from './destructured';
 import { identifier } from '../transformers/common';
 
-function recursiveReplace(node, state, funcs) {
-    const visitor = Object.assign({}, base, funcs);
-    const c = (node, state) => visitor[node.type](node, state, c);
+function recursiveReplace(node, state, visitors) {
+    function c(node, state){
+        const found = visitors[node.type];
+        return found ? found(node, state, c) : node;
+    }
     return c(node, state);
 }
 
-export function observables({ getRef, sigil='$' } = {}) {
-    const newRef = () => identifier(getRef());
+export default function makeObservablesFrom({ getRef, newRef= () => identifier(getRef()), sigil='$' }) {
 
-    return function observablesWalker(ast, state) {
+    const destructure = makeDestructure({ newRef, sigil });
+
+    return function observablesFrom(ast, state) {
 
         return recursiveReplace(ast, state, {
             AssignmentPattern(node, state, c) {
                 const { left, right } = node;
                 
                 if(right.name !== sigil) {
-                    return base.AssignmentPattern(node, state, c);
+                    return {
+                        type: 'AssignmentPattern',
+                        left: c(left, state),
+                        right: c(right, state)
+                    };
                 }
 
                 if(left.type === 'Identifier') {
-                    state.observables.push(left.name);
+                    state.addObservable(left.name);
                     return left;
                 }
                 
                 if(left.type === 'ObjectPattern' || left.type === 'ArrayPattern') {
                     const ref = newRef();
-                    state.destructured.push({ ref, node: left });
+                    const { statements, observables } = destructure(left, ref);
+                    state.addStatements(statements);
+                    observables.forEach(state.addObservable);
                     return ref;
                 }
             },
