@@ -117,6 +117,17 @@ function callExpression({ callee, name, args = [] }) {
     };
 }
 
+// <object>.<property>(<arg>)
+function callMethod({ object, property, arg }) {
+    return callExpression({
+        callee: memberExpression({ 
+            object, 
+            property
+        }),
+        args: [arg]
+    });
+}
+
 // (() => {<body>}())
 // () => {<body>}  ???
 const arrowFunctionExpression = ({ body, block, params = [] }) => {
@@ -847,8 +858,7 @@ class Module {
         this.binders = new UniqueStrings();
         
         // track scope and current function
-        this.scope = null;
-        this.functionScope = null;
+        this.scope = this.functionScope = Object.create(null);
         this.fn = null;
         this.returnStatement = null;
         
@@ -948,191 +958,227 @@ var templates = Object.freeze({
 	ReturnStatement: ReturnStatement
 });
 
-const IDENTIFIER$1 = '$';
+const property = identifier('child');
+const initChild = ({ ref: object, arg }) => callMethod({ object, property, arg });
 
-function params(fn, getRef) {
-    const identifiers = new Set();
-    const statements = [];
-    
-    const state = {
-        key: null,
-        ref: null,
-        getRef,
-        identifiers,
-        statements
+function makeDestructure({ newRef, sigil='$' }) {
+
+    return function destructured(node, ref) {
+        const statements = [];
+        const observables = [];
+
+        acorn_dist_walk.recursive(node, { ref }, {
+            Property({ computed, key, value }, { ref }, c) {
+                const arg = computed ? key : literal({ value: key.name });
+                this.Arg(value, { ref, arg }, c);
+            },
+
+            Arg(node, { ref, arg }, c) {
+                const init = initChild({ ref, arg });
+                c(node, { ref, init });
+            },
+
+            Identifier(node, { init }) {
+                this.Statement(node, init);
+                observables.push(node.name);
+            },
+
+            Statement(node, init) {
+                statements.push(declareConst({ id: node, init }));
+            },
+
+            Ref(init) {
+                const ref = newRef();
+                this.Statement(ref, init);
+                return ref;
+            },
+
+            ObjectPattern(node, { ref, init }, c) {
+                if(init) ref = this.Ref(init);
+                for(let prop of node.properties) c(prop, { ref });
+            },
+
+            ArrayPattern(node, { ref, init }, c) {
+                if(init) ref = this.Ref(init);
+                node.elements.forEach((el, i) => {
+                    if(!el) return;
+                    const arg = literal({ value: i, raw: i });
+                    this.Arg(el, { ref, arg }, c);
+                });
+            },
+
+            AssignmentPattern(node, state, c) {
+                if(node.right.name === sigil) {
+                    throw new Error('Cannot "=$" twice in same destructuring path');
+                }
+                acorn_dist_walk.base.AssignmentPattern(node, state, c);
+            }        
+        });
+
+        return { statements, observables };
     };
-    
-    fn.params = fn.params.map(node => {
-        return paramWalk(node, state);
-    });
+}
 
-    if(statements.length) {
-        addStatementsToFunction({ fn, statements, returnBody: true });
+function recursiveReplace(node, state, visitors) {
+    function c(node, state){
+        const found = visitors[node.type];
+        return found ? found(node, state, c) : node;
     }
-    return [...state.identifiers];
+    return c(node, state);
 }
 
-//TODO: get variables working
+function makeObservablesFrom({ getRef, newRef= () => identifier(getRef()), sigil='$' }) {
 
+    const destructure = makeDestructure({ newRef, sigil });
 
-// const <name> = <ref>.child('<name>');
-function destructure({ name, ref, arg }) {
-    return declareConst({
-        name,
-        init: callExpression({
-            callee: memberExpression({ 
-                object: ref, 
-                property: identifier('child')
-            }),
-            args: [arg]
-        })
-    });
+    return function observablesFrom(ast, state) {
+
+        return recursiveReplace(ast, state, {
+            AssignmentPattern(node, state, c) {
+                const { left, right } = node;
+                
+                if(right.name !== sigil) {
+                    return {
+                        type: 'AssignmentPattern',
+                        left: c(left, state),
+                        right: c(right, state)
+                    };
+                }
+
+                if(left.type === 'Identifier') {
+                    state.addObservable(left.name);
+                    return left;
+                }
+                
+                if(left.type === 'ObjectPattern' || left.type === 'ArrayPattern') {
+                    const ref = newRef();
+                    const { statements, observables } = destructure(left, ref);
+                    state.addStatements(statements);
+                    observables.forEach(state.addObservable);
+                    return ref;
+                }
+            },
+
+            ObjectPattern(node, state, c) {
+                node.properties.forEach(p => p.value = c(p.value, state));
+                return node;
+            },
+
+            ArrayPattern(node, state, c) {
+                node.elements = node.elements.map(el => c(el, state));
+                return node;
+            },
+
+            Identifier(node, state) {
+                state.addIdentifier(node.name);
+                return node;
+            }
+            
+        }) || ast;
+    };
 }
 
-function paramWalk(ast, state) {
-    if(ast.type !== 'AssignmentPattern') return ast;
+function setScope({ declaration, scope, functionScope }, key) {
+    scope[key] = true;
+    if(declaration === 'var' && functionScope !== scope) {
+        functionScope[key] = true; 
+    }
+}
 
-    acorn_dist_walk.recursive(ast, state, {
-        AssignmentPattern(node, state, c) {
-            if(node.right.name !== IDENTIFIER$1 || node !== ast) return;
-            ast = node.left;
-            acorn_dist_walk.base.Pattern(node.left, state, c);
-        },
-        Identifier(node, { identifiers }) {
-            identifiers.add(node.name);
-        },
-        VariablePattern({ name }, { key, ref, identifiers, statements }) {
-            identifiers.add(name);
-            if(!ref) return;
-            const statement = destructure({ name, ref, arg: key });
-            statements.push(statement);
-        },
-        ObjectPattern(node, state, c) {
-            const { ref: parentRef, getRef, statements } = state;
-            const ref = state.ref = identifier(getRef());
-            if(!parentRef) ast = ref;
-            else {
-                const statement = destructure({ 
-                    name: ref.name, 
-                    ref: parentRef, 
-                    arg: state.key
-                });
-                statements.push(statement);
-            }
-            
-            for (let prop of node.properties) {
-                const oldKey = state.key;
-                state.key = literal({ value: prop.key.name });
-                c(prop.value, state, 'Pattern');
-                state.key = oldKey;
-            }
+function createHandlers({ getRef, sigil='$' }) {
+    const newRef = () => identifier(getRef());
+    const observablesFrom = makeObservablesFrom({ newRef, sigil });
 
-            state.ref = parentRef;
+    return {
+        Observable(node, { scope, functionScope, declaration }) {
+            const addTo = declaration === 'var' ? functionScope : scope;
+            return addTo[node.left.name] = true;
         },
-        ArrayPattern(node, state, c) {
-            const { ref: parentRef, getRef, statements } = state;
-            const ref = state.ref = identifier(getRef());
-            if(!parentRef) ast = ref;
-            else {
-                const statement = destructure({ 
-                    name: ref.name, 
-                    ref: parentRef, 
-                    arg: state.key
-                });
-                statements.push(statement);
-            }
-            
-            node.elements.forEach((element, i) => {
-                if(!element) return;
-                const oldKey = state.key;
-                state.key = literal({ value: i });
-                c(element, state, 'Pattern');
-                state.key = oldKey;
+
+        // modification of acorn's "Function" base visitor.
+        // https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
+        Function(node, state, c) {
+            const { scope, functionScope } = state;
+            const newScope = state.scope = state.functionScope = Object.create(scope);
+
+            const statements = [];
+            const options = {
+                addObservable: o => newScope[o] = true,
+                addStatements: s => statements.push(...s),
+                addIdentifier: i => this.Unobservable(i, newScope)
+            };
+
+            node.params = node.params.map(node => {
+                const newNode = observablesFrom(node, options);
+                // process any scope changes
+
+                // TODO: figure this out. works for nested but ruins siblings
+                // c(node, state, 'Pattern');
+                return newNode;
             });
+            
+            
+            const priorFn = state.fn;
+            state.fn = node;
 
-            state.ref = parentRef;
+            c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
+            
+            state.fn = priorFn;
+            state.scope = scope;
+
+            // need to wait to add statements, otherwise they will get picked up
+            // in c(node.body, ...) call above (which causes the identifiers to 
+            // "unregister" the observables)
+            if(statements.length) {
+                // this call may mutate the function by creating a
+                // BlockStatement in lieu of AFE implicit return
+                addStatementsToFunction({ fn: node, statements, returnBody: true });
+            }
+
+            state.functionScope = functionScope;
+        },
+
+        BlockStatement(node, state, c) {
+            const { scope } = state;
+            state.scope = Object.create(scope);
+            state.__block = node.body;
+            acorn_dist_walk.base.BlockStatement(node, state, c);
+            state.scope = scope;
+        },
+
+        VariableDeclaration(node, state, c) {
+            state.declaration = node.kind;
+            acorn_dist_walk.base.VariableDeclaration(node, state, c);
+            state.declaration = null;
+        },
+
+        VariableDeclarator(node, state, c) {
+
+            const statements = [];
+            const options = {
+                addObservable: o => setScope(state, o),
+                addStatements: s => statements.push(...s),
+                addIdentifier: i => this.Unobservable(i, state.scope)
+            };
+
+            node.id = observablesFrom(node.id, options);
+
+            if(statements.length) {
+                console.log(statements);
+            }
+
+            c(node.init, state);
+        },
+
+        Unobservable(name, scope) {
+            if(scope[name]) scope[name] = false;
+        },
+
+        VariablePattern({ name }, { scope }) {
+            this.Unobservable(name, scope);
         }
-    });
-
-    return ast;
+    };
 }
-
-const IDENTIFIER = '$';
-
-function vars(nodes, state, c, elseFn) {
-    return nodes.map(node => {
-        if (node.type === 'AssignmentPattern' && node.right.name === IDENTIFIER) {
-            c(node, state, 'Observable');
-            return node.left;
-        }
-        else if(elseFn) elseFn(node);
-        
-        return node;
-        
-    });
-}
-
-const Observable = (node, { scope, functionScope, declaration }) => {
-    const addTo = declaration === 'var' ? functionScope : scope;
-    return addTo[node.left.name] = true;
-};
-
-// modification of acorn's "Function" base visitor.
-// https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
-const Function = (node, state, c) => {
-    const { scope, functionScope, getRef } = state;
-    const newScope = state.scope = state.functionScope = Object.create(scope);
-
-    // this call may mutate the function by creating a
-    // BlockStatement if params are destructured and 
-    // function was arrow with implicit return
-    const observables = params(node, getRef);
-    observables.forEach(o => newScope[o] = true);
-
-    const priorFn = state.fn;
-    state.fn = node;
-
-    c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
-    
-    state.fn = priorFn;
-    state.scope = scope;
-    state.functionScope = functionScope;
-};
-
-const BlockStatement = (node, state, c) => {
-    const { scope } = state;
-    state.scope = Object.create(scope);
-    state.__block = node.body;
-    acorn_dist_walk.base.BlockStatement(node, state, c);
-    state.scope = scope;
-};
-
-const VariableDeclarator = ({ id, init }, state, c) => {
-    if(id && id.type === 'ObjectPattern') {
-        const newValues = vars(id.properties.map(p => p.value), state, c);
-        id.properties.forEach((p, i) => p.value = newValues[i]);
-    }
-    if(init) c(init, state, 'Expression');
-};
-
-const VariableDeclaration = (node, state, c) => {
-    state.declaration = node.kind;
-    acorn_dist_walk.base.VariableDeclaration(node, state, c);
-    state.declaration = null;
-};
-
-const VariablePattern = ({ name }, { scope }) => {
-    if(scope[name]) scope[name] = false;
-};
-
-var observables = Object.freeze({
-	Observable: Observable,
-	Function: Function,
-	BlockStatement: BlockStatement,
-	VariableDeclarator: VariableDeclarator,
-	VariableDeclaration: VariableDeclaration,
-	VariablePattern: VariablePattern
-});
 
 function compile$1(source) {
     const ast = parse$1(source);
@@ -1140,9 +1186,14 @@ function compile$1(source) {
     return generate$1(ast);
 }
 
-const handlers = Object.assign({}, templates, observables);
 
 function astTransform(ast) {
+
+    let ref = 0;
+    const getRef = () => `__ref${ref++}`;
+    const observables = createHandlers({ getRef });
+    const handlers = Object.assign({}, templates, observables);
+
     acorn_dist_walk.recursive(ast, new Module(), handlers);
 }
 
