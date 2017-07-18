@@ -1,6 +1,6 @@
 export default {
     entry: 'src/index.js',
-    moduleName: 'diamond-compiler',
+    moduleName: 'azoth-compiler',
     external: [
         'acorn',
         'acorn/dist/walk.es',

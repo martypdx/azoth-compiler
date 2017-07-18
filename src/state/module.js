@@ -6,7 +6,7 @@ import parse from '../parse/template';
 import { templateToFunction } from '../transformers/template';
 
 const TAG = '_';
-const MODULE_NAME = 'diamond-ui';
+const MODULE_NAME = 'azoth';
 
 export class Module {
     constructor({ tag = TAG } = {}) {
@@ -58,7 +58,7 @@ export class Module {
         });
         
         // TODO: fn gets set by the observables handlers,
-        // which makes coupled those set of handlers.
+        // which means this is coupled those set of handlers.
         // Combine or find a way to separate?
         templateToFunction(node, { 
             binders, 

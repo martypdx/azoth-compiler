@@ -17,7 +17,7 @@ export function identifier(name) {
     return { type: 'Identifier', name };
 }
 
-const from = value => typeof value === 'string' ? `"${value}"` : `${value}`;
+const from = value => typeof value === 'string' ? `'${value}'` : `${value}`;
 
 export function literal({ value, raw = from(value) }) {
     return { type: 'Literal', value, raw };

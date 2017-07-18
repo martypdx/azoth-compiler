@@ -9,24 +9,27 @@ function compile(ast, visitors) {
     const getRef = () => `__ref${ref++}`;
     const Observables = createHandler({ getRef });
 
-    const state = { 
+    const state = {
         scope,
         functionScope: scope
     };
 
-    const handlers = Object.assign({
-        TaggedTemplateExpression(node, state, c) {
-            const { scope } = state;
-            const visitor = visitors[node.tag.name];
-            if(visitor) visitor(scope);
-            base.TaggedTemplateExpression(node, state, c);
-        }
-    }, Observables);
+    const handlers = Object.assign(
+        {
+            TaggedTemplateExpression(node, state, c) {
+                const { scope } = state;
+                const visitor = visitors[node.tag.name];
+                if (visitor) visitor(scope);
+                base.TaggedTemplateExpression(node, state, c);
+            }
+        },
+        Observables
+    );
 
     recursive(ast, state, handlers);
 }
 
-const keyCount = obj => Object.keys(obj).filter(f => f!=='__function').length;
+const keyCount = obj => Object.keys(obj).filter(f => f !== '__function').length;
 
 /*eslint no-unused-vars: off */
 /* globals _, _1, _2 $ */
@@ -48,7 +51,7 @@ describe('observables', () => {
     it('function parameter observable', () => {
 
         function source() {
-            const template = (name=$, foo, bar=BAR) => _``;
+            const template = (name=$, foo, bar = BAR) => _``;
         }
 
         const ast = source.toAst();
@@ -63,13 +66,37 @@ describe('observables', () => {
         codeEqual(ast, expected);
 
         function expected() {
-            const template = (name, foo, bar=BAR) => _``;
+            const template = (name, foo, bar = BAR) => _``;
         }
     });
 
+    it('destructured param adds statements', () => {
+        function source() {
+            const template = ({ foo, bar }=$) => _``;
+        }
+
+        const ast = source.toAst();
+
+        compile(ast, {
+            _(scope) {
+                assert.equal(keyCount(scope), 2);
+                assert.ok(scope.foo);
+                assert.ok(scope.bar);
+            }
+        });
+
+        codeEqual(ast, expected);
+
+        function expected() {
+            const template = __ref0 => {
+                const foo = __ref0.child('foo');
+                const bar = __ref0.child('bar');
+                return _``;
+            };
+        }
+    });
 
     it('not top-level function parameter observable', () => {
-
         function source() {
             const template = ({ foo=$, bar }) => _``;
         }
@@ -92,7 +119,7 @@ describe('observables', () => {
 
     it('parameter not in scope for function sibling', () => {
         function source() {
-            const one = (name=$, foo, bar=BAR) => _``;
+            const one = (name=$, foo, bar = BAR) => _``;
             const two = qux => _1``;
         }
 
@@ -106,14 +133,13 @@ describe('observables', () => {
         });
     });
 
-
     /* globals item, BAR */
     it('variable observable', () => {
 
         function source() {
             const { name=$ } = item;
             const { foo } = item;
-            const { bar=BAR } = item;
+            const { bar = BAR } = item;
             const template = _``;
         }
 
@@ -131,7 +157,7 @@ describe('observables', () => {
         function expected() {
             const { name } = item;
             const { foo } = item;
-            const { bar=BAR } = item;
+            const { bar = BAR } = item;
             const template = _``;
         }
     });
@@ -139,7 +165,7 @@ describe('observables', () => {
     it('inner variable masks outer scope', () => {
         function source() {
             const { name=$ } = item;
-            const one = (name) => {
+            const one = name => {
                 return _``;
             };
             const template = _1``;
@@ -225,5 +251,4 @@ describe('observables', () => {
         }
         compile(source.toAst());
     });
-
 });

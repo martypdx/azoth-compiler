@@ -1,9 +1,9 @@
 {
-  "name": "diamond-compiler",
-  "version": "0.0.20",
-  "description": "compiler for diamond templates",
-  "main": "dist/diamond-compiler.js",
-  "module": "dist/diamond-compiler.es.js",
+  "name": "azoth-compiler",
+  "version": "0.0.21",
+  "description": "compiler for azoth templates",
+  "main": "dist/azoth-compiler.js",
+  "module": "dist/azoth-compiler.es.js",
   "directories": {
     "test": "test"
   },

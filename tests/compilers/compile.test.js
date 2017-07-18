@@ -7,7 +7,7 @@ describe('compiler', () => {
 
     it('hello world', () => {
         const source = `
-            import { html as _ } from 'diamond-ui';
+            import { html as _ } from 'azoth';
             const template = name => _\`<span>Hello \${name}</span>\`;
         `;
 
@@ -16,7 +16,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
-            import { renderer, makeFragment, __textBinder } from 'diamond-ui';
+            import { renderer, makeFragment, __textBinder } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
                 __bind0(__nodes[0])(name);
@@ -49,7 +49,7 @@ describe('compiler', () => {
 
     it('nested', () => {
         const source = `
-            import { html as _ } from 'diamond-ui';
+            import { html as _ } from 'azoth';
             const template = (foo , bar) => _\`<div>\${ foo ? _\`<span>Hello \${bar}</span>\` : _\`<span>Goodbye \${bar}</span>\`}#</div>\`;
         `;
         const compiled = compile(source);
@@ -60,7 +60,7 @@ describe('compiler', () => {
             const __render2 = renderer(makeFragment(\`<div data-bind><!-- block --></div>\`));
             const __bind0 = __textBinder(1);
             const __bind1 = __blockBinder(0);
-            import { renderer, makeFragment, __textBinder, __blockBinder } from 'diamond-ui';
+            import { renderer, makeFragment, __textBinder, __blockBinder } from 'azoth';
             const template = (foo, bar) => {
                 const __nodes = __render2();
                 const __sub0b = __bind1(__nodes[0]);
@@ -86,7 +86,7 @@ describe('compiler', () => {
 
     it('hello world observable', () => {
         const source = `
-            import { html as _ } from 'diamond-ui';
+            import { html as _ } from 'azoth';
             const template = (name=$) => _\`<span>Hello *\${name}</span>\`;
         `;
 
@@ -95,7 +95,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
-            import { renderer, makeFragment, __textBinder } from 'diamond-ui';
+            import { renderer, makeFragment, __textBinder } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
                 const __sub0 =  name.subscribe(__bind0(__nodes[0]));
@@ -112,7 +112,7 @@ describe('compiler', () => {
 
     it('hello world once observable', () => {
         const source = `
-            import { html as _ } from 'diamond-ui';
+            import { html as _ } from 'azoth';
             const template = (name=$) => _\`<span>Hello $\${name}</span>\`;
         `;
 
@@ -121,7 +121,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
-            import { renderer, makeFragment, __textBinder, __first } from 'diamond-ui';
+            import { renderer, makeFragment, __textBinder, __first } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
                 const __sub0 = __first(name, __bind0(__nodes[0]));
@@ -138,7 +138,7 @@ describe('compiler', () => {
 
     it('mapped observable expression', () => {
         const source = `
-            import { html as _ } from 'diamond-ui';
+            import { html as _ } from 'azoth';
             const template = (x=$) => _\`<span>*\${x * x}</span>\`;
         `;
 
@@ -147,7 +147,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
-            import { renderer, makeFragment, __textBinder, __map } from 'diamond-ui';
+            import { renderer, makeFragment, __textBinder, __map } from 'azoth';
             const template = x => {
                 const __nodes = __render0();
                 const __sub0 = __map(x, x => (x * x), __bind0(__nodes[0]));
@@ -165,7 +165,7 @@ describe('compiler', () => {
 
     it('destructured observable', () => {
         const source = `
-            import { html as _ } from 'diamond-ui';
+            import { html as _ } from 'azoth';
             const template = ({ name }=$) => _\`<span>*\${name}</span>\`;
         `;
 
@@ -174,9 +174,9 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
-            import {renderer, makeFragment, __textBinder} from 'diamond-ui';
+            import {renderer, makeFragment, __textBinder} from 'azoth';
             const template = __ref0 => {
-                const name = __ref0.child("name");
+                const name = __ref0.child('name');
                 const __nodes = __render0();
                 const __sub0 = name.subscribe(__bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
@@ -192,7 +192,7 @@ describe('compiler', () => {
 
     it('combined observable expression', () => {
         const source = `
-            import { html as _ } from 'diamond-ui';
+            import { html as _ } from 'azoth';
             const template = (x=$, y=$) => _\`<span>*\${x + y}</span>\`;
         `;
 
@@ -201,7 +201,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
-            import { renderer, makeFragment, __textBinder, __combine } from 'diamond-ui';
+            import { renderer, makeFragment, __textBinder, __combine } from 'azoth';
             const template = (x, y) => {
                 const __nodes = __render0();
                 const __sub0 = __combine([x, y], (x, y) => (x + y), __bind0(__nodes[0]));

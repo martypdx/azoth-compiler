@@ -1,12 +1,8 @@
-'use strict';
-
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var acorn_dist_walk = require('acorn/dist/walk');
-var htmlparser = _interopDefault(require('htmlparser2'));
-var undeclared = _interopDefault(require('undeclared'));
-var acorn = require('acorn');
-var astring = require('astring');
+import { base, recursive } from 'acorn/dist/walk.es';
+import htmlparser from 'htmlparser2';
+import undeclared from 'undeclared';
+import { parse } from 'acorn';
+import { generate } from 'astring';
 
 class UniqueStrings {
     constructor() {
@@ -918,7 +914,7 @@ const ACORN_DEFAULTS = {
 };
 
 function parse$1(source, options) {
-    return acorn.parse(source, Object.assign({}, ACORN_DEFAULTS, options));
+    return parse(source, Object.assign({}, ACORN_DEFAULTS, options));
 }
 
 const ASTRING_DEFAULTS = { 
@@ -926,17 +922,17 @@ const ASTRING_DEFAULTS = {
 };
 
 function generate$1(ast, options) {
-    return astring.generate(ast, Object.assign({}, ASTRING_DEFAULTS, options));
+    return generate(ast, Object.assign({}, ASTRING_DEFAULTS, options));
 }
 
 const TaggedTemplateExpression = (node, module, c) => {
-    acorn_dist_walk.base.TaggedTemplateExpression(node, module, c);
+    base.TaggedTemplateExpression(node, module, c);
     if (node.tag.name !== module.tag) return;
     module.makeTemplate(node);
 };
 
 const Program = (node, module, c) => {
-    acorn_dist_walk.base.Program(node, module, c);
+    base.Program(node, module, c);
     module.addDeclarations(node.body);
 };
 
@@ -948,7 +944,7 @@ const ImportDeclaration = ({ source, specifiers }, { name, imports }) => {
 const ReturnStatement = (node, module, c) => {
     const prior = module.returnStatement;
     module.returnStatement = node;
-    acorn_dist_walk.base.ReturnStatement(node, module, c);
+    base.ReturnStatement(node, module, c);
     module.returnStatement = prior;
 };
 
@@ -978,7 +974,7 @@ function makeDestructure({ newRef, sigil='$' }) {
             return ref;
         };
 
-        acorn_dist_walk.recursive(node, { ref }, {
+        recursive(node, { ref }, {
             Property({ computed, key, value }, { ref }, c) {
                 const arg = computed ? key : literal({ value: key.name });
                 c(value, { ref, arg }, 'Child');
@@ -1012,7 +1008,7 @@ function makeDestructure({ newRef, sigil='$' }) {
                 if(node.right.name === sigil) {
                     throw new Error(`Cannot "${ sigil }" twice in same destructuring path`);
                 }
-                acorn_dist_walk.base.AssignmentPattern(node, state, c);
+                base.AssignmentPattern(node, state, c);
             }        
         });
 
@@ -1150,13 +1146,13 @@ function createHandlers({ getRef, sigil='$' }) {
             const { scope } = state;
             state.scope = Object.create(scope);
             state.__block = node.body;
-            acorn_dist_walk.base.BlockStatement(node, state, c);
+            base.BlockStatement(node, state, c);
             state.scope = scope;
         },
 
         VariableDeclaration(node, state, c) {
             state.declaration = node.kind;
-            acorn_dist_walk.base.VariableDeclaration(node, state, c);
+            base.VariableDeclaration(node, state, c);
             state.declaration = null;
         },
 
@@ -1189,7 +1185,7 @@ function astTransform(ast) {
     const module = new Module();
     const observables = createHandlers({ getRef() { return module.getRef(); } });
     const handlers = Object.assign({}, templates, observables);
-    acorn_dist_walk.recursive(ast, new Module(), handlers);
+    recursive(ast, new Module(), handlers);
 }
 
-module.exports = compile;
+export default compile;

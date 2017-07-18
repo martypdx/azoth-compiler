@@ -74,7 +74,7 @@ describe('observables from', () => {
             observables: ['foo'],
             ast: () => { __ref0 => {}; },
             statements: () => {
-                const foo = __ref0.child("foo");
+                const foo = __ref0.child('foo');
             }
         }));
 
@@ -83,8 +83,8 @@ describe('observables from', () => {
             observables: ['bar'],
             ast: () => { __ref0 => {}; },
             statements: () => {
-                const __ref1 = __ref0.child("foo");
-                const bar = __ref1.child("bar");
+                const __ref1 = __ref0.child('foo');
+                const bar = __ref1.child('bar');
             }
         }));
 
@@ -119,7 +119,7 @@ describe('observables from', () => {
             observables: ['bar'],
             ast: () => { ({ foo: __ref0 }) => {}; },
             statements: () => {
-                const bar = __ref0.child("bar");
+                const bar = __ref0.child('bar');
             }
         }));
 
@@ -208,7 +208,7 @@ describe('observables from', () => {
                 const { foo: __ref0 } = qux; 
             },
             statements: () => {
-                const bar = __ref0.child("bar");
+                const bar = __ref0.child('bar');
             }
         }));
         
