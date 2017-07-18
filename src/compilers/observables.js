@@ -92,7 +92,7 @@ export default function createHandlers({ getRef, sigil='$' }) {
                 console.log(statements);
             }
 
-            c(node.init, state);
+            if(node.init) c(node.init, state);
         },
 
         VariablePattern({ name }, state) {

@@ -219,4 +219,11 @@ describe('observables', () => {
         });
     });
 
+    it('var with no init okay', () => {
+        function source() {
+            var item;
+        }
+        compile(source.toAst());
+    });
+
 });
