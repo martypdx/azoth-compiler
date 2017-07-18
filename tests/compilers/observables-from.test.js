@@ -53,13 +53,13 @@ describe('observables from', () => {
 
     describe('parameters', () => {
 
-        it('foo', () =>  test({
+        it('(foo)', () =>  test({
             source: () => { foo => {}; },
             identifiers: ['foo'],
             ast: () => { foo => {}; }
         }));
 
-        it('foo=$', () => test({
+        it('(foo=$)', () => test({
             source: () => { 
                 (foo=$) => {}; 
             },
@@ -69,7 +69,7 @@ describe('observables from', () => {
             }
         }));
 
-        it('{ foo }=$', () => test({
+        it('({ foo }=$)', () => test({
             source: () => { ({ foo }=$) => {}; },
             observables: ['foo'],
             ast: () => { __ref0 => {}; },
@@ -78,7 +78,7 @@ describe('observables from', () => {
             }
         }));
 
-        it('{ foo: { bar } }=$', () => test({
+        it('({ foo: { bar } }=$)', () => test({
             source: () => { ({ foo: { bar } }=$) => {}; },
             observables: ['bar'],
             ast: () => { __ref0 => {}; },
@@ -88,33 +88,33 @@ describe('observables from', () => {
             }
         }));
 
-        it('{ foo=$ }', () => test({
+        it('({ foo=$ })', () => test({
             source: () => { ({ foo=$ }) => {}; },
             observables: ['foo'],
             ast: () => { ({ foo }) => {}; }
         }));
 
-        it('foo=$, bar', () => test({
+        it('(foo=$, bar)', () => test({
             source: () => { (foo=$, bar) => {}; },
             observables: ['foo'],
             identifiers: ['bar'],
             ast: () => { (foo, bar) => {}; }
         }));
 
-        it('{ foo=$, bar }', () => test({
+        it('({ foo=$, bar })', () => test({
             source: () => { ({ foo=$, bar }) => {}; },
             observables: ['foo'],
             identifiers: ['bar'],
             ast: () => { ({ foo, bar }) => {}; }
         }));
        
-        it('{ foo: { bar=$ } }', () => test({
+        it('({ foo: { bar=$ } })', () => test({
             source: () => { ({ foo: { bar=$ } }) => {}; },
             observables: ['bar'],
             ast: () => { ({ foo: { bar } }) => {}; }
         }));
 
-        it('{ foo: { bar }=$ }', () => test({
+        it('({ foo: { bar }=$ })', () => test({
             source: () => { ({ foo: { bar }=$ }) => {}; },
             observables: ['bar'],
             ast: () => { ({ foo: __ref0 }) => {}; },
@@ -123,13 +123,13 @@ describe('observables from', () => {
             }
         }));
 
-        it('{ foo: bar=$ }', () => test({
+        it('({ foo: bar=$ })', () => test({
             source: () => { ({ foo: bar=$ }) => {}; },
             observables: ['bar'],
             ast: () => { ({ foo: bar }) => {}; }
         }));
         
-        it('[ foo ]=$', () => test({
+        it('([ foo ]=$)', () => test({
             source: () => { ([ foo ]=$) => {}; },
             observables: ['foo'],
             ast: () => { __ref0 => {}; },
@@ -138,7 +138,7 @@ describe('observables from', () => {
             }
         }));
         
-        it('[, foo ]=$', () => test({
+        it('([, foo ]=$)', () => test({
             source: () => { ([, foo ]=$) => {}; },
             observables: ['foo'],
             ast: () => { __ref0 => {}; },
@@ -147,7 +147,7 @@ describe('observables from', () => {
             }
         }));
         
-        it('[ [ foo ]=$ ]', () => test({
+        it('([ [ foo ]=$ ])', () => test({
             source: () => { ([ [ foo ]=$ ]) => {}; },
             observables: ['foo'],
             ast: () => { ([ __ref0 ]) => {}; },
@@ -156,7 +156,7 @@ describe('observables from', () => {
             }
         }));
 
-        it('{ [id]: bar }=$', () => test({
+        it('({ [id]: bar }=$)', () => test({
             source: () => { ({ [id]: bar }=$) => {}; },
             observables: ['bar'],
             ast: () => { __ref0 => {}; },
@@ -165,7 +165,7 @@ describe('observables from', () => {
             }
         }));
         
-        it('{ foo: { bar: { qux=$ } } }', () => test({
+        it('({ foo: { bar: { qux=$ } } })', () => test({
             source: () => { ({ foo: { bar: { qux=$ } } }) => {}; },
             observables: ['qux'],
             ast: () => { ({ foo: { bar: { qux } } }) => {}; }
