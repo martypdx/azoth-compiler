@@ -1,4 +1,2 @@
-import compiler, { astTransform } from './compilers/compile';
-
+import compiler from './compilers/compile';
 export default compiler;
-export { astTransform };
