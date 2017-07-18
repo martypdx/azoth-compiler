@@ -20,6 +20,7 @@ export default function makeObservablesFrom({ getRef, newRef= () => identifier(g
                 const { left, right } = node;
                 
                 if(right.name !== sigil) {
+                    // TODO: could be more to do on templates, etc with `left`
                     return {
                         type: 'AssignmentPattern',
                         left: c(left, state),

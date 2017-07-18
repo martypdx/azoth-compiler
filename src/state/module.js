@@ -40,10 +40,6 @@ export class Module {
         );
     }
 
-    addFragment(html) {
-        return this.fragments.add(html);
-    }
-
     addBinder(binder) {
         this.imports.addBinder(binder);
 
@@ -55,7 +51,7 @@ export class Module {
     makeTemplate(node) {
         const { html, binders } = parse(node.quasi);
 
-        const index = this.addFragment(html);
+        const index = this.fragments.add(html);
         binders.forEach(b => {
             b.matchObservables(this.scope);
             b.moduleIndex = this.addBinder(b);

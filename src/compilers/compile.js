@@ -10,13 +10,9 @@ export default function compile(source) {
     return generate(ast);
 }
 
-
 export function astTransform(ast) {
-
-    let ref = 0;
-    const getRef = () => `__ref${ref++}`;
-    const observables = createHandler({ getRef });
+    const module = new Module();
+    const observables = createHandler({ getRef() { return module.getRef(); } });
     const handlers = Object.assign({}, templates, observables);
-
     recursive(ast, new Module(), handlers);
 }

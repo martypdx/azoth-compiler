@@ -11,52 +11,52 @@ const initChild = ({ ref: object, arg }) => callMethod({ object, property, arg }
 export default function makeDestructure({ newRef, sigil='$' }) {
 
     return function destructured(node, ref) {
-        const statements = [];
         const observables = [];
+        
+        const statements = [];
+        const addStatement = ({ node: id, init }) => {
+            statements.push(declareConst({ id, init })); 
+        };
+
+        const makeRef = init => {
+            const ref = newRef();
+            addStatement({ node: ref, init });
+            return ref;
+        };
 
         recursive(node, { ref }, {
             Property({ computed, key, value }, { ref }, c) {
                 const arg = computed ? key : literal({ value: key.name });
-                this.Arg(value, { ref, arg }, c);
+                c(value, { ref, arg }, 'Child');
             },
 
-            Arg(node, { ref, arg }, c) {
+            Child(node, { ref, arg }, c) {
                 const init = initChild({ ref, arg });
                 c(node, { ref, init });
             },
 
             Identifier(node, { init }) {
-                this.Statement(node, init);
+                addStatement({ node, init });
                 observables.push(node.name);
             },
 
-            Statement(node, init) {
-                statements.push(declareConst({ id: node, init }));
-            },
-
-            Ref(init) {
-                const ref = newRef();
-                this.Statement(ref, init);
-                return ref;
-            },
-
             ObjectPattern(node, { ref, init }, c) {
-                if(init) ref = this.Ref(init);
+                if(init) ref = makeRef(init);
                 for(let prop of node.properties) c(prop, { ref });
             },
 
             ArrayPattern(node, { ref, init }, c) {
-                if(init) ref = this.Ref(init);
+                if(init) ref = makeRef(init);
                 node.elements.forEach((el, i) => {
                     if(!el) return;
                     const arg = literal({ value: i, raw: i });
-                    this.Arg(el, { ref, arg }, c);
+                    c(el, { ref, arg }, 'Child');
                 });
             },
 
             AssignmentPattern(node, state, c) {
                 if(node.right.name === sigil) {
-                    throw new Error('Cannot "=$" twice in same destructuring path');
+                    throw new Error(`Cannot "${ sigil }" twice in same destructuring path`);
                 }
                 base.AssignmentPattern(node, state, c);
             }        

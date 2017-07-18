@@ -32,15 +32,7 @@ export default function createHandlers({ getRef, sigil='$' }) {
                 addIdentifier: i => this.Unobservable(i, newScope)
             };
 
-            node.params = node.params.map(node => {
-                const newNode = observablesFrom(node, options);
-                // process any scope changes
-
-                // TODO: figure this out. works for nested but ruins siblings
-                // c(node, state, 'Pattern');
-                return newNode;
-            });
-            
+            node.params = node.params.map(node => observablesFrom(node, options));
             
             const priorFn = state.fn;
             state.fn = node;
