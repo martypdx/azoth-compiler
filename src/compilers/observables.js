@@ -9,6 +9,24 @@ function setScope({ declaration, scope, functionScope }, key) {
     }
 }
 
+function clearScope({ declaration, scope, functionScope }, key) {
+    if(!scope[key]) return;
+    scope[key] = false;
+    if(declaration === 'var' && functionScope !== scope) {
+        functionScope[key] = false; 
+    }
+}
+
+function getOptions(state) {
+    const _statements = [];
+    return {
+        addObservable: o => setScope(state, o),
+        addStatements: s => _statements.push(...s),
+        addIdentifier: i => clearScope(state, i),
+        get statements() { return _statements; }
+    };
+}
+
 export default function createHandlers({ getRef, sigil='$' }) {
     const newRef = () => identifier(getRef());
     const observablesFrom = makeObservablesFrom({ newRef, sigil });
@@ -23,14 +41,9 @@ export default function createHandlers({ getRef, sigil='$' }) {
         // https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
         Function(node, state, c) {
             const { scope, functionScope } = state;
-            const newScope = state.scope = state.functionScope = Object.create(scope);
+            state.scope = state.functionScope = Object.create(scope);
 
-            const statements = [];
-            const options = {
-                addObservable: o => newScope[o] = true,
-                addStatements: s => statements.push(...s),
-                addIdentifier: i => this.Unobservable(i, newScope)
-            };
+            const options = getOptions(state);
 
             node.params = node.params.map(node => observablesFrom(node, options));
             
@@ -45,6 +58,7 @@ export default function createHandlers({ getRef, sigil='$' }) {
             // need to wait to add statements, otherwise they will get picked up
             // in c(node.body, ...) call above (which causes the identifiers to 
             // "unregister" the observables)
+            const { statements } = options;
             if(statements.length) {
                 // this call may mutate the function by creating a
                 // BlockStatement in lieu of AFE implicit return
@@ -70,15 +84,10 @@ export default function createHandlers({ getRef, sigil='$' }) {
 
         VariableDeclarator(node, state, c) {
 
-            const statements = [];
-            const options = {
-                addObservable: o => setScope(state, o),
-                addStatements: s => statements.push(...s),
-                addIdentifier: i => this.Unobservable(i, state.scope)
-            };
-
+            const options = getOptions(state);
             node.id = observablesFrom(node.id, options);
 
+            const { statements } = options;
             if(statements.length) {
                 console.log(statements);
             }
@@ -86,12 +95,8 @@ export default function createHandlers({ getRef, sigil='$' }) {
             c(node.init, state);
         },
 
-        Unobservable(name, scope) {
-            if(scope[name]) scope[name] = false;
-        },
-
-        VariablePattern({ name }, { scope }) {
-            this.Unobservable(name, scope);
+        VariablePattern({ name }, state) {
+            clearScope(state, name);
         }
     };
 }

@@ -1,4 +1,1 @@
-
-import compile from './compilers/compile';
-
-export default compile;
+export { default, astTransform } from './compilers/compile';

@@ -58,8 +58,8 @@ export class Module {
         });
         
         // TODO: fn gets set by the observables handlers,
-        // which makes this cross those set of handlers.
-        // Probably should combine into one set.
+        // which makes coupled those set of handlers.
+        // Combine or find a way to separate?
         templateToFunction(node, { 
             binders, 
             index,
