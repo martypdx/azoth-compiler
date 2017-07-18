@@ -1,7 +1,5 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var acorn_dist_walk = require('acorn/dist/walk');
@@ -1172,7 +1170,7 @@ function createHandlers({ getRef, sigil='$' }) {
                 console.log(statements);
             }
 
-            c(node.init, state);
+            if(node.init) c(node.init, state);
         },
 
         VariablePattern({ name }, state) {
@@ -1194,5 +1192,4 @@ function astTransform(ast) {
     acorn_dist_walk.recursive(ast, new Module(), handlers);
 }
 
-exports['default'] = compile;
-exports.astTransform = astTransform;
+module.exports = compile;

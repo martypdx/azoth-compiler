@@ -1166,7 +1166,7 @@ function createHandlers({ getRef, sigil='$' }) {
                 console.log(statements);
             }
 
-            c(node.init, state);
+            if(node.init) c(node.init, state);
         },
 
         VariablePattern({ name }, state) {
@@ -1188,4 +1188,4 @@ function astTransform(ast) {
     recursive(ast, new Module(), handlers);
 }
 
-export { astTransform };export default compile;
+export default compile;
