@@ -13,8 +13,9 @@ function test(expected) {
     const ast = expected.source.toAst();
     const getRef = makeRef();
 
-    const { observables, statements } = compile(ast, getRef);
-    assert.deepEqual(observables, expected.observables);
+    const { observables, statements, identifiers } = compile(ast, getRef);
+    assert.deepEqual(observables, expected.observables || [], 'observables');
+    assert.deepEqual(identifiers, expected.identifiers || [], 'identifiers');
     codeEqual(ast, expected.ast);
     if(expected.statements) {
         codeEqual({ type: 'Program', body: statements }, expected.statements);
@@ -24,9 +25,11 @@ function test(expected) {
 function compile(ast, getRef) {
     const observables = [];
     const statements = [];
+    const identifiers = [];
     const state = { 
         addObservable(o) { observables.push(o); },
-        addStatements(s) { statements.push(...s); }
+        addStatements(s) { statements.push(...s); },
+        addIdentifier(i) { identifiers.push(i); }
     };
     
     const compileObservables = makeObservables({ getRef });
@@ -40,7 +43,7 @@ function compile(ast, getRef) {
         }
     });
 
-    return { observables, statements };
+    return { observables, statements, identifiers };
 }
 
 
@@ -52,7 +55,7 @@ describe('observables from', () => {
 
         it('foo', () =>  test({
             source: () => { foo => {}; },
-            observables: [],
+            identifiers: ['foo'],
             ast: () => { foo => {}; }
         }));
 
@@ -91,9 +94,17 @@ describe('observables from', () => {
             ast: () => { ({ foo }) => {}; }
         }));
 
+        it('foo=$, bar', () => test({
+            source: () => { (foo=$, bar) => {}; },
+            observables: ['foo'],
+            identifiers: ['bar'],
+            ast: () => { (foo, bar) => {}; }
+        }));
+
         it('{ foo=$, bar }', () => test({
             source: () => { ({ foo=$, bar }) => {}; },
             observables: ['foo'],
+            identifiers: ['bar'],
             ast: () => { ({ foo, bar }) => {}; }
         }));
        
@@ -166,7 +177,7 @@ describe('observables from', () => {
 
         it('foo', () => test({
             source: () => { const foo = qux; },
-            observables: [],
+            identifiers: ['foo'],
             ast: () => {const foo = qux; }
         }));
 
@@ -221,13 +232,13 @@ describe('observables from', () => {
 
         it('foo="BAR"', () => test({
             source: () => { (foo='BAR') => {}; },
-            observables: [],
+            identifiers: ['foo'],
             ast: () => { (foo='BAR') => {}; }
         }));
         
         it('{ foo="BAR" }', () => test({
             source: () => { const { foo='BAR' } = qux; },
-            observables: [],
+            identifiers: ['foo'],
             ast: () => { const { foo='BAR' } = qux; }
         }));
 

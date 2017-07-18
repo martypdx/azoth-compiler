@@ -136,7 +136,7 @@ describe('observables', () => {
         }
     });
 
-    it.skip('inner variable masks outer scope', () => {
+    it('inner variable masks outer scope', () => {
         function source() {
             const { name=$ } = item;
             const one = (name) => {

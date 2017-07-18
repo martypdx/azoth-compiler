@@ -49,6 +49,11 @@ export default function makeObservablesFrom({ getRef, newRef= () => identifier(g
             ArrayPattern(node, state, c) {
                 node.elements = node.elements.map(el => c(el, state));
                 return node;
+            },
+
+            Identifier(node, state) {
+                state.addIdentifier(node.name);
+                return node;
             }
             
         }) || ast;

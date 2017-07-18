@@ -17,7 +17,7 @@ import { templateStatements } from '../../src/transformers/template';
 
 // TODO: there are trailing ";\n" issues in comparisons :(
 
-describe.skip('transform - template', () => {
+describe('transform - template', () => {
     const binders = [
         getBinder({ ast: (() => one).toExpr(), sigil: AT }, { module: 0, element: 0 }),
         getBinder({ ast: (() => two).toExpr(), sigil: NONE }, { module: 1, element: 0 }),
@@ -26,11 +26,20 @@ describe.skip('transform - template', () => {
     const scope = { one: true, three: true };
     binders.forEach(b => b.matchObservables(scope));
 
+    const makeProgram = code => ({
+        type: 'Program',
+        sourceType: 'module',
+        body: [{
+            type: 'ExpressionStatement',
+            expression: code,
+        }]
+    });
+
     it('no bindings', () => {
         const body = templateStatements({ binders: [], index: 1 });
         const code = arrowFunctionExpression({ body: blockStatement({ body }) });
 
-        codeEqual({ type: 'Program', body: [code] }, expected);
+        codeEqual(makeProgram(code), expected);
 
         function expected() {
             () => {
@@ -44,7 +53,7 @@ describe.skip('transform - template', () => {
         const body = templateStatements({ binders, index: 2 });
         const code = arrowFunctionExpression({ body: blockStatement({ body }) });
 
-        codeEqual(code, expected);
+        codeEqual(makeProgram(code), expected);
 
         function expected() {
             () => {

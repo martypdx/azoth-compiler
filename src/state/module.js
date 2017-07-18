@@ -20,8 +20,7 @@ export class Module {
         this.binders = new UniqueStrings();
         
         // track scope and current function
-        this.scope = null;
-        this.functionScope = null;
+        this.scope = this.functionScope = Object.create(null);
         this.fn = null;
         this.returnStatement = null;
         

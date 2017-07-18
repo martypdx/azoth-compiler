@@ -28,22 +28,19 @@ export default function createHandlers({ getRef, sigil='$' }) {
             const statements = [];
             const options = {
                 addObservable: o => newScope[o] = true,
-                addStatements: s => statements.push(...s) 
+                addStatements: s => statements.push(...s),
+                addIdentifier: i => this.Unobservable(i, newScope)
             };
 
             node.params = node.params.map(node => {
                 const newNode = observablesFrom(node, options);
                 // process any scope changes
+
                 // TODO: figure this out. works for nested but ruins siblings
                 // c(node, state, 'Pattern');
                 return newNode;
             });
             
-            if(statements.length) {
-                // this call may mutate the function by creating a
-                // BlockStatement in lieu of AFE implicit return
-                addStatementsToFunction({ fn: node, statements, returnBody: true });
-            }
             
             const priorFn = state.fn;
             state.fn = node;
@@ -52,6 +49,16 @@ export default function createHandlers({ getRef, sigil='$' }) {
             
             state.fn = priorFn;
             state.scope = scope;
+
+            // need to wait to add statements, otherwise they will get picked up
+            // in c(node.body, ...) call above (which causes the identifiers to 
+            // "unregister" the observables)
+            if(statements.length) {
+                // this call may mutate the function by creating a
+                // BlockStatement in lieu of AFE implicit return
+                addStatementsToFunction({ fn: node, statements, returnBody: true });
+            }
+
             state.functionScope = functionScope;
         },
 
@@ -74,7 +81,8 @@ export default function createHandlers({ getRef, sigil='$' }) {
             const statements = [];
             const options = {
                 addObservable: o => setScope(state, o),
-                addStatements: s => statements.push(...s) 
+                addStatements: s => statements.push(...s),
+                addIdentifier: i => this.Unobservable(i, state.scope)
             };
 
             node.id = observablesFrom(node.id, options);
@@ -86,8 +94,12 @@ export default function createHandlers({ getRef, sigil='$' }) {
             c(node.init, state);
         },
 
-        VariablePattern({ name }, { scope }) {
+        Unobservable(name, scope) {
             if(scope[name]) scope[name] = false;
+        },
+
+        VariablePattern({ name }, { scope }) {
+            this.Unobservable(name, scope);
         }
     };
 }

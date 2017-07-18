@@ -17,18 +17,26 @@ export default function makeDestructure({ newRef, sigil='$' }) {
         recursive(node, { ref }, {
             Property({ computed, key, value }, { ref }, c) {
                 const arg = computed ? key : literal({ value: key.name });
-                const init = initChild({ ref, arg });
-                c(value, { ref, init });
+                this.Arg(value, { ref, arg }, c);
             },
 
-            Identifier(node, { init, isObservable = true }) {
+            Arg(node, { ref, arg }, c) {
+                const init = initChild({ ref, arg });
+                c(node, { ref, init });
+            },
+
+            Identifier(node, { init }) {
+                this.Statement(node, init);
+                observables.push(node.name);
+            },
+
+            Statement(node, init) {
                 statements.push(declareConst({ id: node, init }));
-                if(isObservable) observables.push(node.name);
             },
 
             Ref(init) {
                 const ref = newRef();
-                this.Identifier(ref, { init, isObservable: false });
+                this.Statement(ref, init);
                 return ref;
             },
 
@@ -42,8 +50,7 @@ export default function makeDestructure({ newRef, sigil='$' }) {
                 node.elements.forEach((el, i) => {
                     if(!el) return;
                     const arg = literal({ value: i, raw: i });
-                    const init = initChild({ ref, arg });
-                    c(el, { ref, init });
+                    this.Arg(el, { ref, arg }, c);
                 });
             },
 
