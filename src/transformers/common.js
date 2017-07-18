@@ -97,6 +97,12 @@ export const specifier = name => ({
     local: identifier(name)
 });
 
+export function replaceStatements(block, match, statements) {
+    const index = block.findIndex(n => n === match);
+    block.splice(index, 1, ...statements);
+    return;
+}
+
 export function addStatementsTo(node, statements, { returnBody = false } = {})  {
     let body = node.type === 'Program' || node.type === 'BlockStatement' ? node : node.body;
     if(body.type === 'BlockStatement' || body.type === 'Program') {
@@ -104,12 +110,6 @@ export function addStatementsTo(node, statements, { returnBody = false } = {})  
     } else {
         node.body = replaceBody(body, statements, returnBody);
     }
-}
-
-export function replaceStatements(block, match, statements) {
-    const index = block.findIndex(n => n === match);
-    block.splice(index, 1, ...statements);
-    return;
 }
 
 function spliceStatements(body, statements) {

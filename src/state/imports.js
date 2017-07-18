@@ -14,7 +14,8 @@ import {
     VALUE } from '../binders/binding-types';
 import { specifier } from '../transformers/common';
 
-const SPECIFIER_NAME = /html|_/;
+const TEMPLATE_SPECIFIER_NAME = /html|_/;
+const OBSERVABLE_SPECIFIER_NAME = /^\$$/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
 
@@ -29,10 +30,11 @@ const importSpecifiers = {
 };
 
 export class Imports {
-    constructor({ tag }) {
+    constructor({ tag, oTag }) {
         this.names = new Set(baseNames);
         this.ast = [];
         this.tag = tag;
+        this.oTag = oTag;
     }
 
     addBinder({ declaration: { name }, type }) {
@@ -50,10 +52,15 @@ export class Imports {
 
     set specifiers(specifiers) {
         this.ast = specifiers;
-        const index = specifiers.findIndex(({ imported }) => SPECIFIER_NAME.test(imported.name)); 
+        const index = specifiers.findIndex(({ imported }) => TEMPLATE_SPECIFIER_NAME.test(imported.name)); 
         if(index > -1) {
             this.tag = specifiers[index].local.name;
             specifiers.splice(index, 1);
+        }
+        const oIndex = specifiers.findIndex(({ imported }) => OBSERVABLE_SPECIFIER_NAME.test(imported.name)); 
+        if(oIndex > -1) {
+            this.oTag = specifiers[oIndex].local.name;
+            specifiers.splice(oIndex, 1);
         }
         specifiers.push(...baseSpecifiers.slice());
     }

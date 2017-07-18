@@ -11,23 +11,21 @@ import {
     replaceStatements } from '../transformers/common';
 
 const TAG = '_';
+const OTAG = '$';
 const MODULE_NAME = 'azoth';
 
 export class Module {
-    constructor({ tag = TAG } = {}) {
+    constructor({ tag = TAG, oTag = OTAG } = {}) {
         this.name = MODULE_NAME;
-        // TODO: tag comes back from imports
-        // and may be aliased so this needs
-        // to account for that
-        this.tag = tag;
-        this.imports = new Imports({ tag });
+        // imports may modify tag and oTag based on found imports
+        this.imports = new Imports({ tag, oTag });
         this.fragments = new UniqueStrings();
         this.binders = new UniqueStrings();
         
         // track scope and current function
         this.scope = this.functionScope = Object.create(null);
         this.currentFn = null;
-        this.returnStatement = null;
+        this.currentReturnStmt = null;
 
         //track added statements
         this.statements = null;
@@ -36,6 +34,14 @@ export class Module {
         // ref counter for destructuring
         let ref = 0;
         this.getRef = () => `__ref${ref++}`;
+    }
+
+    get tag() {
+        return this.imports.tag;
+    }
+
+    get oTag() {
+        return this.imports.oTag;
     }
 
     addStatements(statements, index = 0) {
@@ -80,11 +86,11 @@ export class Module {
         
         // TODO: this.currentFn gets set by the observables handlers,
         // which means this is coupled those set of handlers.
-        const { currentFn, returnStatement } = this;
+        const { currentFn, currentReturnStmt } = this;
         if(currentFn) {
             if(currentFn.body === node) addStatementsTo(currentFn, [{ statements, index: 0 }]);
-            else if(returnStatement && returnStatement.argument === node) {
-                replaceStatements(currentFn.body.body, returnStatement, statements);
+            else if(currentReturnStmt && currentReturnStmt.argument === node) {
+                replaceStatements(currentFn.body.body, currentReturnStmt, statements);
             }
         }
 

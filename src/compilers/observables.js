@@ -37,8 +37,6 @@ export default function createHandlers({ getRef, sigil='$' }) {
             return addTo[node.left.name] = true;
         },
 
-        // modification of acorn's "Function" base visitor.
-        // https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
         Function(node, state, c) {
             const { scope, functionScope } = state;
             state.scope = state.functionScope = Object.create(scope);

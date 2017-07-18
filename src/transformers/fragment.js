@@ -4,7 +4,9 @@ import {
     declareConst, 
     identifier,
     literal, 
-    memberExpression } from './common';
+    memberExpression,
+    returnStatement } from './common';
+
 import { 
     FRAGMENT, 
     NODES, 
@@ -16,19 +18,20 @@ import { VALUE } from '../binders/binding-types';
 
 // const __render${index} = __renderer(__makeFragment(`${html}`));
 export const renderer = (html, index) =>{
+    
+    const makeFragment = callExpression({
+        name: MAKE_FRAGMENT_IMPORT,
+        args: [literal({
+            value: html,
+            raw: `\`${html}\``
+        })]
+    });
+
     return declareConst({ 
         name: `${RENDER}${index}`, 
         init: callExpression({ 
             name: RENDERER_IMPORT,
-            args: [
-                callExpression({
-                    name: MAKE_FRAGMENT_IMPORT,
-                    args: [literal({
-                        value: html,
-                        raw: `\`${html}\``
-                    })]
-                })
-            ]
+            args: [ makeFragment ]
         })
     });  
 };
@@ -49,22 +52,13 @@ const LAST_NODE = memberExpression({
 }); 
 
 // const __fragment = __nodes[__nodes.length - 1];
-const DECLARE_FRAGMENT = declareConst({
-    name: FRAGMENT, 
-    init: LAST_NODE
-});  
+const DECLARE_FRAGMENT = declareConst({ name: FRAGMENT, init: LAST_NODE });  
 
 // return __fragment;
-const RETURN_FRAGMENT = {
-    type: 'ReturnStatement',
-    argument: identifier(FRAGMENT)
-};
+const RETURN_FRAGMENT = returnStatement({ arg: identifier(FRAGMENT) });
 
 // return __nodes[__nodes.length - 1];
-const DIRECT_RETURN = {
-    type: 'ReturnStatement',
-    argument: LAST_NODE
-};
+const DIRECT_RETURN = returnStatement({ arg: LAST_NODE });
 
 // __sub${index}${suffix}.unsubscribe();
 const unsubscribe = (index, suffix = '') => {

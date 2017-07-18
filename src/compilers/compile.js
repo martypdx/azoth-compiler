@@ -12,6 +12,7 @@ export default function compile(source) {
 
 export function astTransform(ast) {
     const module = new Module();
+    // TODO: preflight imports in own walker so we have the right specifiers
     const observables = createHandler({ getRef() { return module.getRef(); } });
     const handlers = Object.assign({}, templates, observables);
     recursive(ast, new Module(), handlers);

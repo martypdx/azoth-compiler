@@ -18,8 +18,8 @@ export const ImportDeclaration = ({ source, specifiers }, { name, imports }) => 
 };
 
 export const ReturnStatement = (node, module, c) => {
-    const prior = module.returnStatement;
-    module.returnStatement = node;
+    const prior = module.currentReturnStmt;
+    module.currentReturnStmt = node;
     base.ReturnStatement(node, module, c);
-    module.returnStatement = prior;
+    module.currentReturnStmt = prior;
 };
