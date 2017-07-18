@@ -1,5 +1,7 @@
 'use strict';
 
+Object.defineProperty(exports, '__esModule', { value: true });
+
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var acorn_dist_walk = require('acorn/dist/walk');
@@ -205,6 +207,7 @@ class Imports {
     }
 }
 
+// const __render${index} = __renderer(__makeFragment(`${html}`));
 const renderer = (html, index) =>{
     return declareConst({ 
         name: `${RENDER}${index}`, 
@@ -557,7 +560,7 @@ const childNode = (name, html, isBlock) => ({
 });
 
 const text = childNode('__textBinder', '<text-node></text-node>', false);
-const block = childNode('__blockBinder', '<block-node></block-node>', true);
+const block = childNode('__blockBinder', '<!-- block -->', true);
 
 const attribute = {
     isBlock: false,
@@ -699,6 +702,10 @@ function parseTemplate({ expressions, quasis }) {
             stack.push(currentEl);
             currentEl = getEl(name);
             inAttributes = true;
+        },
+        oncomment(comment) {
+            html.push(`<!--${comment}-->`);
+            if(currentEl) currentEl.childIndex++;
         },
         onattribute(name, value) {
             currentEl.attributes[currentAttr = name] = value;
@@ -878,10 +885,6 @@ class Module {
         );
     }
 
-    addFragment(html) {
-        return this.fragments.add(html);
-    }
-
     addBinder(binder) {
         this.imports.addBinder(binder);
 
@@ -893,15 +896,15 @@ class Module {
     makeTemplate(node) {
         const { html, binders } = parseTemplate(node.quasi);
 
-        const index = this.addFragment(html);
+        const index = this.fragments.add(html);
         binders.forEach(b => {
             b.matchObservables(this.scope);
             b.moduleIndex = this.addBinder(b);
         });
         
         // TODO: fn gets set by the observables handlers,
-        // which makes this cross those set of handlers.
-        // Probably should combine into one set.
+        // which makes coupled those set of handlers.
+        // Combine or find a way to separate?
         templateToFunction(node, { 
             binders, 
             index,
@@ -964,52 +967,52 @@ const initChild = ({ ref: object, arg }) => callMethod({ object, property, arg }
 function makeDestructure({ newRef, sigil='$' }) {
 
     return function destructured(node, ref) {
-        const statements = [];
         const observables = [];
+        
+        const statements = [];
+        const addStatement = ({ node: id, init }) => {
+            statements.push(declareConst({ id, init })); 
+        };
+
+        const makeRef = init => {
+            const ref = newRef();
+            addStatement({ node: ref, init });
+            return ref;
+        };
 
         acorn_dist_walk.recursive(node, { ref }, {
             Property({ computed, key, value }, { ref }, c) {
                 const arg = computed ? key : literal({ value: key.name });
-                this.Arg(value, { ref, arg }, c);
+                c(value, { ref, arg }, 'Child');
             },
 
-            Arg(node, { ref, arg }, c) {
+            Child(node, { ref, arg }, c) {
                 const init = initChild({ ref, arg });
                 c(node, { ref, init });
             },
 
             Identifier(node, { init }) {
-                this.Statement(node, init);
+                addStatement({ node, init });
                 observables.push(node.name);
             },
 
-            Statement(node, init) {
-                statements.push(declareConst({ id: node, init }));
-            },
-
-            Ref(init) {
-                const ref = newRef();
-                this.Statement(ref, init);
-                return ref;
-            },
-
             ObjectPattern(node, { ref, init }, c) {
-                if(init) ref = this.Ref(init);
+                if(init) ref = makeRef(init);
                 for(let prop of node.properties) c(prop, { ref });
             },
 
             ArrayPattern(node, { ref, init }, c) {
-                if(init) ref = this.Ref(init);
+                if(init) ref = makeRef(init);
                 node.elements.forEach((el, i) => {
                     if(!el) return;
                     const arg = literal({ value: i, raw: i });
-                    this.Arg(el, { ref, arg }, c);
+                    c(el, { ref, arg }, 'Child');
                 });
             },
 
             AssignmentPattern(node, state, c) {
                 if(node.right.name === sigil) {
-                    throw new Error('Cannot "=$" twice in same destructuring path');
+                    throw new Error(`Cannot "${ sigil }" twice in same destructuring path`);
                 }
                 acorn_dist_walk.base.AssignmentPattern(node, state, c);
             }        
@@ -1038,6 +1041,7 @@ function makeObservablesFrom({ getRef, newRef= () => identifier(getRef()), sigil
                 const { left, right } = node;
                 
                 if(right.name !== sigil) {
+                    // TODO: could be more to do on templates, etc with `left`
                     return {
                         type: 'AssignmentPattern',
                         left: c(left, state),
@@ -1085,6 +1089,24 @@ function setScope({ declaration, scope, functionScope }, key) {
     }
 }
 
+function clearScope({ declaration, scope, functionScope }, key) {
+    if(!scope[key]) return;
+    scope[key] = false;
+    if(declaration === 'var' && functionScope !== scope) {
+        functionScope[key] = false; 
+    }
+}
+
+function getOptions(state) {
+    const _statements = [];
+    return {
+        addObservable: o => setScope(state, o),
+        addStatements: s => _statements.push(...s),
+        addIdentifier: i => clearScope(state, i),
+        get statements() { return _statements; }
+    };
+}
+
 function createHandlers({ getRef, sigil='$' }) {
     const newRef = () => identifier(getRef());
     const observablesFrom = makeObservablesFrom({ newRef, sigil });
@@ -1099,24 +1121,11 @@ function createHandlers({ getRef, sigil='$' }) {
         // https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
         Function(node, state, c) {
             const { scope, functionScope } = state;
-            const newScope = state.scope = state.functionScope = Object.create(scope);
+            state.scope = state.functionScope = Object.create(scope);
 
-            const statements = [];
-            const options = {
-                addObservable: o => newScope[o] = true,
-                addStatements: s => statements.push(...s),
-                addIdentifier: i => this.Unobservable(i, newScope)
-            };
+            const options = getOptions(state);
 
-            node.params = node.params.map(node => {
-                const newNode = observablesFrom(node, options);
-                // process any scope changes
-
-                // TODO: figure this out. works for nested but ruins siblings
-                // c(node, state, 'Pattern');
-                return newNode;
-            });
-            
+            node.params = node.params.map(node => observablesFrom(node, options));
             
             const priorFn = state.fn;
             state.fn = node;
@@ -1129,6 +1138,7 @@ function createHandlers({ getRef, sigil='$' }) {
             // need to wait to add statements, otherwise they will get picked up
             // in c(node.body, ...) call above (which causes the identifiers to 
             // "unregister" the observables)
+            const { statements } = options;
             if(statements.length) {
                 // this call may mutate the function by creating a
                 // BlockStatement in lieu of AFE implicit return
@@ -1154,15 +1164,10 @@ function createHandlers({ getRef, sigil='$' }) {
 
         VariableDeclarator(node, state, c) {
 
-            const statements = [];
-            const options = {
-                addObservable: o => setScope(state, o),
-                addStatements: s => statements.push(...s),
-                addIdentifier: i => this.Unobservable(i, state.scope)
-            };
-
+            const options = getOptions(state);
             node.id = observablesFrom(node.id, options);
 
+            const { statements } = options;
             if(statements.length) {
                 console.log(statements);
             }
@@ -1170,31 +1175,24 @@ function createHandlers({ getRef, sigil='$' }) {
             c(node.init, state);
         },
 
-        Unobservable(name, scope) {
-            if(scope[name]) scope[name] = false;
-        },
-
-        VariablePattern({ name }, { scope }) {
-            this.Unobservable(name, scope);
+        VariablePattern({ name }, state) {
+            clearScope(state, name);
         }
     };
 }
 
-function compile$1(source) {
+function compile(source) {
     const ast = parse$1(source);
     astTransform(ast);
     return generate$1(ast);
 }
 
-
 function astTransform(ast) {
-
-    let ref = 0;
-    const getRef = () => `__ref${ref++}`;
-    const observables = createHandlers({ getRef });
+    const module = new Module();
+    const observables = createHandlers({ getRef() { return module.getRef(); } });
     const handlers = Object.assign({}, templates, observables);
-
     acorn_dist_walk.recursive(ast, new Module(), handlers);
 }
 
-module.exports = compile$1;
+exports['default'] = compile;
+exports.astTransform = astTransform;
