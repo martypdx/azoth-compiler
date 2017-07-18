@@ -97,12 +97,31 @@ export const specifier = name => ({
     local: identifier(name)
 });
 
-export function addStatementsToFunction({ fn, statements, returnBody = false })  {
-    let { body } = fn;
-    if(body.type === 'BlockStatement') {
-        body.body.splice(0, 0, ...statements);
+export function addStatementsTo(node, statements, { returnBody = false } = {})  {
+    let body = node.type === 'Program' || node.type === 'BlockStatement' ? node : node.body;
+    if(body.type === 'BlockStatement' || body.type === 'Program') {
+        spliceStatements(body.body, statements);
     } else {
-        if(returnBody) statements.push(returnStatement({ arg: body }));
-        fn.body = blockStatement({ body: statements });
+        node.body = replaceBody(body, statements, returnBody);
     }
+}
+
+export function replaceStatements(block, match, statements) {
+    const index = block.findIndex(n => n === match);
+    block.splice(index, 1, ...statements);
+    return;
+}
+
+function spliceStatements(body, statements) {
+    statements.forEach(({ statements, index }) => {
+        body.splice(index, 0, ...statements);
+    });
+}
+
+function replaceBody(body, statements, returnBody) {
+    statements = statements
+        .reverse()
+        .reduce((all, s) => all.concat(s.statements), []);
+    if(returnBody) statements.push(returnStatement({ arg: body }));
+    return blockStatement({ body: statements });
 }

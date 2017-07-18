@@ -163,7 +163,7 @@ describe('compiler', () => {
     }); 
 
 
-    it('destructured observable', () => {
+    it('destructured param observable', () => {
         const source = `
             import { html as _ } from 'azoth';
             const template = ({ name }=$) => _\`<span>*\${name}</span>\`;
@@ -179,6 +179,37 @@ describe('compiler', () => {
                 const name = __ref0.child('name');
                 const __nodes = __render0();
                 const __sub0 = name.subscribe(__bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
+                };
+                return __fragment;
+            };
+        `;
+
+        codeEqual(compiled, expected);
+    }); 
+
+    it('destructured variable observable', () => {
+        const source = `
+            import { html as _ } from 'azoth';
+            const template = person => {
+                const { name: { first }=$ } = person;
+                return _\`<span>*\${first}</span>\`;
+            };
+        `;
+        
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
+            const __bind0 = __textBinder(0);
+            import {renderer, makeFragment, __textBinder} from 'azoth';
+            const template = person => {
+                const {name: __ref0} = person;
+                const first = __ref0.child('first');
+                const __nodes = __render0();
+                const __sub0 = first.subscribe(__bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();

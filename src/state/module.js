@@ -3,7 +3,12 @@ import { Imports } from './imports';
 import { renderer } from '../transformers/fragment';
 import { initBinder } from '../transformers/binding';
 import parse from '../parse/template';
-import { templateToFunction } from '../transformers/template';
+import { 
+    templateToFunction, 
+    makeTemplateStatements } from '../transformers/template';
+import { 
+    addStatementsTo,
+    replaceStatements } from '../transformers/common';
 
 const TAG = '_';
 const MODULE_NAME = 'azoth';
@@ -21,13 +26,27 @@ export class Module {
         
         // track scope and current function
         this.scope = this.functionScope = Object.create(null);
-        this.fn = null;
+        this.currentFn = null;
         this.returnStatement = null;
+
+        //track added statements
+        this.statements = null;
         
         // all purpose module-wide 
         // ref counter for destructuring
         let ref = 0;
         this.getRef = () => `__ref${ref++}`;
+    }
+
+    addStatements(statements, index = 0) {
+        if(!this.statements) this.statements = [];
+        this.statements.push({ statements, index });
+    }
+
+    flushStatements(node, options) {
+        if(!this.statements) return;
+        addStatementsTo(node, this.statements, options);
+        this.statements = null;
     }
 
     addDeclarations(body) {
@@ -57,14 +76,18 @@ export class Module {
             b.moduleIndex = this.addBinder(b);
         });
         
-        // TODO: fn gets set by the observables handlers,
+        const statements = makeTemplateStatements({ binders, index });
+        
+        // TODO: this.currentFn gets set by the observables handlers,
         // which means this is coupled those set of handlers.
-        // Combine or find a way to separate?
-        templateToFunction(node, { 
-            binders, 
-            index,
-            fn: this.fn,
-            returnStatement: this.returnStatement
-        });
+        const { currentFn, returnStatement } = this;
+        if(currentFn) {
+            if(currentFn.body === node) addStatementsTo(currentFn, [{ statements, index: 0 }]);
+            else if(returnStatement && returnStatement.argument === node) {
+                replaceStatements(currentFn.body.body, returnStatement, statements);
+            }
+        }
+
+        templateToFunction(node, statements);
     }
 }

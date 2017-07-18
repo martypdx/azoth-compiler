@@ -1,4 +1,5 @@
 import createHandler from '../../src/compilers/observables';
+import { Module } from '../../src/state/module';
 import { recursive, base } from 'acorn/dist/walk.es';
 import { assert } from 'chai';
 import codeEqual from '../helpers/code-equal';
@@ -9,13 +10,15 @@ function compile(ast, visitors) {
     const getRef = () => `__ref${ref++}`;
     const Observables = createHandler({ getRef });
 
-    const state = {
-        scope,
-        functionScope: scope
-    };
+    const state = new Module();
 
     const handlers = Object.assign(
         {
+            Program(node, state, c) {
+                state.currentFn = node;
+                c(node, state, 'BlockStatement');
+            },
+
             TaggedTemplateExpression(node, state, c) {
                 const { scope } = state;
                 const visitor = visitors[node.tag.name];
@@ -96,6 +99,36 @@ describe('observables', () => {
         }
     });
 
+    it('destructured param in function adds statements', () => {
+        function source() {
+            function qux() {
+                const template = ({ foo, bar }=$) => _``;
+            }
+        }
+
+        const ast = source.toAst();
+
+        compile(ast, {
+            _(scope) {
+                assert.equal(keyCount(scope), 2);
+                assert.ok(scope.foo);
+                assert.ok(scope.bar);
+            }
+        });
+
+        codeEqual(ast, expected);
+
+        function expected() {
+            function qux() {
+                const template = __ref0 => {
+                    const foo = __ref0.child('foo');
+                    const bar = __ref0.child('bar');
+                    return _``;
+                };
+            }
+        }
+    });
+
     it('not top-level function parameter observable', () => {
         function source() {
             const template = ({ foo=$, bar }) => _``;
@@ -159,6 +192,64 @@ describe('observables', () => {
             const { foo } = item;
             const { bar = BAR } = item;
             const template = _``;
+        }
+    });
+
+    it('destructured variable adds statements', () => {
+
+        function source() {
+            const { foo } = item;
+            const { bar: { name }=$ } = item;
+            const template = _``;
+        }
+
+        const ast = source.toAst();
+
+        compile(ast, {
+            _(scope) {
+                assert.equal(keyCount(scope), 1);
+                assert.ok(scope.name);
+            }
+        });
+
+        codeEqual(ast, expected);
+
+        function expected() {
+            const { foo } = item;
+            const { bar: __ref0 } = item;
+            const name = __ref0.child('name');
+            const template = _``;
+        }
+    });
+
+    it('destructured variable in function adds statements', () => {
+
+        function source() {
+            function foo() {
+                const { foo } = item;
+                const { bar: { name }=$ } = item;
+                const template = _``;
+            }
+        }
+
+        const ast = source.toAst();
+
+        compile(ast, {
+            _(scope) {
+                assert.equal(keyCount(scope), 1);
+                assert.ok(scope.name);
+            }
+        });
+
+        codeEqual(ast, expected);
+
+        function expected() {
+            function foo() {
+                const { foo } = item;
+                const { bar: __ref0 } = item;
+                const name = __ref0.child('name');
+                const template = _``;
+            }
         }
     });
 

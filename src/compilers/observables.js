@@ -1,5 +1,5 @@
 import { base } from 'acorn/dist/walk.es';
-import { addStatementsToFunction, identifier } from '../transformers/common';
+import { identifier } from '../transformers/common';
 import makeObservablesFrom from './observables-from';
 
 function setScope({ declaration, scope, functionScope }, key) {
@@ -47,12 +47,12 @@ export default function createHandlers({ getRef, sigil='$' }) {
 
             node.params = node.params.map(node => observablesFrom(node, options));
             
-            const priorFn = state.fn;
-            state.fn = node;
+            const priorFn = state.currentFn;
+            state.currentFn = node;
 
             c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
             
-            state.fn = priorFn;
+            state.currentFn = priorFn;
             state.scope = scope;
 
             // need to wait to add statements, otherwise they will get picked up
@@ -62,7 +62,8 @@ export default function createHandlers({ getRef, sigil='$' }) {
             if(statements.length) {
                 // this call may mutate the function by creating a
                 // BlockStatement in lieu of AFE implicit return
-                addStatementsToFunction({ fn: node, statements, returnBody: true });
+                state.addStatements(statements);
+                state.flushStatements(node, { returnBody: true });
             }
 
             state.functionScope = functionScope;
@@ -71,8 +72,13 @@ export default function createHandlers({ getRef, sigil='$' }) {
         BlockStatement(node, state, c) {
             const { scope } = state;
             state.scope = Object.create(scope);
-            state.__block = node.body;
-            base.BlockStatement(node, state, c);
+            node.body.slice().forEach((statement, i) => {
+                const oldIndex = state.index;
+                state.index = i;
+                c(statement, state, 'Statement');
+                state.index = oldIndex;
+            });
+            state.flushStatements(node);
             state.scope = scope;
         },
 
@@ -89,7 +95,10 @@ export default function createHandlers({ getRef, sigil='$' }) {
 
             const { statements } = options;
             if(statements.length) {
-                console.log(statements);
+                const index = state.index !== -1 ? state.index + 1 : 0;
+                // this call may mutate the function by creating a
+                // BlockStatement in lieu of AFE implicit return
+                state.addStatements(statements, index);
             }
 
             if(node.init) c(node.init, state);

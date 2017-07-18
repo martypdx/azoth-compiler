@@ -7,7 +7,8 @@ export const TaggedTemplateExpression = (node, module, c) => {
 };
 
 export const Program = (node, module, c) => {
-    base.Program(node, module, c);
+    module.currentFn = node;
+    c(node, module, 'BlockStatement');
     module.addDeclarations(node.body);
 };
 

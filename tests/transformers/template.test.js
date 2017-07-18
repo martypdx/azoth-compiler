@@ -13,7 +13,7 @@ import { parse } from '../../src/ast';
 import { 
     blockStatement,
     arrowFunctionExpression } from '../../src/transformers/common';
-import { templateStatements } from '../../src/transformers/template';
+import { makeTemplateStatements } from '../../src/transformers/template';
 
 // TODO: there are trailing ";\n" issues in comparisons :(
 
@@ -36,7 +36,7 @@ describe('transform - template', () => {
     });
 
     it('no bindings', () => {
-        const body = templateStatements({ binders: [], index: 1 });
+        const body = makeTemplateStatements({ binders: [], index: 1 });
         const code = arrowFunctionExpression({ body: blockStatement({ body }) });
 
         codeEqual(makeProgram(code), expected);
@@ -50,7 +50,7 @@ describe('transform - template', () => {
     });
 
     it('with bindings', () => {
-        const body = templateStatements({ binders, index: 2 });
+        const body = makeTemplateStatements({ binders, index: 2 });
         const code = arrowFunctionExpression({ body: blockStatement({ body }) });
 
         codeEqual(makeProgram(code), expected);
