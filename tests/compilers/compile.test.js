@@ -215,4 +215,15 @@ describe('compiler', () => {
 
         codeEqual(compiled, expected);
     }); 
+
+    // // for debug of files that are failing compile.
+    // // put file contents in ./build/test-file.js
+    // it('parses domUtil file', () => {
+    //     const source = readFileSync(__dirname + '/test-file.js', 'utf8');
+    //     const compiled = compile(source);
+    //     assert.ok(compiled);
+    // });
 });
+
+// import { readFileSync } from 'fs';
+// import assert from 'assert';
