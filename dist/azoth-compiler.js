@@ -70,7 +70,7 @@ function identifier(name) {
     return { type: 'Identifier', name };
 }
 
-const from = value => typeof value === 'string' ? `"${value}"` : `${value}`;
+const from = value => typeof value === 'string' ? `'${value}'` : `${value}`;
 
 function literal({ value, raw = from(value) }) {
     return { type: 'Literal', value, raw };
@@ -150,17 +150,37 @@ const specifier = name => ({
     local: identifier(name)
 });
 
-function addStatementsToFunction({ fn, statements, returnBody = false })  {
-    let { body } = fn;
-    if(body.type === 'BlockStatement') {
-        body.body.splice(0, 0, ...statements);
+function replaceStatements(block, match, statements) {
+    const index = block.findIndex(n => n === match);
+    block.splice(index, 1, ...statements);
+    return;
+}
+
+function addStatementsTo(node, statements, { returnBody = false } = {})  {
+    let body = node.type === 'Program' || node.type === 'BlockStatement' ? node : node.body;
+    if(body.type === 'BlockStatement' || body.type === 'Program') {
+        spliceStatements(body.body, statements);
     } else {
-        if(returnBody) statements.push(returnStatement({ arg: body }));
-        fn.body = blockStatement({ body: statements });
+        node.body = replaceBody(body, statements, returnBody);
     }
 }
 
-const SPECIFIER_NAME = /html|_/;
+function spliceStatements(body, statements) {
+    statements.forEach(({ statements, index }) => {
+        body.splice(index, 0, ...statements);
+    });
+}
+
+function replaceBody(body, statements, returnBody) {
+    statements = statements
+        .reverse()
+        .reduce((all, s) => all.concat(s.statements), []);
+    if(returnBody) statements.push(returnStatement({ arg: body }));
+    return blockStatement({ body: statements });
+}
+
+const TEMPLATE_SPECIFIER_NAME = /html|_/;
+const OBSERVABLE_SPECIFIER_NAME = /^\$$/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
 
@@ -175,10 +195,11 @@ const importSpecifiers = {
 };
 
 class Imports {
-    constructor({ tag }) {
+    constructor({ tag, oTag }) {
         this.names = new Set(baseNames);
         this.ast = [];
         this.tag = tag;
+        this.oTag = oTag;
     }
 
     addBinder({ declaration: { name }, type }) {
@@ -196,10 +217,15 @@ class Imports {
 
     set specifiers(specifiers) {
         this.ast = specifiers;
-        const index = specifiers.findIndex(({ imported }) => SPECIFIER_NAME.test(imported.name)); 
+        const index = specifiers.findIndex(({ imported }) => TEMPLATE_SPECIFIER_NAME.test(imported.name)); 
         if(index > -1) {
             this.tag = specifiers[index].local.name;
             specifiers.splice(index, 1);
+        }
+        const oIndex = specifiers.findIndex(({ imported }) => OBSERVABLE_SPECIFIER_NAME.test(imported.name)); 
+        if(oIndex > -1) {
+            this.oTag = specifiers[oIndex].local.name;
+            specifiers.splice(oIndex, 1);
         }
         specifiers.push(...baseSpecifiers.slice());
     }
@@ -207,19 +233,20 @@ class Imports {
 
 // const __render${index} = __renderer(__makeFragment(`${html}`));
 const renderer = (html, index) =>{
+    
+    const makeFragment = callExpression({
+        name: MAKE_FRAGMENT_IMPORT,
+        args: [literal({
+            value: html,
+            raw: `\`${html}\``
+        })]
+    });
+
     return declareConst({ 
         name: `${RENDER}${index}`, 
         init: callExpression({ 
             name: RENDERER_IMPORT,
-            args: [
-                callExpression({
-                    name: MAKE_FRAGMENT_IMPORT,
-                    args: [literal({
-                        value: html,
-                        raw: `\`${html}\``
-                    })]
-                })
-            ]
+            args: [ makeFragment ]
         })
     });  
 };
@@ -240,22 +267,13 @@ const LAST_NODE = memberExpression({
 }); 
 
 // const __fragment = __nodes[__nodes.length - 1];
-const DECLARE_FRAGMENT = declareConst({
-    name: FRAGMENT, 
-    init: LAST_NODE
-});  
+const DECLARE_FRAGMENT = declareConst({ name: FRAGMENT, init: LAST_NODE });  
 
 // return __fragment;
-const RETURN_FRAGMENT = {
-    type: 'ReturnStatement',
-    argument: identifier(FRAGMENT)
-};
+const RETURN_FRAGMENT = returnStatement({ arg: identifier(FRAGMENT) });
 
 // return __nodes[__nodes.length - 1];
-const DIRECT_RETURN = {
-    type: 'ReturnStatement',
-    argument: LAST_NODE
-};
+const DIRECT_RETURN = returnStatement({ arg: LAST_NODE });
 
 // __sub${index}${suffix}.unsubscribe();
 const unsubscribe = (index, suffix = '') => {
@@ -816,27 +834,12 @@ const renderNodes = index => {
     });
 };
 
-const templateToFunction = (node, options) => {
-    const statements = templateStatements(options);
-    const { fn, returnStatement: returnStatement$$1 } = options;
-    if(fn) {
-        if(fn.body === node) {
-            addStatementsToFunction({ fn, statements });
-            return;
-        }
-        if(returnStatement$$1 && returnStatement$$1.argument === node) {
-            const block = fn.body.body;
-            const index = block.findIndex(n => n === returnStatement$$1);
-            block.splice(index, 1, ...statements);
-            return;
-        }
-    } 
-
-    const ast = arrowFunctionExpression({ block: statements });
+const templateToFunction = (node, block) => {
+    const ast = arrowFunctionExpression({ block });
     Object.assign(node, ast);
 };
 
-const templateStatements = ({ binders, index }) => {
+const makeTemplateStatements = ({ binders, index }) => {
     const bindings = binders
         .map(binding)
         .reduce((a, b) => a.concat(b), []);
@@ -849,28 +852,48 @@ const templateStatements = ({ binders, index }) => {
 };
 
 const TAG = '_';
+const OTAG = '$';
 const MODULE_NAME = 'azoth';
 
 class Module {
-    constructor({ tag = TAG } = {}) {
+    constructor({ tag = TAG, oTag = OTAG } = {}) {
         this.name = MODULE_NAME;
-        // TODO: tag comes back from imports
-        // and may be aliased so this needs
-        // to account for that
-        this.tag = tag;
-        this.imports = new Imports({ tag });
+        // imports may modify tag and oTag based on found imports
+        this.imports = new Imports({ tag, oTag });
         this.fragments = new UniqueStrings();
         this.binders = new UniqueStrings();
         
         // track scope and current function
         this.scope = this.functionScope = Object.create(null);
-        this.fn = null;
-        this.returnStatement = null;
+        this.currentFn = null;
+        this.currentReturnStmt = null;
+
+        //track added statements
+        this.statements = null;
         
         // all purpose module-wide 
         // ref counter for destructuring
         let ref = 0;
         this.getRef = () => `__ref${ref++}`;
+    }
+
+    get tag() {
+        return this.imports.tag;
+    }
+
+    get oTag() {
+        return this.imports.oTag;
+    }
+
+    addStatements(statements, index = 0) {
+        if(!this.statements) this.statements = [];
+        this.statements.push({ statements, index });
+    }
+
+    flushStatements(node, options) {
+        if(!this.statements) return;
+        addStatementsTo(node, this.statements, options);
+        this.statements = null;
     }
 
     addDeclarations(body) {
@@ -900,15 +923,19 @@ class Module {
             b.moduleIndex = this.addBinder(b);
         });
         
-        // TODO: fn gets set by the observables handlers,
-        // which makes coupled those set of handlers.
-        // Combine or find a way to separate?
-        templateToFunction(node, { 
-            binders, 
-            index,
-            fn: this.fn,
-            returnStatement: this.returnStatement
-        });
+        const statements = makeTemplateStatements({ binders, index });
+        
+        // TODO: this.currentFn gets set by the observables handlers,
+        // which means this is coupled those set of handlers.
+        const { currentFn, currentReturnStmt } = this;
+        if(currentFn) {
+            if(currentFn.body === node) addStatementsTo(currentFn, [{ statements, index: 0 }]);
+            else if(currentReturnStmt && currentReturnStmt.argument === node) {
+                replaceStatements(currentFn.body.body, currentReturnStmt, statements);
+            }
+        }
+
+        templateToFunction(node, statements);
     }
 }
 
@@ -936,7 +963,8 @@ const TaggedTemplateExpression = (node, module, c) => {
 };
 
 const Program = (node, module, c) => {
-    acorn_dist_walk.base.Program(node, module, c);
+    module.currentFn = node;
+    c(node, module, 'BlockStatement');
     module.addDeclarations(node.body);
 };
 
@@ -946,10 +974,10 @@ const ImportDeclaration = ({ source, specifiers }, { name, imports }) => {
 };
 
 const ReturnStatement = (node, module, c) => {
-    const prior = module.returnStatement;
-    module.returnStatement = node;
+    const prior = module.currentReturnStmt;
+    module.currentReturnStmt = node;
     acorn_dist_walk.base.ReturnStatement(node, module, c);
-    module.returnStatement = prior;
+    module.currentReturnStmt = prior;
 };
 
 var templates = Object.freeze({
@@ -1115,8 +1143,6 @@ function createHandlers({ getRef, sigil='$' }) {
             return addTo[node.left.name] = true;
         },
 
-        // modification of acorn's "Function" base visitor.
-        // https://github.com/ternjs/acorn/blob/master/src/walk/index.js#L262-L267
         Function(node, state, c) {
             const { scope, functionScope } = state;
             state.scope = state.functionScope = Object.create(scope);
@@ -1125,12 +1151,12 @@ function createHandlers({ getRef, sigil='$' }) {
 
             node.params = node.params.map(node => observablesFrom(node, options));
             
-            const priorFn = state.fn;
-            state.fn = node;
+            const priorFn = state.currentFn;
+            state.currentFn = node;
 
             c(node.body, state, node.expression ? 'ScopeExpression' : 'ScopeBody');
             
-            state.fn = priorFn;
+            state.currentFn = priorFn;
             state.scope = scope;
 
             // need to wait to add statements, otherwise they will get picked up
@@ -1140,7 +1166,8 @@ function createHandlers({ getRef, sigil='$' }) {
             if(statements.length) {
                 // this call may mutate the function by creating a
                 // BlockStatement in lieu of AFE implicit return
-                addStatementsToFunction({ fn: node, statements, returnBody: true });
+                state.addStatements(statements);
+                state.flushStatements(node, { returnBody: true });
             }
 
             state.functionScope = functionScope;
@@ -1149,8 +1176,13 @@ function createHandlers({ getRef, sigil='$' }) {
         BlockStatement(node, state, c) {
             const { scope } = state;
             state.scope = Object.create(scope);
-            state.__block = node.body;
-            acorn_dist_walk.base.BlockStatement(node, state, c);
+            node.body.slice().forEach((statement, i) => {
+                const oldIndex = state.index;
+                state.index = i;
+                c(statement, state, 'Statement');
+                state.index = oldIndex;
+            });
+            state.flushStatements(node);
             state.scope = scope;
         },
 
@@ -1167,7 +1199,10 @@ function createHandlers({ getRef, sigil='$' }) {
 
             const { statements } = options;
             if(statements.length) {
-                console.log(statements);
+                const index = state.index !== -1 ? state.index + 1 : 0;
+                // this call may mutate the function by creating a
+                // BlockStatement in lieu of AFE implicit return
+                state.addStatements(statements, index);
             }
 
             if(node.init) c(node.init, state);
@@ -1187,6 +1222,7 @@ function compile(source) {
 
 function astTransform(ast) {
     const module = new Module();
+    // TODO: preflight imports in own walker so we have the right specifiers
     const observables = createHandlers({ getRef() { return module.getRef(); } });
     const handlers = Object.assign({}, templates, observables);
     acorn_dist_walk.recursive(ast, new Module(), handlers);
