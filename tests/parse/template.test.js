@@ -80,7 +80,7 @@ describe('parse template', () => {
                 const template = foo => _`${foo}#`;
             }
             const { html, binders } = parseSource(source);
-            assert.equal(html, '<block-node></block-node>');
+            assert.equal(html, '<!-- block -->');
             testFirst(binders, { ref: 'foo', sigil: NONE });
         });
 
@@ -89,7 +89,7 @@ describe('parse template', () => {
                 const template = foo => _`*${foo}#`;
             }
             const { html, binders } = parseSource(source);
-            assert.equal(html, '<block-node></block-node>');
+            assert.equal(html, '<!-- block -->');
             testFirst(binders, { ref: 'foo' });
         });
 

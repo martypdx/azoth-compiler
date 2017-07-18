@@ -10,7 +10,7 @@ const childNode = (name, html, isBlock) => ({
 });
 
 export const text = childNode('__textBinder', '<text-node></text-node>', false);
-export const block = childNode('__blockBinder', '<block-node></block-node>', true);
+export const block = childNode('__blockBinder', '<!-- block -->', true);
 
 export const attribute = {
     isBlock: false,

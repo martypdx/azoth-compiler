@@ -15,7 +15,7 @@ describe('binder targets', () => {
     });
 
     it('block', () => {
-        assert.equal(block.html, '<block-node></block-node>');
+        assert.equal(block.html, '<!-- block -->');
         assert.strictEqual(block.isBlock, true);
         assert.deepEqual(
             block.init({ index: 2 }), 

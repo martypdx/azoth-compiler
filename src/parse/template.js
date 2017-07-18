@@ -30,6 +30,10 @@ export default function parseTemplate({ expressions, quasis }) {
             currentEl = getEl(name);
             inAttributes = true;
         },
+        oncomment(comment) {
+            html.push(`<!--${comment}-->`);
+            if(currentEl) currentEl.childIndex++;
+        },
         onattribute(name, value) {
             currentEl.attributes[currentAttr = name] = value;
         },

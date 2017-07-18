@@ -57,7 +57,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __render1 = renderer(makeFragment(\`<span data-bind>Goodbye <text-node></text-node></span>\`));
-            const __render2 = renderer(makeFragment(\`<div data-bind><block-node></block-node></div>\`));
+            const __render2 = renderer(makeFragment(\`<div data-bind><!-- block --></div>\`));
             const __bind0 = __textBinder(1);
             const __bind1 = __blockBinder(0);
             import { renderer, makeFragment, __textBinder, __blockBinder } from 'diamond-ui';
