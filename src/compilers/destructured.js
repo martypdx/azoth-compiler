@@ -12,8 +12,8 @@ export default function makeDestructure({ newRef, sigil='$' }) {
 
     return function destructured(node, ref) {
         const observables = [];
-        
         const statements = [];
+        
         const addStatement = ({ node: id, init }) => {
             statements.push(declareConst({ id, init })); 
         };
@@ -42,7 +42,7 @@ export default function makeDestructure({ newRef, sigil='$' }) {
 
             ObjectPattern(node, { ref, init }, c) {
                 if(init) ref = makeRef(init);
-                for(let prop of node.properties) c(prop, { ref });
+                node.properties.forEach(p => c(p, { ref }));
             },
 
             ArrayPattern(node, { ref, init }, c) {
