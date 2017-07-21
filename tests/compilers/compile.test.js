@@ -247,6 +247,50 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
+    
+    it('no subscriptions for undeclareds in nested templates', () => {
+        const source = `
+            import { html as _ } from 'azoth';
+            const template = ({ foo=$, bar=$}) => _\`
+                *\${foo.map(f => _\`*\${bar}\`)}#        
+            \`;
+        `;
+
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = renderer(makeFragment(\`<text-node></text-node>\`));
+            const __render1 = renderer(makeFragment(\`
+                <!-- block -->        
+            \`));
+            const __bind0 = __textBinder(0);
+            const __bind1 = __blockBinder(1);
+            import {renderer, makeFragment, __textBinder, __blockBinder, __map} from 'azoth';
+            const template = ({foo, bar}) => {
+                const __nodes = __render1();
+                const __sub0b = __bind1(__nodes[0]);
+                const __sub0 = __map(foo, foo => foo.map(f => {
+                    const __nodes = __render0();
+                    const __sub0 = bar.subscribe(__bind0(__nodes[0]));
+                    const __fragment = __nodes[__nodes.length];
+                    __fragment.unsubscribe = () => {
+                        __sub0.unsubscribe();
+                    };
+                    return __fragment;
+                }), __sub0b.observer);
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
+                    __sub0b.unsubscribe();
+                };
+                return __fragment;
+            };
+
+        `;
+
+        codeEqual(compiled, expected);
+    }); 
+
     // // for debug of files that are failing compile.
     // // put file contents in ./build/test-file.js
     // it('parses domUtil file', () => {

@@ -1,4 +1,4 @@
-import undeclared from 'undeclared';
+import undeclared from '../parse/undeclared';
 
 export default function match(ast, scope) {
     if(ast.type === 'Identifier') {

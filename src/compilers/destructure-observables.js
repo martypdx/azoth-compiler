@@ -8,12 +8,12 @@ import {
 const property = identifier('child');
 const initChild = ({ ref: object, arg }) => callMethod({ object, property, arg });
 
-export default function makeDestructure({ newRef, sigil='$' }) {
+export default function destructureObservables({ newRef, sigil='$' }) {
 
-    return function destructured(node, ref) {
+    return function destructure(node, ref) {
         const observables = [];
         const statements = [];
-        
+
         const addStatement = ({ node: id, init }) => {
             statements.push(declareConst({ id, init })); 
         };

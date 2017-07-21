@@ -6,6 +6,6 @@ export default {
         'acorn/dist/walk.es',
         'astring',
         'htmlparser2',
-        'undeclared'
+        'estraverse'
     ]
 };

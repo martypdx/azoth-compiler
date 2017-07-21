@@ -1,4 +1,4 @@
-import makeDestructure from './destructured';
+import destructureObservables from './destructure-observables';
 import { identifier } from '../transformers/common';
 
 function recursiveReplace(node, state, visitors) {
@@ -11,7 +11,7 @@ function recursiveReplace(node, state, visitors) {
 
 export default function makeObservablesFrom({ getRef, newRef= () => identifier(getRef()), sigil='$' }) {
 
-    const destructure = makeDestructure({ newRef, sigil });
+    const destructure = destructureObservables({ newRef, sigil });
 
     return function observablesFrom(ast, state) {
 
@@ -20,7 +20,7 @@ export default function makeObservablesFrom({ getRef, newRef= () => identifier(g
                 const { left, right } = node;
                 
                 if(right.name !== sigil) {
-                    // TODO: could be more to do on templates, etc with `left`
+                    // TODO: could be more to do `left` (templates, expression functions, etc)
                     return {
                         type: 'AssignmentPattern',
                         left: c(left, state),

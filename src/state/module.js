@@ -88,11 +88,16 @@ export class Module {
         // which means this is coupled those set of handlers.
         const { currentFn, currentReturnStmt } = this;
         if(currentFn) {
-            if(currentFn.body === node) addStatementsTo(currentFn, [{ statements, index: 0 }]);
+            if(currentFn.body === node) {
+                addStatementsTo(currentFn, [{ statements, index: 0 }]);
+                currentFn.subtemplate = true;
+            }
             else if(currentReturnStmt && currentReturnStmt.argument === node) {
                 replaceStatements(currentFn.body.body, currentReturnStmt, statements);
             }
-        }
+        } 
+        
+        if(!currentFn.subtemplate) node.subtemplate = true;
 
         templateToFunction(node, statements);
     }

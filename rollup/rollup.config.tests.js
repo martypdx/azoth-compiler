@@ -9,7 +9,7 @@ export default {
     external:  [
         'mocha', 'chai',
         'acorn', 'acorn/dist/walk.es', 'astring', 'htmlparser2',
-        'magic-string', 'undeclared'
+        'magic-string', 'estraverse'
     ],
     intro: `require('source-map-support').install();`,
     paths:     { 
