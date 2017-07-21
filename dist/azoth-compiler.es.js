@@ -1,6 +1,6 @@
 import { base, recursive } from 'acorn/dist/walk.es';
 import htmlparser from 'htmlparser2';
-import undeclared from 'undeclared';
+import estraverse from 'estraverse';
 import { parse } from 'acorn';
 import { generate } from 'astring';
 
@@ -585,12 +585,72 @@ const attribute = {
     }
 };
 
+// TODO: rewrite this using acron.
+function recurse(ast, declared, undeclared) {
+    var ast_fn, ast_fns, declared_copy, i, ids, len;
+    if (declared == null) {
+        declared = new Set();
+    }
+    if (undeclared == null) {
+        undeclared = new Set();
+    }
+    ids = new Set();
+    ast_fns = [];
+    estraverse.traverse(ast, {
+        enter: function(node, parent) {
+            if (parent != null) {
+                if (node.type === 'Identifier') {
+                    if (parent.type === 'VariableDeclarator') {
+                        declared.add(node.name);
+                    } else if (
+                        !parent.key &&
+                        (parent.type !== 'MemberExpression' ||
+                            node.name !== parent.property.name)
+                    ) {
+                        ids.add(node.name);
+                    }
+                }
+                else if (
+                    node.type === 'FunctionDeclaration' ||
+                    node.type === 'FunctionExpression' ||
+                    node.type === 'ArrowFunctionExpression'
+                ) {
+                    if(!node.subtemplate) {
+                        ast_fns.push(node);
+                        if (node.id != null) {
+                            declared.add(node.id.name);
+                        }
+                    }
+                    this.skip();
+                }
+            }
+        }
+    });
+    ids.forEach(function(id) {
+        if (!declared.has(id)) {
+            undeclared.add(id);
+        }
+    });
+    for ((i = 0), (len = ast_fns.length); i < len; i++) {
+        ast_fn = ast_fns[i];
+        declared_copy = new Set();
+        declared.forEach(function(id) {
+            declared_copy.add(id);
+        });
+        ast_fn.params.forEach(function(param) {
+            declared_copy.add(param.name);
+        });
+        recurse(ast_fn, declared_copy, undeclared);
+    }
+    return undeclared;
+}
+
 function match(ast, scope) {
     if(ast.type === 'Identifier') {
         return scope[ast.name] ? [ast.name] : [];
     }
 
-    const undeclareds = undeclared(ast).values();
+    const undeclareds = recurse(ast).values();
     
     return Array
         .from(undeclareds)
@@ -925,11 +985,16 @@ class Module {
         // which means this is coupled those set of handlers.
         const { currentFn, currentReturnStmt } = this;
         if(currentFn) {
-            if(currentFn.body === node) addStatementsTo(currentFn, [{ statements, index: 0 }]);
+            if(currentFn.body === node) {
+                addStatementsTo(currentFn, [{ statements, index: 0 }]);
+                currentFn.subtemplate = true;
+            }
             else if(currentReturnStmt && currentReturnStmt.argument === node) {
                 replaceStatements(currentFn.body.body, currentReturnStmt, statements);
             }
-        }
+        } 
+        
+        if(!currentFn.subtemplate) node.subtemplate = true;
 
         templateToFunction(node, statements);
     }
@@ -986,12 +1051,12 @@ var templates = Object.freeze({
 const property = identifier('child');
 const initChild = ({ ref: object, arg }) => callMethod({ object, property, arg });
 
-function makeDestructure({ newRef, sigil='$' }) {
+function destructureObservables({ newRef, sigil='$' }) {
 
-    return function destructured(node, ref) {
+    return function destructure(node, ref) {
         const observables = [];
-        
         const statements = [];
+
         const addStatement = ({ node: id, init }) => {
             statements.push(declareConst({ id, init })); 
         };
@@ -1020,7 +1085,7 @@ function makeDestructure({ newRef, sigil='$' }) {
 
             ObjectPattern(node, { ref, init }, c) {
                 if(init) ref = makeRef(init);
-                for(let prop of node.properties) c(prop, { ref });
+                node.properties.forEach(p => c(p, { ref }));
             },
 
             ArrayPattern(node, { ref, init }, c) {
@@ -1054,7 +1119,7 @@ function recursiveReplace(node, state, visitors) {
 
 function makeObservablesFrom({ getRef, newRef= () => identifier(getRef()), sigil='$' }) {
 
-    const destructure = makeDestructure({ newRef, sigil });
+    const destructure = destructureObservables({ newRef, sigil });
 
     return function observablesFrom(ast, state) {
 
@@ -1063,7 +1128,7 @@ function makeObservablesFrom({ getRef, newRef= () => identifier(getRef()), sigil
                 const { left, right } = node;
                 
                 if(right.name !== sigil) {
-                    // TODO: could be more to do on templates, etc with `left`
+                    // TODO: could be more to do `left` (templates, expression functions, etc)
                     return {
                         type: 'AssignmentPattern',
                         left: c(left, state),
