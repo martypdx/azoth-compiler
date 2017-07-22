@@ -309,7 +309,7 @@ describe('compiler', () => {
                 __sub0b.onanchor(__bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
-                    __sub0b.ondestroy();
+                    __sub0b.unsubscribe();
                 };
                 return __fragment;
             };
