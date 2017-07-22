@@ -27,8 +27,8 @@ export function getBindingType(text) {
     return { sigil, text };
 }
 
-const escapedBlockMatch = /^\\(#|\/>)/;
-const blockMatch = /^(#|\/>)/;
+const escapedBlockMatch = /^\\(#|\s*\/>)/;
+const blockMatch = /^(#|\s*\/>)/;
 
 export function getBlock(text) {
 
