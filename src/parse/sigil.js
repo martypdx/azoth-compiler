@@ -1,8 +1,8 @@
 import { NONE, typeMap } from './sigil-types';
 
-// TODO: get the values *@$ from sigil types
-const escapedBindingMatch = /\\[*@$]$/;
-const bindingMatch = /[\*@$]$/;
+// TODO: get the values from sigil types
+const escapedBindingMatch = /\\(\*|\@|\$|<#:)$/;
+const bindingMatch = /(\*|\@|\$|<#:)$/;
 
 export function getBindingType(text) {
 
@@ -27,8 +27,8 @@ export function getBindingType(text) {
     return { sigil, text };
 }
 
-const escapedBlockMatch = /^\\#/;
-const blockMatch = /^#/;
+const escapedBlockMatch = /^\\(#|\/>)/;
+const blockMatch = /^(#|\/>)/;
 
 export function getBlock(text) {
 

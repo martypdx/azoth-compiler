@@ -1,7 +1,7 @@
 import chai from 'chai';
 const assert = chai.assert;
 import { getBindingType, getBlock } from '../../src/parse/sigil';
-import { AT, DOLLAR, NONE, STAR } from '../../src/parse/sigil-types';
+import { AT, DOLLAR, NONE, STAR, ELEMENT } from '../../src/parse/sigil-types';
 
 
 describe('sigils', () => {
@@ -46,6 +46,10 @@ describe('sigils', () => {
 
         it('escaped $', () => {
             test('text\\$', { sigil: NONE, text: 'text$' });
+        });
+
+        it('component element', () => {
+            test('text<#:', { sigil: ELEMENT, text: 'text' });
         });
     });
 

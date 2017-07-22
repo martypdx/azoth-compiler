@@ -1,6 +1,5 @@
 /*eslint no-unused-vars: off */
-/* globals _ */
-import { NONE, STAR, AT } from '../../src/parse/sigil-types';
+import { NONE, STAR, AT, ELEMENT } from '../../src/parse/sigil-types';
 import template from '../../src/parse/template';
 import chai from 'chai';
 const assert = chai.assert;
@@ -27,6 +26,7 @@ const parseSource = source => {
     return template(quasi);
 };
 
+/* globals _, Block */
 describe('parse template', () => {
 
     describe('text-node', () => {
@@ -56,6 +56,15 @@ describe('parse template', () => {
                 `ref: ${ref}`
             );
         }
+
+        it('block component', () => {
+            function source() {
+                const template = () => _`<#:${Block}/>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<!-- component -->');
+            testFirst(binders, { ref: 'Block', sigil: ELEMENT });
+        });
 
         it('stand-alone text node', () => {
             function source() {

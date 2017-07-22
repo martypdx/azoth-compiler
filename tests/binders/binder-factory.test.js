@@ -21,6 +21,11 @@ describe('binder factory', () => {
             const binder = getBinder({ inAttributes: false, block: true });
             assert.equal(binder.target, block);
         });
+
+        it('component binder', () => {
+            const binder = getBinder({ inAttributes: false, block: true });
+            assert.equal(binder.target, block);
+        });
     });  
 
     describe('element attribute', () => {

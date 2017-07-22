@@ -38,7 +38,7 @@ export class Imports {
     }
 
     addBinder({ declaration: { name }, type }) {
-        this.addName(name);
+        if(name) this.addName(name);
         const typeImport = importSpecifiers[type];
         if(typeImport) this.addName(typeImport);     
     }

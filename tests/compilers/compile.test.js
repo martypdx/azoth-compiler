@@ -291,6 +291,33 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
+    it('block component', () => {
+        const source = `
+            import { _, Block } from 'azoth';
+            const template = name => _\`<span><#:\${Block({ name })}/></span>\`;
+        `;
+
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = renderer(makeFragment(\`<span data-bind><!-- component --></span>\`));
+            const __bind0 = __componentBinder(0);
+            import { Block, renderer, makeFragment, __componentBinder } from 'azoth';
+            const template = name => {
+                const __nodes = __render0();
+                const __sub0b = Block({ name });
+                __sub0b.onanchor(__bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0b.ondestroy();
+                };
+                return __fragment;
+            };
+        `;
+
+        codeEqual(compiled, expected);
+    }); 
+
     // // for debug of files that are failing compile.
     // // put file contents in ./build/test-file.js
     // it('parses domUtil file', () => {

@@ -61,10 +61,10 @@ const RETURN_FRAGMENT = returnStatement({ arg: identifier(FRAGMENT) });
 const DIRECT_RETURN = returnStatement({ arg: LAST_NODE });
 
 // __sub${index}${suffix}.unsubscribe();
-const unsubscribe = (index, suffix = '') => {
+const unsubscribe = (index, suffix = '', property = 'unsubscribe') => {
     const callee = memberExpression({
         name: `${SUB}${index}${suffix}`, 
-        property: identifier('unsubscribe')
+        property: identifier(property)
     });
 
     return {
@@ -76,8 +76,9 @@ const unsubscribe = (index, suffix = '') => {
 const unsubscribes = binders => {
     const unsubs = [];
     binders.forEach((binder, i) => {
-        if(binder.type !== VALUE) unsubs.push(unsubscribe(i));
-        if(binder.target.isBlock) unsubs.push(unsubscribe(i, 'b')); 
+        const { type, target } = binder;
+        if(type !== VALUE) unsubs.push(unsubscribe(i));
+        if(target.isBlock) unsubs.push(unsubscribe(i, 'b', target.isComponent ? 'ondestroy' : undefined)); 
     });
     return unsubs;
 };

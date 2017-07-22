@@ -32,23 +32,42 @@ const bindings = {
 };
 
 export default function binding(binder, i) {
-    const binding = bindings[binder.type];
+    const { type, target } = binder;
+    const binding = bindings[type];
     const statements = [];
     let observer = nodeBinding(binder);
 
-    if(binder.target.isBlock) {
+    if(target.isBlock) {
         const id = identifier(`${SUB}${i}b`);
-        // const __sub${i}b = <nodeBinding>;
-        const declare = declareConst({ id, init: observer });
+        const init = target.isComponent ? binder.ast : observer;
+        const declare = declareConst({ id, init });
         statements.push(declare);
 
-        observer = memberExpression({
-            object: id,
-            property: identifier('observer')
-        });
+        if(target.isComponent) {
+            const onanchor = {
+                type: 'ExpressionStatement',
+                expression: callExpression({
+                    callee: memberExpression({
+                        object: id,
+                        property: identifier('onanchor')
+                    }),
+                    args: [observer]
+                })
+            }; 
+            statements.push(onanchor);
+        }
+        else {
+            observer = memberExpression({
+                object: id,
+                property: identifier('observer')
+            });
+            statements.push(binding(observer, binder, i));
+        }
+    }
+    else {
+        statements.push(binding(observer, binder, i));
     }
 
-    statements.push(binding(observer, binder, i));
     return statements;
 }
 
