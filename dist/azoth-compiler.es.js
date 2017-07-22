@@ -199,7 +199,7 @@ class Imports {
     }
 
     addBinder({ declaration: { name }, type }) {
-        this.addName(name);
+        if(name) this.addName(name);
         const typeImport = importSpecifiers[type];
         if(typeImport) this.addName(typeImport);     
     }
@@ -287,8 +287,9 @@ const unsubscribe = (index, suffix = '') => {
 const unsubscribes = binders => {
     const unsubs = [];
     binders.forEach((binder, i) => {
-        if(binder.type !== VALUE) unsubs.push(unsubscribe(i));
-        if(binder.target.isBlock) unsubs.push(unsubscribe(i, 'b')); 
+        const { type, target } = binder;
+        if(type !== VALUE) unsubs.push(unsubscribe(i));
+        if(target.isBlock) unsubs.push(unsubscribe(i, 'b')); 
     });
     return unsubs;
 };
@@ -345,23 +346,42 @@ const bindings = {
 };
 
 function binding(binder, i) {
-    const binding = bindings[binder.type];
+    const { type, target } = binder;
+    const binding = bindings[type];
     const statements = [];
     let observer = nodeBinding(binder);
 
-    if(binder.target.isBlock) {
+    if(target.isBlock) {
         const id = identifier(`${SUB}${i}b`);
-        // const __sub${i}b = <nodeBinding>;
-        const declare = declareConst({ id, init: observer });
+        const init = target.isComponent ? binder.ast : observer;
+        const declare = declareConst({ id, init });
         statements.push(declare);
 
-        observer = memberExpression({
-            object: id,
-            property: identifier('observer')
-        });
+        if(target.isComponent) {
+            const onanchor = {
+                type: 'ExpressionStatement',
+                expression: callExpression({
+                    callee: memberExpression({
+                        object: id,
+                        property: identifier('onanchor')
+                    }),
+                    args: [observer]
+                })
+            }; 
+            statements.push(onanchor);
+        }
+        else {
+            observer = memberExpression({
+                object: id,
+                property: identifier('observer')
+            });
+            statements.push(binding(observer, binder, i));
+        }
+    }
+    else {
+        statements.push(binding(observer, binder, i));
     }
 
-    statements.push(binding(observer, binder, i));
     return statements;
 }
 
@@ -494,17 +514,19 @@ const AT = Symbol('@');
 const DOLLAR = Symbol('$');
 const NONE = Symbol('none');
 const STAR = Symbol('*');
+const ELEMENT = Symbol('<#:');
 
 const typeMap = {
     '@': AT,
     '$': DOLLAR,
     '': NONE,
     '*': STAR,
+    '<#:': ELEMENT,
 };
 
-// TODO: get the values *@$ from sigil types
-const escapedBindingMatch = /\\[*@$]$/;
-const bindingMatch = /[\*@$]$/;
+// TODO: get the values from sigil types
+const escapedBindingMatch = /\\(\*|\@|\$|<#:)$/;
+const bindingMatch = /(\*|\@|\$|<#:)$/;
 
 function getBindingType(text) {
 
@@ -529,8 +551,8 @@ function getBindingType(text) {
     return { sigil, text };
 }
 
-const escapedBlockMatch = /^\\#/;
-const blockMatch = /^#/;
+const escapedBlockMatch = /^\\(#|\/>)/;
+const blockMatch = /^(#|\/>)/;
 
 function getBlock(text) {
 
@@ -560,8 +582,9 @@ function getBlock(text) {
     return { block, text };
 }
 
-const childNode = (name, html, isBlock) => ({
+const childNode = (name, html, isBlock = false, isComponent = false) => ({
     isBlock,
+    isComponent,
     html,
     init({ index }) {
         return {
@@ -571,11 +594,13 @@ const childNode = (name, html, isBlock) => ({
     }
 });
 
-const text = childNode('__textBinder', '<text-node></text-node>', false);
+const text = childNode('__textBinder', '<text-node></text-node>');
 const block = childNode('__blockBinder', '<!-- block -->', true);
+const component = childNode('__componentBinder', '<!-- component -->', true, true);
 
 const attribute = {
     isBlock: false,
+    isComponent: false,
     html: '""',
     init({ name }) {
         return { 
@@ -709,7 +734,10 @@ class Binder {
 
 function getBinder(options) {
 
-    if (options.inAttributes) {
+    if(options.sigil === ELEMENT) {
+        options.target = component;
+    }
+    else if (options.inAttributes) {
         if (options.block) {
             throw new Error('Attribute Blocks not yet supported');
         }
