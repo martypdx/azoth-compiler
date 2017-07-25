@@ -1,6 +1,7 @@
 import { NONE, typeMap } from './sigil-types';
 
-// TODO: get the values from sigil types
+// TODO: get the values from sigil types.
+// TODO: make regex and escape version from base string
 const escapedBindingMatch = /\\(\*|\@|\$|<#:)$/;
 const bindingMatch = /(\*|\@|\$|<#:)$/;
 
