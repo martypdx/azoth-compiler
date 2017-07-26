@@ -37,7 +37,7 @@ export default function binding(binder, i) {
     const statements = [];
     let observer = nodeBinding(binder);
 
-    if(target.isBlock) {
+    if(target.isBlock || target.isComponent) {
         const id = identifier(`${SUB}${i}b`);
         const init = target.isComponent ? binder.ast : observer;
         const declare = declareConst({ id, init });

@@ -78,7 +78,7 @@ const unsubscribes = binders => {
     binders.forEach((binder, i) => {
         const { type, target } = binder;
         if(type !== VALUE) unsubs.push(unsubscribe(i));
-        if(target.isBlock) unsubs.push(unsubscribe(i, 'b')); 
+        if(target.isBlock || target.isComponent) unsubs.push(unsubscribe(i, 'b')); 
     });
     return unsubs;
 };

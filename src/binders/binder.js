@@ -15,7 +15,9 @@ export default class Binder {
         this.moduleIndex = -1;
         
         this.index = -1;
-        this.name = '';        
+        this.name = '';
+        
+        this.properties = [];
     }
 
     init(el, attr) {

@@ -36,7 +36,7 @@ describe('binder targets', () => {
     });
 
     it('component', () => {
-        assert.equal(component.html, '<!-- component -->');
+        assert.equal(component.html, '<#: ');
         assert.strictEqual(component.isBlock, true);
         assert.strictEqual(component.isComponent, true);
         assert.deepEqual(

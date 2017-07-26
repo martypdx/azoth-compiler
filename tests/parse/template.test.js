@@ -26,45 +26,57 @@ const parseSource = source => {
     return template(quasi);
 };
 
-/* globals _, Block */
+/* globals _, Block, foo */
 describe('parse template', () => {
+
+
+    function testBinder(binder, {
+        elIndex = 0,
+        moduleIndex = -1,
+        name = '',
+        index = -1,
+        sigil = NONE,
+        ref = '',
+        observables = []    
+    } = {}) {
+        assert.ok(binder, 'binder does not exist');
+        const { name: astName, type: astType } = binder.ast;
+        assert.equal(astType, 'Identifier');
+        assert.equal(astName, ref);
+        delete binder.ast;
+        delete binder.target;
+        delete binder.properties;
+        
+        assert.deepEqual(
+            binder, 
+            { elIndex, moduleIndex, index, name, sigil, observables }, 
+            `name: ${name || ref}`
+        );
+    }
+
+    function testAttr(binder, options) { 
+        return testBinder(binder, options);
+    }
+
+    function testProp(binder, options) { 
+        options.elIndex = binder.elIndex;
+        options.index = binder.index;
+        return testBinder(binder, options);
+    }
+
+    function testText(binder, options) {
+        options.index = options.index || 0;
+        options.sigil = options.sigil || STAR;
+        testBinder(binder, options);
+
+    }
 
     describe('text-node', () => {
     
-        function testFirst(binders, options) {
+        function testFirstText(binders, options) {
             assert.equal(binders.length, 1);
             testText(binders[0], options);
         }    
-
-        function testText(binder, {
-            elIndex = 0,
-            moduleIndex = -1,
-            index = 0,
-            name = '',
-            sigil = STAR,
-            ref = '',
-            observables = []
-        } = {}) {
-            const { name: astName, type: astType } = binder.ast;
-            assert.equal(astType, 'Identifier');
-            assert.equal(astName, ref);
-            delete binder.ast;
-            delete binder.target;
-            assert.deepEqual(
-                binder, 
-                { elIndex, moduleIndex, index, name, sigil, observables }, 
-                `ref: ${ref}`
-            );
-        }
-
-        it('block component', () => {
-            function source() {
-                const template = () => _`<#:${Block}/>`;
-            }
-            const { html, binders } = parseSource(source);
-            assert.equal(html, '<!-- component -->');
-            testFirst(binders, { ref: 'Block', sigil: ELEMENT });
-        });
 
         it('stand-alone text node', () => {
             function source() {
@@ -72,7 +84,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<text-node></text-node>');
-            testFirst(binders, { ref: 'foo' });
+            testFirstText(binders, { ref: 'foo' });
         });
 
         it('value text node', () => {
@@ -81,7 +93,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<text-node></text-node>');
-            testFirst(binders, { ref: 'foo', sigil: NONE });
+            testFirstText(binders, { ref: 'foo', sigil: NONE });
         });
 
         it('block text node', () => {
@@ -90,7 +102,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<!-- block -->');
-            testFirst(binders, { ref: 'foo', sigil: NONE });
+            testFirstText(binders, { ref: 'foo', sigil: NONE });
         });
 
         it('block observer text node', () => {
@@ -99,7 +111,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<!-- block -->');
-            testFirst(binders, { ref: 'foo' });
+            testFirstText(binders, { ref: 'foo' });
         });
 
         it('element with text node', () => {
@@ -112,7 +124,7 @@ describe('parse template', () => {
             assert.equal(html,
                 '<span data-bind>hello <text-node></text-node></span>'
             );
-            testFirst(binders, { index: 1, ref: 'place' });
+            testFirstText(binders, { index: 1, ref: 'place' });
         });
 
         it('second element with text node', () => {
@@ -125,7 +137,7 @@ describe('parse template', () => {
             assert.equal(html,
                 '<span>hello</span> <span data-bind><text-node></text-node></span>'
             );
-            testFirst(binders, { ref: 'place' });
+            testFirstText(binders, { ref: 'place' });
         });
 
         it('two elements with text node', () => {
@@ -168,7 +180,7 @@ describe('parse template', () => {
             assert.equal(html,
                 '<div><span data-bind><text-node></text-node></span></div>'
             );
-            testFirst(binders, { ref: 'foo' });
+            testFirstText(binders, { ref: 'foo' });
         });
 
         it('multiple nested elements with text node', () => {
@@ -198,44 +210,54 @@ describe('parse template', () => {
             testText(binders[3], { elIndex: 2, index: 1, ref: 'four' });
             testText(binders[4], { elIndex: 3, ref: 'five' });
         });
+  
+        it('block component', () => {
+            function source() {
+                const template = () => _`<#:${Block}></#:>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<!-- component -->');
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT });
+        });
+
+        it('self-closing block component', () => {
+            function source() {
+                const template = () => _`<#:${Block}/>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<!-- component -->');
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT });
+        });
+
+        it('block component with properties', () => {
+            function source() {
+                const template = () => _`<#:${Block} foo=*${foo} bar="BAR"/>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<!-- component -->');
+            
+            const properties = binders[0].properties;
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT, propCount: properties.length });
+            assert.equal(properties.length, 2);
+            testProp(properties[0], { name: 'foo', ref: 'foo', sigil: STAR });
+
+        });
     });
 
     describe('attribute', () => {
 
-        function testFirst(binders, options) {
+        function testFirstAttr(binders, options) {
             assert.equal(binders.length, 1);
             testAttr(binders[0], options);
         }   
         
-        function testAttr(binder, {
-            elIndex = 0,
-            moduleIndex = -1,
-            name = '',
-            index = -1,
-            sigil = NONE,
-            ref = '',
-            observables = []
-        } = {}) {
-            assert.ok(binder, 'binder does not exist');
-            const { ast } = binder;
-            assert.equal(ast.type, 'Identifier');
-            assert.equal(ast.name, ref);
-            delete binder.ast;
-            delete binder.target;
-            assert.deepEqual(
-                binder, 
-                { elIndex, moduleIndex, name, index, sigil, observables }, 
-                `name: ${name}`
-            );
-        }
-
         it('simple', () => {
             function source() {
                 const template = foo => _`<span bar=${foo}></span>`;
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<span bar="" data-bind></span>');
-            testFirst(binders, { name: 'bar', ref: 'foo' });
+            testFirstAttr(binders, { name: 'bar', ref: 'foo' });
         });
 
         it('with statics, value and valueless', () => {
@@ -245,7 +267,7 @@ describe('parse template', () => {
             const { html, binders } = parseSource(source);
             // NOTE: empty string is equivalent to boolean attribute per spec.
             assert.equal(html, '<input class="" type="checkbox" checked="" data-bind>');
-            testFirst(binders, { name: 'class', ref: 'foo' });
+            testFirstAttr(binders, { name: 'class', ref: 'foo' });
         });
 
         it('many', () => {

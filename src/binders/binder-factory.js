@@ -1,6 +1,6 @@
 import Binder from './binder';
 import { ELEMENT } from '../parse/sigil-types';
-import { text, block, attribute, component } from './targets';
+import { text, block, attribute, property, component } from './targets';
     
 export default function getBinder(options) {
 
@@ -11,7 +11,7 @@ export default function getBinder(options) {
         if (options.block) {
             throw new Error('Attribute Blocks not yet supported');
         }
-        options.target = attribute;
+        options.target = options.component ? property : attribute;
     }
     else {
         options.target = options.block ? block : text;

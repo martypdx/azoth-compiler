@@ -1,10 +1,10 @@
-const childNode = (name, html, isBlock = false, isComponent = false) => ({
+const childNode = (binder, html, isBlock = false, isComponent = false) => ({
     isBlock,
     isComponent,
     html,
     init({ index }) {
         return {
-            name: name,
+            name: binder,
             arg: index
         };
     }
@@ -12,16 +12,19 @@ const childNode = (name, html, isBlock = false, isComponent = false) => ({
 
 export const text = childNode('__textBinder', '<text-node></text-node>');
 export const block = childNode('__blockBinder', '<!-- block -->', true);
-export const component = childNode('__componentBinder', '<!-- component -->', true, true);
+export const component = childNode('__componentBinder', '<#: ', true, true);
 
-export const attribute = {
+const attr = binder => ({
     isBlock: false,
     isComponent: false,
     html: '""',
     init({ name }) {
         return { 
-            name: '__attrBinder',
+            name: binder,
             arg: name
         };
     }
-};
+});
+
+export const attribute = attr('__attrBinder');
+export const property = attr('__propBinder');

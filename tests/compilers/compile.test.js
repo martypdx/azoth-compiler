@@ -294,14 +294,14 @@ describe('compiler', () => {
     it('block component', () => {
         const source = `
             import { _, Block } from 'azoth';
-            const template = name => _\`<span><#:\${Block({ name })}/></span>\`;
+            const template = name => _\`<span>Hello <#:\${Block({ name })}/></span>\`;
         `;
 
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind><!-- component --></span>\`));
-            const __bind0 = __componentBinder(0);
+            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <!-- component --></span>\`));
+            const __bind0 = __componentBinder(1);
             import { Block, renderer, makeFragment, __componentBinder } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
@@ -310,6 +310,38 @@ describe('compiler', () => {
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
+                };
+                return __fragment;
+            };
+        `;
+
+        codeEqual(compiled, expected);
+    }); 
+
+    it.skip('block component with attributes', () => {
+        const source = `
+            import { _, Block } from 'azoth';
+            const template = (name, foo=$) => _\`<span><#:\${Block({ name })} foo=*\${foo} bar="bar"/></span>\`;
+        `;
+
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = renderer(makeFragment(\`<span data-bind><!-- component --></span>\`));
+            const __bind0 = __componentBinder(0);
+            const __bind1 = __propBinder('foo');
+            const __bind2 = __propBinder('bar');
+            import { Block, renderer, makeFragment, __componentBinder, __propBinder } from 'azoth';
+            const template = (name, foo) => {
+                const __nodes = __render0();
+                const __sub0b = Block({ name });
+                const __sub1 = foo.subscribe(__bind1(__sub0b));
+                __bind2(__sub0b)('bar');
+                __sub0b.onanchor(__bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0b.unsubscribe();
+                    __sub1.unsubscribe();
                 };
                 return __fragment;
             };

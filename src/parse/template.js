@@ -2,13 +2,24 @@ import htmlparser from 'htmlparser2';
 import { getBindingType, getBlock } from './sigil'; 
 import getBinder from '../binders/binder-factory';
 import voidElements from './void-elements';
+import { literal } from '../transformers/common';
 
 const getEl = (name = 'root') => ({
     name, 
     attributes: {}, 
     binders: [],
     childBinders: [],
-    childIndex: -1
+    childIndex: -1,
+    htmlIndex: -1,
+    opened: false,
+    component: false,
+    binder: null
+});
+
+const literalProperty = value => getBinder({
+    inAttributes: true,
+    component: true,
+    ast: literal({ value })
 });
 
 export default function parseTemplate({ expressions, quasis }) {
@@ -25,9 +36,10 @@ export default function parseTemplate({ expressions, quasis }) {
     
     const handler = {
         onopentagname(name) {
-            currentEl.childIndex++;
+            const childIndex = ++currentEl.childIndex;
             stack.push(currentEl);
             currentEl = getEl(name);
+            if(currentEl.component = name === '#:') currentEl.childIndex = childIndex;
             inAttributes = true;
         },
         oncomment(comment) {
@@ -35,26 +47,34 @@ export default function parseTemplate({ expressions, quasis }) {
             if(currentEl) currentEl.childIndex++;
         },
         onattribute(name, value) {
-            currentEl.attributes[currentAttr = name] = value;
+            currentAttr = name;
+            currentEl.attributes[name] = value;
         },
         onopentag(name) {
             const el = currentEl;
+            el.opened = true;
             const { attributes } = el;
-            // TODO: Switch to Object.values, but needs node.js version 7.x - wait for 8.x?
-            const attrsText = Object.keys(attributes)
-                .reduce((text, key) => {
-                    // NOTE: currently not distinguishing between empty string and valueless attribute.
-                    // htmlparser2 does not distinguish and html spec says empty string 
-                    // and boolean are equivalent
-                    const value = attributes[key];
+            const entries = Object.entries(attributes);
+
+            if(el.component) {
+                el.binder.properties = entries.map(([, value]) => {
+                    return typeof value === 'string' ? literalProperty(value) : value;
+                });
+                html.push(`<!-- component -->`);
+            }
+            else {                
+                // NOTE: html spec and htmlparser2 implementation treat 
+                // empty string and valueless attribute as equivalent
+                const attrsText = entries.reduce((text, [key, value]) => {
                     return `${text} ${key}="${value}"`;
                 },'');
 
-            el.htmlIndex = -2 + html.push(
-                `<${name}${attrsText}`,
-                '',
-                `>`
-            );
+                el.htmlIndex = -2 + html.push(
+                    `<${name}${attrsText}`,
+                    '',
+                    `>`
+                );
+            }
 
             currentAttr = null;
             inAttributes = false;
@@ -65,12 +85,27 @@ export default function parseTemplate({ expressions, quasis }) {
         },
         add(binder) { 
             const el = currentEl;
+            // this works for components, but is misleading
+            // because child index in other cases is relative
+            // to current el, but for components really is el
+            // index of parent el (set in onopentagname)
             binder.init(el, currentAttr || '');
-            el.binders.push(binder);
+
+            if(el.component && !el.binder) {
+                stack[stack.length - 1].binders.push(binder);
+                el.binder = binder;
+            }
+            else if(el.component && inAttributes) {
+                if(!binder.name) throw new Error('Expected binder to have name');
+                this.onattribute(binder.name, binder);
+            }
+            else el.binders.push(binder);
         },
         onclosetag(name) {
-            if(!voidElements[name]) html.push(`</${name}>`);
             const el = currentEl;
+            if(!el.component && !voidElements[name] && el.opened) html.push(`</${name}>`);
+            else if(el.component && !el.opened) html.push('<!-- component -->');
+
             currentEl = stack.pop();
 
             //Notice array of arrays. 
@@ -79,7 +114,8 @@ export default function parseTemplate({ expressions, quasis }) {
             //element binding index in right order.
 
             if(el.binders.length > 0) {
-                html[el.htmlIndex] = ` data-bind`;
+                const target = el.htmlIndex > -1 ? el : currentEl;
+                html[target.htmlIndex] = ` data-bind`;
                 currentEl.childBinders.push(el.binders);
             }
 
@@ -100,7 +136,7 @@ export default function parseTemplate({ expressions, quasis }) {
 
         const { sigil, text } = getBindingType(quasi.value.raw);
 
-        parser.write(text);
+        if(text) parser.write(text);
 
         let block = false;
         if(i < quasis.length) {
@@ -114,6 +150,7 @@ export default function parseTemplate({ expressions, quasis }) {
             block,
             sigil,
             inAttributes,
+            component: currentEl.component,
             ast: expressions[i]
         });
 
@@ -134,3 +171,10 @@ export default function parseTemplate({ expressions, quasis }) {
         binders
     };
 }
+
+//     const binder = getBinder({
+//         inAttributes: true,
+//         component: true,
+//         ast: literal({ value })
+//     });
+//     currentEl.binder.properties.push(binder);

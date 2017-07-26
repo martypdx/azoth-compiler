@@ -1,13 +1,14 @@
 import getBinder from '../../src/binders/binder-factory';
-import { text, block, attribute } from '../../src/binders/targets';
+import { text, block, attribute, property, component } from '../../src/binders/targets';
+import { ELEMENT } from '../../src/parse/sigil-types';
 import { assert } from 'chai';
 
 describe('binder factory', () => {
 
     describe('binding type', () => {
         it('passes thru options', () => {
-            const binder = getBinder({ inAttributes: false, block: false, sigil: 'value' });
-            assert.equal(binder.sigil, 'value');
+            const binder = getBinder({ inAttributes: false, block: false, sigil: 'test' });
+            assert.equal(binder.sigil, 'test');
         });
     });
 
@@ -23,8 +24,8 @@ describe('binder factory', () => {
         });
 
         it('component binder', () => {
-            const binder = getBinder({ inAttributes: false, block: true });
-            assert.equal(binder.target, block);
+            const binder = getBinder({ sigil: ELEMENT });
+            assert.equal(binder.target, component);
         });
     });  
 
@@ -32,6 +33,11 @@ describe('binder factory', () => {
         it('attribute binder', () => {
             const binder = getBinder({ inAttributes: true, block: false });
             assert.equal(binder.target, attribute);
+        });
+
+        it('property binder', () => {
+            const binder = getBinder({ inAttributes: true, block: false, component: true });
+            assert.equal(binder.target, property);
         });
 
         it('attribute block binder not yet supported', () => {
