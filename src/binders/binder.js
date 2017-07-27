@@ -5,7 +5,7 @@ import matchObservables from './match-observables';
 
 export default class Binder {
 
-    constructor({ sigil = NONE, ast = null, target = text } = {}) {        
+    constructor({ sigil = NONE, ast = null, target = text, name = '' } = {}) {        
         this.sigil = sigil;
         this.ast = ast;
         this.target = target;
@@ -15,7 +15,7 @@ export default class Binder {
         this.moduleIndex = -1;
         
         this.index = -1;
-        this.name = '';
+        this.name = name;
         
         this.properties = [];
     }
@@ -31,6 +31,14 @@ export default class Binder {
 
     get declaration() {
         return this.target.init(this);
+    }
+    
+    get declarations() {
+        const declarations = [this.declaration];
+        if(this.properties) {
+            declarations.push(...this.properties.map(p => p.declaration));
+        }
+        return declarations;
     }
 
     matchObservables(scope) {

@@ -318,7 +318,7 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
-    it.skip('block component with attributes', () => {
+    it('block component with attributes', () => {
         const source = `
             import { _, Block } from 'azoth';
             const template = (name, foo=$) => _\`<span><#:\${Block({ name })} foo=*\${foo} bar="bar"/></span>\`;
@@ -335,13 +335,13 @@ describe('compiler', () => {
             const template = (name, foo) => {
                 const __nodes = __render0();
                 const __sub0b = Block({ name });
-                const __sub1 = foo.subscribe(__bind1(__sub0b));
+                const __sub0_0 = foo.subscribe(__bind1(__sub0b));
                 __bind2(__sub0b)('bar');
                 __sub0b.onanchor(__bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
-                    __sub1.unsubscribe();
+                    __sub0_0.unsubscribe();
                 };
                 return __fragment;
             };

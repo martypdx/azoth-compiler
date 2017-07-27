@@ -65,22 +65,28 @@ export class Module {
         );
     }
 
+    // only used privately from makeTemplate
     addBinder(binder) {
+
+        binder.matchObservables(this.scope);
         this.imports.addBinder(binder);
 
-        const { declaration } = binder;
-        const unique = JSON.stringify(declaration);
-        return this.binders.add(unique, declaration);
+        const { declarations } = binder;
+        let index = -1;
+        declarations.forEach((d, i) => {
+            const unique = JSON.stringify(d);
+            const at = this.binders.add(unique, d);
+            if(i === 0) index = at;
+        });
+        binder.moduleIndex = index;
+        binder.properties.forEach(p => this.addBinder(p));
     }
 
     makeTemplate(node) {
         const { html, binders } = parse(node.quasi);
-
         const index = this.fragments.add(html);
-        binders.forEach(b => {
-            b.matchObservables(this.scope);
-            b.moduleIndex = this.addBinder(b);
-        });
+         
+        binders.forEach(b => this.addBinder(b));
         
         const statements = makeTemplateStatements({ binders, index });
         

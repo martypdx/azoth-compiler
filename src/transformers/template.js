@@ -24,7 +24,8 @@ export const templateToFunction = (node, block) => {
 
 export const makeTemplateStatements = ({ binders, index }) => {
     const bindings = binders
-        .map(binding)
+        // binding takes additional params, so we can't directly pass to map
+        .map((b, i) => binding(b, i))
         .reduce((a, b) => a.concat(b), []);
         
     return [

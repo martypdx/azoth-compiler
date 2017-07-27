@@ -73,12 +73,14 @@ const unsubscribe = (index, suffix = '') => {
     };
 };
 
-const unsubscribes = binders => {
+const unsubscribes = (binders, prefix = '') => {
     const unsubs = [];
     binders.forEach((binder, i) => {
         const { type, target } = binder;
-        if(type !== VALUE) unsubs.push(unsubscribe(i));
-        if(target.isBlock || target.isComponent) unsubs.push(unsubscribe(i, 'b')); 
+        const id = prefix + i;
+        if(type !== VALUE) unsubs.push(unsubscribe(id));
+        if(target.isBlock || target.isComponent) unsubs.push(unsubscribe(id, 'b')); 
+        unsubs.push(...unsubscribes(binder.properties, `${id}_`));
     });
     return unsubs;
 };

@@ -31,11 +31,10 @@ const bindings = {
     [VALUE]: valueBinding,
 };
 
-export default function binding(binder, i) {
-    const { type, target } = binder;
-    const binding = bindings[type];
+export default function binding(binder, i, observer = nodeBinding(binder)) {
+    const { type, target, properties } = binder;
+    const typeBinding = bindings[type];
     const statements = [];
-    let observer = nodeBinding(binder);
 
     if(target.isBlock || target.isComponent) {
         const id = identifier(`${SUB}${i}b`);
@@ -44,6 +43,11 @@ export default function binding(binder, i) {
         statements.push(declare);
 
         if(target.isComponent) {
+            properties.forEach((p, j) => {
+                const selfObserver = componentBinding(p, id);
+                statements.push(...binding(p, `${i}_${j}`, selfObserver));
+            });
+            
             const onanchor = {
                 type: 'ExpressionStatement',
                 expression: callExpression({
@@ -61,11 +65,11 @@ export default function binding(binder, i) {
                 object: id,
                 property: identifier('observer')
             });
-            statements.push(binding(observer, binder, i));
+            statements.push(typeBinding(observer, binder, i));
         }
     }
     else {
-        statements.push(binding(observer, binder, i));
+        statements.push(typeBinding(observer, binder, i));
     }
 
     return statements;
@@ -80,6 +84,14 @@ function nodeBinding({ moduleIndex, elIndex }) {
             property: literal({ value: elIndex }), 
             computed: true
         })]
+    });
+}
+
+// __bind${moduleIndex}(<identifier>)
+function componentBinding({ moduleIndex }, componentIdentifier) {
+    return callExpression({
+        callee: identifier(`${BINDER}${moduleIndex}`), 
+        args: [componentIdentifier]
     });
 }
 

@@ -32,13 +32,13 @@ describe('Binder', () => {
             assert.equal(attrBinder.name, 'name');
         });
 
-        it('declaration', () => {
+        it('declarations', () => {
             const target = {
                 init: binder => binder.foo
             };
             const binder = new Binder({ target });
             binder.foo = 'FOO';
-            assert.equal(binder.declaration, 'FOO');
+            assert.deepEqual(binder.declarations, ['FOO']);
         });
     });
     
@@ -137,5 +137,33 @@ describe('Binder', () => {
             assert.equal(binder.type, COMBINE);
         });
         
+    });
+
+    describe('properties', () => {
+        it('adds property binders to declarations', () => {
+            const target = {
+                init: binder => ({ 
+                    name: 'propBinder',
+                    arg: binder.name
+                })
+            };
+            
+            const prop1 = new Binder({ target });
+            prop1.init({}, 'foo');
+            const prop2 = new Binder({ target });
+            prop2.init({}, 'bar');
+
+            const binder = new Binder({ target: {
+                init: () => 'parent'
+            }});
+            binder.properties = [prop1, prop2];
+
+            assert.deepEqual(binder.declarations, [
+                'parent',
+                { name: 'propBinder', arg: 'foo' },
+                { name: 'propBinder', arg: 'bar' },
+            ]);
+
+        });
     });
 });

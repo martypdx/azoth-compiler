@@ -37,8 +37,8 @@ export class Imports {
         this.oTag = oTag;
     }
 
-    addBinder({ declaration: { name }, type }) {
-        if(name) this.addName(name);
+    addBinder({ declarations, type }) {
+        declarations.forEach(d => d.name && this.addName(d.name));
         const typeImport = importSpecifiers[type];
         if(typeImport) this.addName(typeImport);     
     }

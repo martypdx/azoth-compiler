@@ -16,7 +16,8 @@ const getEl = (name = 'root') => ({
     binder: null
 });
 
-const literalProperty = value => getBinder({
+const literalProperty = (name, value) => getBinder({
+    name,
     inAttributes: true,
     component: true,
     ast: literal({ value })
@@ -57,8 +58,8 @@ export default function parseTemplate({ expressions, quasis }) {
             const entries = Object.entries(attributes);
 
             if(el.component) {
-                el.binder.properties = entries.map(([, value]) => {
-                    return typeof value === 'string' ? literalProperty(value) : value;
+                el.binder.properties = entries.map(([key, value]) => {
+                    return typeof value === 'string' ? literalProperty(key, value) : value;
                 });
                 html.push(`<!-- component -->`);
             }
@@ -171,10 +172,3 @@ export default function parseTemplate({ expressions, quasis }) {
         binders
     };
 }
-
-//     const binder = getBinder({
-//         inAttributes: true,
-//         component: true,
-//         ast: literal({ value })
-//     });
-//     currentEl.binder.properties.push(binder);
