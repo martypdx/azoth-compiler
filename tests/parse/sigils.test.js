@@ -6,11 +6,12 @@ import { AT, DOLLAR, NONE, STAR, ELEMENT } from '../../src/parse/sigil-types';
 
 describe('sigils', () => {
 
+    function test(text, expected) {
+        assert.deepEqual(getBindingType(text), expected);
+    }
+    
     describe('binding type', () => {
 
-        function test(text, expected) {
-            assert.deepEqual(getBindingType(text), expected);
-        }
 
         it('empty string okay', () => {
             test('', { sigil: NONE, text: ''});
@@ -75,7 +76,19 @@ describe('sigils', () => {
         it('escaped block', () => {
             test('\\#text', { block: false, text: '#text' });
         });
+    });
 
+    describe('not allowed errors', () => {
 
+        it('sigils on components not supported', done => {
+            try {
+                test('<#:*');
+                done('expected error');
+            }
+            catch(err) {
+                assert.match(err.message, /not currently supported/);
+                done();
+            }
+        });
     });
 });

@@ -3,9 +3,14 @@ import { NONE, typeMap } from './sigil-types';
 // TODO: get the values from sigil types.
 // TODO: make regex and escape version from base string
 const escapedBindingMatch = /\\(\*|\@|\$|<#:)$/;
+const errorBindingMatch = /<#:(\*|\@|\$)$/;
 const bindingMatch = /(\*|\@|\$|<#:)$/;
 
 export function getBindingType(text) {
+
+    if(errorBindingMatch.test(text)) {
+        throw new Error('Binding sigils with components are not currently supported');
+    }
 
     const tryEscaped = () => {
         let escaped = false;
