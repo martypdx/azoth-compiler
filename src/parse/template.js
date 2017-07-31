@@ -1,6 +1,8 @@
 import htmlparser from 'htmlparser2';
 import { getBindingType, getBlock } from './sigil'; 
 import getBinder from '../binders/binder-factory';
+import { property } from '../binders/targets';
+
 import voidElements from './void-elements';
 import { literal } from '../transformers/common';
 
@@ -37,8 +39,12 @@ export default function parseTemplate({ expressions, quasis }) {
     
     const handler = {
         onopentagname(name) {
-            const childIndex = ++currentEl.childIndex;
-            stack.push(currentEl);
+            const el = currentEl;
+            if(el.component) throw new Error('text/html children not yet supported for components');
+            
+            const childIndex = ++el.childIndex;
+            stack.push(el);
+
             currentEl = getEl(name);
             if(currentEl.component = name === '#:') currentEl.childIndex = childIndex;
             inAttributes = true;
@@ -61,7 +67,7 @@ export default function parseTemplate({ expressions, quasis }) {
                 el.binder.properties = entries.map(([key, value]) => {
                     return typeof value === 'string' ? literalProperty(key, value) : value;
                 });
-                html.push(`<!-- component -->`);
+                html.push(`<!-- component start -->`);
             }
             else {                
                 // NOTE: html spec and htmlparser2 implementation treat 
@@ -81,8 +87,14 @@ export default function parseTemplate({ expressions, quasis }) {
             inAttributes = false;
         },
         ontext(text) {
-            html.push(text);
-            if(currentEl) currentEl.childIndex++;
+            const el = currentEl;
+            if(el.component) {
+                if(text.trim()) throw new Error('text/html children not yet supported for components');
+            }
+            else {
+                html.push(text);
+                if(el) el.childIndex++;
+            }
         },
         add(binder) { 
             const el = currentEl;
@@ -96,16 +108,28 @@ export default function parseTemplate({ expressions, quasis }) {
                 stack[stack.length - 1].binders.push(binder);
                 el.binder = binder;
             }
-            else if(el.component && inAttributes) {
-                if(!binder.name) throw new Error('Expected binder to have name');
-                this.onattribute(binder.name, binder);
+            else if(el.component) {
+                if(inAttributes) {
+                    if(!binder.name) throw new Error('Expected binder to have name');
+                    this.onattribute(binder.name, binder);
+                }
+                else {
+                    binder.target = property;
+                    binder.init(el, 'children');
+                    el.binder.properties.push(binder);
+                }
             }
-            else el.binders.push(binder);
+            else {
+                el.binders.push(binder);
+            }
         },
         onclosetag(name) {
             const el = currentEl;
             if(!el.component && !voidElements[name] && el.opened) html.push(`</${name}>`);
-            else if(el.component && !el.opened) html.push('<!-- component -->');
+            else if(el.component) {
+                html.push('<!-- component end -->');
+                stack[stack.length - 1].childIndex++;
+            }
 
             currentEl = stack.pop();
 
@@ -125,11 +149,13 @@ export default function parseTemplate({ expressions, quasis }) {
             }
         },
         onend() {
+            // fragment is indexed at the end of the nodes array,
+            // which is why its binders go _after_ its child binders
             allBinders = [...fragment.childBinders, fragment.binders];
         }
     };
 
-    var parser = new htmlparser.Parser(handler);
+    var parser = new htmlparser.Parser(handler, { recognizeSelfClosing: true });
 
     quasis.forEach((quasi, i) => {
         // quasis length is one more than expressions
@@ -155,7 +181,7 @@ export default function parseTemplate({ expressions, quasis }) {
             ast: expressions[i]
         });
 
-        parser.write(binder.html);
+        if(!currentEl.component || inAttributes) parser.write(binder.html);
         handler.add(binder);
     });
 

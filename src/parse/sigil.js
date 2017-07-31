@@ -56,7 +56,7 @@ export function getBlock(text) {
         };
     }
 
-    text = text.replace(blockMatch, m => {
+    text = text.replace(blockMatch, () => {
         block = true;
         return '';
     });

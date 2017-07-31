@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: off */
-/* globals _, $, renderer, makeFragment, __textBinder, __map */
+/* globals _, $, renderer, makeFragment, __textBinder, __map, __componentBinder */
 import codeEqual from '../helpers/code-equal';
 import compile from '../../src/compilers/compile';
 
@@ -300,7 +300,7 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <!-- component --></span>\`));
+            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <!-- component start --><!-- component end --></span>\`));
             const __bind0 = __componentBinder(1);
             import { Block, renderer, makeFragment, __componentBinder } from 'azoth';
             const template = name => {
@@ -318,25 +318,31 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
-    it('block component with attributes', () => {
+    it('block component with attributes and child function', () => {
         const source = `
             import { _, Block } from 'azoth';
-            const template = (name, foo=$) => _\`<span><#:\${Block({ name })} foo=*\${foo} bar="bar"/></span>\`;
+            const template = (name, foo=$) => _\`<span><#:\${Block({ name })} foo=*\${foo} bar="bar">\${() => _\`child-template\`}</#:></span>\`;
         `;
 
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind><!-- component --></span>\`));
+            const __render0 = renderer(makeFragment(\`child-template\`));
+            const __render1 = renderer(makeFragment(\`<span data-bind><!-- component start --><!-- component end --></span>\`));
             const __bind0 = __componentBinder(0);
             const __bind1 = __propBinder('foo');
             const __bind2 = __propBinder('bar');
+            const __bind3 = __propBinder('children');
             import { Block, renderer, makeFragment, __componentBinder, __propBinder } from 'azoth';
             const template = (name, foo) => {
-                const __nodes = __render0();
+                const __nodes = __render1();
                 const __sub0b = Block({ name });
                 const __sub0_0 = foo.subscribe(__bind1(__sub0b));
                 __bind2(__sub0b)('bar');
+                __bind3(__sub0b)(() => {
+                    const __nodes = __render0();
+                    return __nodes[__nodes.length];
+                });
                 __sub0b.onanchor(__bind0(__nodes[0]));
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
@@ -346,6 +352,36 @@ describe('compiler', () => {
                 return __fragment;
             };
         `;
+
+        codeEqual(compiled, expected);
+    }); 
+
+    /* globals Block */
+    it('block component maintains correct child index', () => {
+        const source = () => {
+            const template = foo => _`<span>${foo}<#:${Block()}/>${foo}</span>`;
+        };
+
+        const compiled = compile(source.toCode());
+
+        const expected = () => {
+            const __render0 = renderer(makeFragment(`<span data-bind><text-node></text-node><!-- component start --><!-- component end --><text-node></text-node></span>`));
+            const __bind0 = __textBinder(0);
+            const __bind1 = __componentBinder(1);
+            const __bind2 = __textBinder(3);
+            const template = foo => {
+                const __nodes = __render0();
+                __bind0(__nodes[0])(foo);
+                const __sub1b = Block();
+                __sub1b.onanchor(__bind1(__nodes[0]));
+                __bind2(__nodes[0])(foo);
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub1b.unsubscribe();
+                };
+                return __fragment;
+            };
+        };
 
         codeEqual(compiled, expected);
     }); 

@@ -26,9 +26,8 @@ const parseSource = source => {
     return template(quasi);
 };
 
-/* globals _, Block, foo */
+/* globals _, Block, Stream, foo */
 describe('parse template', () => {
-
 
     function testBinder(binder, {
         elIndex = 0,
@@ -37,12 +36,13 @@ describe('parse template', () => {
         index = -1,
         sigil = NONE,
         ref = '',
-        observables = []    
+        observables = [],
+        expectedType = 'Identifier'    
     } = {}) {
         assert.ok(binder, 'binder does not exist');
         const { name: astName, type: astType } = binder.ast;
-        assert.equal(astType, 'Identifier');
-        assert.equal(astName, ref);
+        assert.equal(astType, expectedType);
+        assert.equal(astName || '', ref);
         delete binder.ast;
         delete binder.target;
         delete binder.properties;
@@ -71,12 +71,13 @@ describe('parse template', () => {
 
     }
 
+    function testFirstText(binders, options) {
+        assert.equal(binders.length, 1);
+        testText(binders[0], options);
+    } 
+
     describe('text-node', () => {
     
-        function testFirstText(binders, options) {
-            assert.equal(binders.length, 1);
-            testText(binders[0], options);
-        }    
 
         it('stand-alone text node', () => {
             function source() {
@@ -210,13 +211,16 @@ describe('parse template', () => {
             testText(binders[3], { elIndex: 2, index: 1, ref: 'four' });
             testText(binders[4], { elIndex: 3, ref: 'five' });
         });
+    });
+
+    describe('components', () => {
   
         it('block component', () => {
             function source() {
                 const template = () => _`<#:${Block}></#:>`;
             }
             const { html, binders } = parseSource(source);
-            assert.equal(html, '<!-- component -->');
+            assert.equal(html, '<!-- component start --><!-- component end -->');
             testFirstText(binders, { ref: 'Block', sigil: ELEMENT });
         });
 
@@ -225,8 +229,17 @@ describe('parse template', () => {
                 const template = () => _`<#:${Block}/>`;
             }
             const { html, binders } = parseSource(source);
-            assert.equal(html, '<!-- component -->');
+            assert.equal(html, '<!-- component start --><!-- component end -->');
             testFirstText(binders, { ref: 'Block', sigil: ELEMENT });
+        });
+
+        it('self-closing block component with siblings', () => {
+            function source() {
+                const template = () => _`<input><#:${Block}/><input>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<input><!-- component start --><!-- component end --><input>');
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT, index: 1 });
         });
 
         it('block component with properties', () => {
@@ -234,13 +247,43 @@ describe('parse template', () => {
                 const template = () => _`<#:${Block} foo=*${foo} bar="BAR"/>`;
             }
             const { html, binders } = parseSource(source);
-            assert.equal(html, '<!-- component -->');
+            assert.equal(html, '<!-- component start --><!-- component end -->');
             
             const properties = binders[0].properties;
-            testFirstText(binders, { ref: 'Block', sigil: ELEMENT, propCount: properties.length });
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT });
             assert.equal(properties.length, 2);
             testProp(properties[0], { name: 'foo', ref: 'foo', sigil: STAR });
+            testProp(properties[1], { name: 'bar', expectedType: 'Literal' });
 
+        });
+
+        //TODO: should this be allowed???
+        // it.skip('block component with children', () => {
+        //     function source() {
+        //         const template = foo => _`<div><#:${Block}><span>${foo}</span></#:></div>`;
+        //     }
+        //     const { html, binders } = parseSource(source);
+        //     assert.equal(html, '<div data-bind><!-- component start --><span data-bind><text-node></text-node></span><!-- component end --></div>');
+        //     assert.equal(binders.length, 2);
+        //     testText(binders[0], { ref: 'Block', sigil: ELEMENT });
+        //     testText(binders[1], { ref: 'foo', sigil: NONE, elIndex: 1 });
+        // });
+
+        it('block component with child function', () => {
+            function source() {
+                const template = items => _`<#:${Stream(items)}>${item => _`<li>${item}</li>`}</#:>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<!-- component start --><!-- component end -->');
+            
+            const properties = binders[0].properties;
+            testFirstText(binders, { expectedType: 'CallExpression', ref: '', sigil: ELEMENT });
+            assert.equal(properties.length, 1);
+            testProp(properties[0], { 
+                expectedType: 'ArrowFunctionExpression',
+                name: 'children', 
+                sigil: NONE, elIndex: 1 
+            });
         });
     });
 

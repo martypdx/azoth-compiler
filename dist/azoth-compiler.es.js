@@ -43,7 +43,7 @@ const MAKE_FRAGMENT_IMPORT = 'makeFragment';
 const COMBINE = Symbol('combine');
 const COMBINE_FIRST = Symbol('combine-first');
 const FIRST = Symbol('first');
-const MAP = Symbol('map');
+const MAP = Symbol('children');
 const MAP_FIRST = Symbol('map-first');
 const SUBSCRIBE = Symbol('subscribe');
 const VALUE = Symbol('value');
@@ -198,8 +198,8 @@ class Imports {
         this.oTag = oTag;
     }
 
-    addBinder({ declaration: { name }, type }) {
-        if(name) this.addName(name);
+    addBinder({ declarations, type }) {
+        declarations.forEach(d => d.name && this.addName(d.name));
         const typeImport = importSpecifiers[type];
         if(typeImport) this.addName(typeImport);     
     }
@@ -284,12 +284,14 @@ const unsubscribe = (index, suffix = '') => {
     };
 };
 
-const unsubscribes = binders => {
+const unsubscribes = (binders, prefix = '') => {
     const unsubs = [];
     binders.forEach((binder, i) => {
         const { type, target } = binder;
-        if(type !== VALUE) unsubs.push(unsubscribe(i));
-        if(target.isBlock) unsubs.push(unsubscribe(i, 'b')); 
+        const id = prefix + i;
+        if(type !== VALUE) unsubs.push(unsubscribe(id));
+        if(target.isBlock || target.isComponent) unsubs.push(unsubscribe(id, 'b')); 
+        unsubs.push(...unsubscribes(binder.properties, `${id}_`));
     });
     return unsubs;
 };
@@ -345,19 +347,23 @@ const bindings = {
     [VALUE]: valueBinding,
 };
 
-function binding(binder, i) {
-    const { type, target } = binder;
-    const binding = bindings[type];
+function binding(binder, i, observer = nodeBinding(binder)) {
+    const { type, target, properties } = binder;
+    const typeBinding = bindings[type];
     const statements = [];
-    let observer = nodeBinding(binder);
 
-    if(target.isBlock) {
+    if(target.isBlock || target.isComponent) {
         const id = identifier(`${SUB}${i}b`);
         const init = target.isComponent ? binder.ast : observer;
         const declare = declareConst({ id, init });
         statements.push(declare);
 
         if(target.isComponent) {
+            properties.forEach((p, j) => {
+                const selfObserver = componentBinding(p, id);
+                statements.push(...binding(p, `${i}_${j}`, selfObserver));
+            });
+            
             const onanchor = {
                 type: 'ExpressionStatement',
                 expression: callExpression({
@@ -375,11 +381,11 @@ function binding(binder, i) {
                 object: id,
                 property: identifier('observer')
             });
-            statements.push(binding(observer, binder, i));
+            statements.push(typeBinding(observer, binder, i));
         }
     }
     else {
-        statements.push(binding(observer, binder, i));
+        statements.push(typeBinding(observer, binder, i));
     }
 
     return statements;
@@ -394,6 +400,14 @@ function nodeBinding({ moduleIndex, elIndex }) {
             property: literal({ value: elIndex }), 
             computed: true
         })]
+    });
+}
+
+// __bind${moduleIndex}(<identifier>)
+function componentBinding({ moduleIndex }, componentIdentifier) {
+    return callExpression({
+        callee: identifier(`${BINDER}${moduleIndex}`), 
+        args: [componentIdentifier]
     });
 }
 
@@ -524,11 +538,17 @@ const typeMap = {
     '<#:': ELEMENT,
 };
 
-// TODO: get the values from sigil types
+// TODO: get the values from sigil types.
+// TODO: make regex and escape version from base string
 const escapedBindingMatch = /\\(\*|\@|\$|<#:)$/;
+const errorBindingMatch = /<#:(\*|\@|\$)$/;
 const bindingMatch = /(\*|\@|\$|<#:)$/;
 
 function getBindingType(text) {
+
+    if(errorBindingMatch.test(text)) {
+        throw new Error('Binding sigils with components are not currently supported');
+    }
 
     const tryEscaped = () => {
         let escaped = false;
@@ -551,8 +571,8 @@ function getBindingType(text) {
     return { sigil, text };
 }
 
-const escapedBlockMatch = /^\\(#|\/>)/;
-const blockMatch = /^(#|\/>)/;
+const escapedBlockMatch = /^\\#/;
+const blockMatch = /^#/;
 
 function getBlock(text) {
 
@@ -582,13 +602,13 @@ function getBlock(text) {
     return { block, text };
 }
 
-const childNode = (name, html, isBlock = false, isComponent = false) => ({
+const childNode = (binder, html, isBlock = false, isComponent = false) => ({
     isBlock,
     isComponent,
     html,
     init({ index }) {
         return {
-            name: name,
+            name: binder,
             arg: index
         };
     }
@@ -596,19 +616,22 @@ const childNode = (name, html, isBlock = false, isComponent = false) => ({
 
 const text = childNode('__textBinder', '<text-node></text-node>');
 const block = childNode('__blockBinder', '<!-- block -->', true);
-const component = childNode('__componentBinder', '<!-- component -->', true, true);
+const component = childNode('__componentBinder', '<#: ', true, true);
 
-const attribute = {
+const attr = binder => ({
     isBlock: false,
     isComponent: false,
     html: '""',
     init({ name }) {
         return { 
-            name: '__attrBinder',
+            name: binder,
             arg: name
         };
     }
-};
+});
+
+const attribute = attr('__attrBinder');
+const property = attr('__propBinder');
 
 // TODO: rewrite this using acron.
 function recurse(ast, declared, undeclared) {
@@ -684,7 +707,7 @@ function match(ast, scope) {
 
 class Binder {
 
-    constructor({ sigil = NONE, ast = null, target = text } = {}) {        
+    constructor({ sigil = NONE, ast = null, target = text, name = '' } = {}) {        
         this.sigil = sigil;
         this.ast = ast;
         this.target = target;
@@ -694,7 +717,9 @@ class Binder {
         this.moduleIndex = -1;
         
         this.index = -1;
-        this.name = '';        
+        this.name = name;
+        
+        this.properties = [];
     }
 
     init(el, attr) {
@@ -708,6 +733,14 @@ class Binder {
 
     get declaration() {
         return this.target.init(this);
+    }
+    
+    get declarations() {
+        const declarations = [this.declaration];
+        if(this.properties) {
+            declarations.push(...this.properties.map(p => p.declaration));
+        }
+        return declarations;
     }
 
     matchObservables(scope) {
@@ -741,7 +774,7 @@ function getBinder(options) {
         if (options.block) {
             throw new Error('Attribute Blocks not yet supported');
         }
-        options.target = attribute;
+        options.target = options.component ? property : attribute;
     }
     else {
         options.target = options.block ? block : text;
@@ -781,7 +814,18 @@ const getEl = (name = 'root') => ({
     attributes: {}, 
     binders: [],
     childBinders: [],
-    childIndex: -1
+    childIndex: -1,
+    htmlIndex: -1,
+    opened: false,
+    component: false,
+    binder: null
+});
+
+const literalProperty = (name, value) => getBinder({
+    name,
+    inAttributes: true,
+    component: true,
+    ast: literal({ value })
 });
 
 function parseTemplate({ expressions, quasis }) {
@@ -798,9 +842,14 @@ function parseTemplate({ expressions, quasis }) {
     
     const handler = {
         onopentagname(name) {
-            currentEl.childIndex++;
-            stack.push(currentEl);
+            const el = currentEl;
+            if(el.component) throw new Error('text/html children not yet supported for components');
+            
+            const childIndex = ++el.childIndex;
+            stack.push(el);
+
             currentEl = getEl(name);
+            if(currentEl.component = name === '#:') currentEl.childIndex = childIndex;
             inAttributes = true;
         },
         oncomment(comment) {
@@ -808,42 +857,83 @@ function parseTemplate({ expressions, quasis }) {
             if(currentEl) currentEl.childIndex++;
         },
         onattribute(name, value) {
-            currentEl.attributes[currentAttr = name] = value;
+            currentAttr = name;
+            currentEl.attributes[name] = value;
         },
         onopentag(name) {
             const el = currentEl;
+            el.opened = true;
             const { attributes } = el;
-            // TODO: Switch to Object.values, but needs node.js version 7.x - wait for 8.x?
-            const attrsText = Object.keys(attributes)
-                .reduce((text, key) => {
-                    // NOTE: currently not distinguishing between empty string and valueless attribute.
-                    // htmlparser2 does not distinguish and html spec says empty string 
-                    // and boolean are equivalent
-                    const value = attributes[key];
-                    return `${text} ${key}="${value}"`;
+            const entries = Object.entries(attributes);
+
+            if(el.component) {
+                el.binder.properties = entries.map(([key, value]) => {
+                    return typeof value === 'string' ? literalProperty(key, value) : value;
+                });
+                html.push(`<!-- component start -->`);
+            }
+            else {                
+                // NOTE: html spec and htmlparser2 implementation treat 
+                // empty string and valueless attribute as equivalent
+                const attrsText = entries.reduce((text$$1, [key, value]) => {
+                    return `${text$$1} ${key}="${value}"`;
                 },'');
 
-            el.htmlIndex = -2 + html.push(
-                `<${name}${attrsText}`,
-                '',
-                `>`
-            );
+                el.htmlIndex = -2 + html.push(
+                    `<${name}${attrsText}`,
+                    '',
+                    `>`
+                );
+            }
 
             currentAttr = null;
             inAttributes = false;
         },
-        ontext(text) {
-            html.push(text);
-            if(currentEl) currentEl.childIndex++;
+        ontext(text$$1) {
+            const el = currentEl;
+            if(el.component) {
+                if(text$$1.trim()) throw new Error('text/html children not yet supported for components');
+            }
+            else {
+                html.push(text$$1);
+                if(el) el.childIndex++;
+            }
         },
         add(binder) { 
             const el = currentEl;
+            // this works for components, but is misleading
+            // because child index in other cases is relative
+            // to current el, but for components really is el
+            // index of parent el (set in onopentagname)
             binder.init(el, currentAttr || '');
-            el.binders.push(binder);
+
+            if(el.component && !el.binder) {
+                stack[stack.length - 1].binders.push(binder);
+                el.binder = binder;
+            }
+            else if(el.component) {
+                if(inAttributes) {
+                    if(!binder.name) throw new Error('Expected binder to have name');
+                    this.onattribute(binder.name, binder);
+                }
+                else {
+                    binder.target = property;
+                    binder.init(el, 'children');
+                    el.binder.properties.push(binder);
+                }
+            }
+            else {
+                el.binders.push(binder);
+            }
         },
         onclosetag(name) {
-            if(!voidElements[name]) html.push(`</${name}>`);
             const el = currentEl;
+            if(!el.component && !voidElements[name] && el.opened) html.push(`</${name}>`);
+            else if(el.component) {
+                html.push('<!-- component end -->');
+                stack[stack.length - 1].childIndex++;
+            }
+
             currentEl = stack.pop();
 
             //Notice array of arrays. 
@@ -852,7 +942,8 @@ function parseTemplate({ expressions, quasis }) {
             //element binding index in right order.
 
             if(el.binders.length > 0) {
-                html[el.htmlIndex] = ` data-bind`;
+                const target = el.htmlIndex > -1 ? el : currentEl;
+                html[target.htmlIndex] = ` data-bind`;
                 currentEl.childBinders.push(el.binders);
             }
 
@@ -861,36 +952,39 @@ function parseTemplate({ expressions, quasis }) {
             }
         },
         onend() {
+            // fragment is indexed at the end of the nodes array,
+            // which is why its binders go _after_ its child binders
             allBinders = [...fragment.childBinders, fragment.binders];
         }
     };
 
-    var parser = new htmlparser.Parser(handler);
+    var parser = new htmlparser.Parser(handler, { recognizeSelfClosing: true });
 
     quasis.forEach((quasi, i) => {
         // quasis length is one more than expressions
         if(i === expressions.length) return parser.write(quasi.value.raw);
 
-        const { sigil, text } = getBindingType(quasi.value.raw);
+        const { sigil, text: text$$1 } = getBindingType(quasi.value.raw);
 
-        parser.write(text);
+        if(text$$1) parser.write(text$$1);
 
-        let block = false;
+        let block$$1 = false;
         if(i < quasis.length) {
             const value = quasis[i + 1].value;
             const result = getBlock(value.raw);
             value.raw = result.text;
-            block = result.block;
+            block$$1 = result.block;
         }
         
         const binder = getBinder({
-            block,
+            block: block$$1,
             sigil,
             inAttributes,
+            component: currentEl.component,
             ast: expressions[i]
         });
 
-        parser.write(binder.html);
+        if(!currentEl.component || inAttributes) parser.write(binder.html);
         handler.add(binder);
     });
 
@@ -925,7 +1019,8 @@ const templateToFunction = (node, block) => {
 
 const makeTemplateStatements = ({ binders, index }) => {
     const bindings = binders
-        .map(binding)
+        // binding takes additional params, so we can't directly pass to map
+        .map((b, i) => binding(b, i))
         .reduce((a, b) => a.concat(b), []);
         
     return [
@@ -990,22 +1085,28 @@ class Module {
         );
     }
 
+    // only used privately from makeTemplate
     addBinder(binder) {
+
+        binder.matchObservables(this.scope);
         this.imports.addBinder(binder);
 
-        const { declaration } = binder;
-        const unique = JSON.stringify(declaration);
-        return this.binders.add(unique, declaration);
+        const { declarations } = binder;
+        let index = -1;
+        declarations.forEach((d, i) => {
+            const unique = JSON.stringify(d);
+            const at = this.binders.add(unique, d);
+            if(i === 0) index = at;
+        });
+        binder.moduleIndex = index;
+        binder.properties.forEach(p => this.addBinder(p));
     }
 
     makeTemplate(node) {
         const { html, binders } = parseTemplate(node.quasi);
-
         const index = this.fragments.add(html);
-        binders.forEach(b => {
-            b.matchObservables(this.scope);
-            b.moduleIndex = this.addBinder(b);
-        });
+         
+        binders.forEach(b => this.addBinder(b));
         
         const statements = makeTemplateStatements({ binders, index });
         
@@ -1076,8 +1177,8 @@ var templates = Object.freeze({
 	ReturnStatement: ReturnStatement
 });
 
-const property = identifier('child');
-const initChild = ({ ref: object, arg }) => callMethod({ object, property, arg });
+const property$1 = identifier('child');
+const initChild = ({ ref: object, arg }) => callMethod({ object, property: property$1, arg });
 
 function destructureObservables({ newRef, sigil='$' }) {
 
