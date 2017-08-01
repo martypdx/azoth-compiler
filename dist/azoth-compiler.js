@@ -293,7 +293,7 @@ const unsubscribes = (binders, prefix = '') => {
     binders.forEach((binder, i) => {
         const { type, target } = binder;
         const id = prefix + i;
-        if(type !== VALUE) unsubs.push(unsubscribe(id));
+        if(type && type !== VALUE) unsubs.push(unsubscribe(id));
         if(target.isBlock || target.isComponent) unsubs.push(unsubscribe(id, 'b')); 
         unsubs.push(...unsubscribes(binder.properties, `${id}_`));
     });
@@ -606,9 +606,9 @@ function getBlock(text) {
     return { block, text };
 }
 
-const childNode = (binder, html, isBlock = false, isComponent = false) => ({
+const childNode = (binder, html, isBlock = false) => ({
     isBlock,
-    isComponent,
+    isComponent: false,
     html,
     init({ index }) {
         return {
@@ -620,7 +620,19 @@ const childNode = (binder, html, isBlock = false, isComponent = false) => ({
 
 const text = childNode('__textBinder', '<text-node></text-node>');
 const block = childNode('__blockBinder', '<!-- block -->', true);
-const component = childNode('__componentBinder', '<#: ', true, true);
+
+const component = {
+    isBlock: true,
+    isComponent: true,
+    html: '<#: ',
+    init({ index }) {
+        return {
+            name: '__componentBinder',
+            arg: index + 1
+        };
+    }
+};
+
 
 const attr = binder => ({
     isBlock: false,

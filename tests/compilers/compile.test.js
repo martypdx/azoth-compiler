@@ -386,6 +386,32 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
+    // TODO: this should just be tranforms/fragment.js unit test
+    it('block component unsubscribes but not its binder', () => {
+        const source = () => {
+            const template = (name=$) => _`<#:${new Block(name)}></#:>`;
+        };
+
+        const compiled = compile(source.toCode());
+
+        const expected = () => {
+            const __render0 = renderer(makeFragment(`<!-- component start --><!-- component end -->`));
+            const __bind0 = __componentBinder(1);
+            const template = name => {
+                const __nodes = __render0();
+                const __sub0b = new Block(name);
+                __sub0b.onanchor(__bind0(__nodes[0]));
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0b.unsubscribe();
+                };
+                return __fragment;
+            };
+        };
+
+        codeEqual(compiled, expected);
+    }); 
+
     // // for debug of files that are failing compile.
     // // put file contents in ./build/test-file.js
     // it('parses domUtil file', () => {
