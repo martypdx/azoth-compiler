@@ -301,7 +301,7 @@ describe('compiler', () => {
 
         const expected = `
             const __render0 = renderer(makeFragment(\`<span data-bind>Hello <!-- component start --><!-- component end --></span>\`));
-            const __bind0 = __componentBinder(1);
+            const __bind0 = __componentBinder(2);
             import { Block, renderer, makeFragment, __componentBinder } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
@@ -329,7 +329,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = renderer(makeFragment(\`child-template\`));
             const __render1 = renderer(makeFragment(\`<span data-bind><!-- component start --><!-- component end --></span>\`));
-            const __bind0 = __componentBinder(0);
+            const __bind0 = __componentBinder(1);
             const __bind1 = __propBinder('foo');
             const __bind2 = __propBinder('bar');
             const __bind3 = __propBinder('children');
@@ -367,7 +367,7 @@ describe('compiler', () => {
         const expected = () => {
             const __render0 = renderer(makeFragment(`<span data-bind><text-node></text-node><!-- component start --><!-- component end --><text-node></text-node></span>`));
             const __bind0 = __textBinder(0);
-            const __bind1 = __componentBinder(1);
+            const __bind1 = __componentBinder(2);
             const __bind2 = __textBinder(3);
             const template = foo => {
                 const __nodes = __render0();

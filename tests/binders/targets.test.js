@@ -41,7 +41,7 @@ describe('binder targets', () => {
         assert.strictEqual(component.isComponent, true);
         assert.deepEqual(
             component.init({ index: 2 }), 
-            { name: '__componentBinder', arg: 2 }
+            { name: '__componentBinder', arg: 3 }
         );    
     });
 });
