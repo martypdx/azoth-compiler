@@ -1,6 +1,6 @@
 {
   "name": "azoth-compiler",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "compiler for azoth templates",
   "main": "dist/azoth-compiler.js",
   "module": "dist/azoth-compiler.es.js",
