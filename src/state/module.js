@@ -89,8 +89,10 @@ export class Module {
         binders.forEach(b => this.addBinder(b));
         
         const statements = makeTemplateStatements({ binders, index });
+        statements.forEach(node => node.subtemplate = true);
         
-        // TODO: this.currentFn gets set by the observables handlers,
+        // TODO: this.currentFn gets set by the observables handlers
+        // (currentReturnStmt gets set by templates handlers),
         // which means this is coupled those set of handlers.
         const { currentFn, currentReturnStmt } = this;
         if(currentFn) {

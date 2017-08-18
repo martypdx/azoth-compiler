@@ -14,7 +14,10 @@ export default function recurse(ast, declared, undeclared) {
     estraverse.traverse(ast, {
         enter: function(node, parent) {
             if (parent != null) {
-                if (node.type === 'Identifier') {
+                if (node.subtemplate) {
+                    this.skip();
+                }
+                else if (node.type === 'Identifier') {
                     if (parent.type === 'VariableDeclarator') {
                         declared.add(node.name);
                     } else if (
@@ -30,11 +33,9 @@ export default function recurse(ast, declared, undeclared) {
                     node.type === 'FunctionExpression' ||
                     node.type === 'ArrowFunctionExpression'
                 ) {
-                    if(!node.subtemplate) {
-                        ast_fns.push(node);
-                        if (node.id != null) {
-                            declared.add(node.id.name);
-                        }
+                    ast_fns.push(node);
+                    if (node.id != null) {
+                        declared.add(node.id.name);
                     }
                     this.skip();
                 }
