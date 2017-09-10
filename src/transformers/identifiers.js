@@ -8,6 +8,6 @@ export const FIRST_IMPORT = '__first';
 export const MAP_IMPORT = '__map';
 export const COMBINE_IMPORT = '__combine';
 
-export const RENDERER_IMPORT = 'renderer';
-export const MAKE_FRAGMENT_IMPORT = 'makeFragment';
+export const RENDERER_IMPORT = '__renderer';
+export const MAKE_FRAGMENT_IMPORT = '__rawHtml';
 

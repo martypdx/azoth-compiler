@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: off */
-/* globals _, $, renderer, makeFragment, __textBinder, __map, __componentBinder, __blockBinder */
+/* globals _, $, __renderer, __rawHtml, __textBinder, __map, __componentBinder, __blockBinder */
 import codeEqual from '../helpers/code-equal';
 import compile from '../../src/compilers/compile';
 
@@ -14,9 +14,9 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
-            import { renderer, makeFragment, __textBinder } from 'azoth';
+            import { __renderer, __rawHtml, __textBinder } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
                 __bind0(__nodes[0])(name);
@@ -35,7 +35,7 @@ describe('compiler', () => {
         const compiled = compile(source.toCode());
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
             const template = name => {
                 const __nodes = __render0();
@@ -55,12 +55,12 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
-            const __render1 = renderer(makeFragment(\`<span data-bind>Goodbye <text-node></text-node></span>\`));
-            const __render2 = renderer(makeFragment(\`<div data-bind><!-- block --></div>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind>Hello <text-node></text-node></span>\`));
+            const __render1 = __renderer(__rawHtml(\`<span data-bind>Goodbye <text-node></text-node></span>\`));
+            const __render2 = __renderer(__rawHtml(\`<div data-bind><!-- block --></div>\`));
             const __bind0 = __textBinder(1);
             const __bind1 = __blockBinder(0);
-            import { renderer, makeFragment, __textBinder, __blockBinder } from 'azoth';
+            import { __renderer, __rawHtml, __textBinder, __blockBinder } from 'azoth';
             const template = (foo, bar) => {
                 const __nodes = __render2();
                 const __sub0b = __bind1(__nodes[0]);
@@ -93,9 +93,9 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
-            import { renderer, makeFragment, __textBinder } from 'azoth';
+            import { __renderer, __rawHtml, __textBinder } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
                 const __sub0 =  name.subscribe(__bind0(__nodes[0]));
@@ -119,9 +119,9 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <text-node></text-node></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const __bind0 = __textBinder(1);
-            import { renderer, makeFragment, __textBinder, __first } from 'azoth';
+            import { __renderer, __rawHtml, __textBinder, __first } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
                 const __sub0 = __first(name, __bind0(__nodes[0]));
@@ -145,9 +145,9 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
-            import { renderer, makeFragment, __textBinder, __map } from 'azoth';
+            import { __renderer, __rawHtml, __textBinder, __map } from 'azoth';
             const template = x => {
                 const __nodes = __render0();
                 const __sub0 = __map(x, x => (x * x), __bind0(__nodes[0]));
@@ -172,9 +172,9 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
-            import {renderer, makeFragment, __textBinder} from 'azoth';
+            import {__renderer, __rawHtml, __textBinder} from 'azoth';
             const template = __ref0 => {
                 const name = __ref0.child('name');
                 const __nodes = __render0();
@@ -202,9 +202,9 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
-            import {renderer, makeFragment, __textBinder} from 'azoth';
+            import {__renderer, __rawHtml, __textBinder} from 'azoth';
             const template = person => {
                 const {name: __ref0} = person;
                 const first = __ref0.child('first');
@@ -230,9 +230,9 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind><text-node></text-node></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind><text-node></text-node></span>\`));
             const __bind0 = __textBinder(0);
-            import { renderer, makeFragment, __textBinder, __combine } from 'azoth';
+            import { __renderer, __rawHtml, __textBinder, __combine } from 'azoth';
             const template = (x, y) => {
                 const __nodes = __render0();
                 const __sub0 = __combine([x, y], (x, y) => (x + y), __bind0(__nodes[0]));
@@ -256,9 +256,9 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`<span data-bind>Hello <!-- component start --><!-- component end --></span>\`));
+            const __render0 = __renderer(__rawHtml(\`<span data-bind>Hello <!-- component start --><!-- component end --></span>\`));
             const __bind0 = __componentBinder(2);
-            import { Block, renderer, makeFragment, __componentBinder } from 'azoth';
+            import { Block, __renderer, __rawHtml, __componentBinder } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
                 const __sub0b = Block({ name });
@@ -283,13 +283,13 @@ describe('compiler', () => {
         const compiled = compile(source);
 
         const expected = `
-            const __render0 = renderer(makeFragment(\`child-template\`));
-            const __render1 = renderer(makeFragment(\`<span data-bind><!-- component start --><!-- component end --></span>\`));
+            const __render0 = __renderer(__rawHtml(\`child-template\`));
+            const __render1 = __renderer(__rawHtml(\`<span data-bind><!-- component start --><!-- component end --></span>\`));
             const __bind0 = __componentBinder(1);
             const __bind1 = __propBinder('foo');
             const __bind2 = __propBinder('bar');
             const __bind3 = __propBinder('children');
-            import { Block, renderer, makeFragment, __componentBinder, __propBinder } from 'azoth';
+            import { Block, __renderer, __rawHtml, __componentBinder, __propBinder } from 'azoth';
             const template = (name, foo) => {
                 const __nodes = __render1();
                 const __sub0b = Block({ name });
@@ -321,7 +321,7 @@ describe('compiler', () => {
         const compiled = compile(source.toCode());
 
         const expected = () => {
-            const __render0 = renderer(makeFragment(`<span data-bind><text-node></text-node><!-- component start --><!-- component end --><text-node></text-node></span>`));
+            const __render0 = __renderer(__rawHtml(`<span data-bind><text-node></text-node><!-- component start --><!-- component end --><text-node></text-node></span>`));
             const __bind0 = __textBinder(0);
             const __bind1 = __componentBinder(2);
             const __bind2 = __textBinder(3);
@@ -351,7 +351,7 @@ describe('compiler', () => {
         const compiled = compile(source.toCode());
 
         const expected = () => {
-            const __render0 = renderer(makeFragment(`<!-- component start --><!-- component end -->`));
+            const __render0 = __renderer(__rawHtml(`<!-- component start --><!-- component end -->`));
             const __bind0 = __componentBinder(1);
             const template = name => {
                 const __nodes = __render0();
@@ -381,8 +381,8 @@ describe('compiler', () => {
             const compiled = compile(source.toCode());
 
             const expected = () => {
-                const __render0 = renderer(makeFragment(`<text-node></text-node>`));
-                const __render1 = renderer(makeFragment(`
+                const __render0 = __renderer(__rawHtml(`<text-node></text-node>`));
+                const __render1 = __renderer(__rawHtml(`
                     <!-- block -->        
                 `));
                 const __bind0 = __textBinder(0);
@@ -425,8 +425,8 @@ describe('compiler', () => {
             const compiled = compile(source.toCode());
 
             const expected = () => {
-                const __render0 = renderer(makeFragment(`<text-node></text-node>`));
-                const __render1 = renderer(makeFragment(`
+                const __render0 = __renderer(__rawHtml(`<text-node></text-node>`));
+                const __render1 = __renderer(__rawHtml(`
                     <!-- block -->
                 `));
                 const __bind0 = __textBinder(0);

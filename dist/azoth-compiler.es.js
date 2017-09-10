@@ -37,8 +37,8 @@ const FIRST_IMPORT = '__first';
 const MAP_IMPORT = '__map';
 const COMBINE_IMPORT = '__combine';
 
-const RENDERER_IMPORT = 'renderer';
-const MAKE_FRAGMENT_IMPORT = 'makeFragment';
+const RENDERER_IMPORT = '__renderer';
+const MAKE_FRAGMENT_IMPORT = '__rawHtml';
 
 const COMBINE = Symbol('combine');
 const COMBINE_FIRST = Symbol('combine-first');
@@ -227,7 +227,7 @@ class Imports {
     }
 }
 
-// const __render${index} = __renderer(__makeFragment(`${html}`));
+// const __render${index} = __renderer(__rawHtml(`${html}`));
 const renderer = (html, index) =>{
     
     const makeFragment = callExpression({
@@ -659,7 +659,10 @@ function recurse(ast, declared, undeclared) {
     estraverse.traverse(ast, {
         enter: function(node, parent) {
             if (parent != null) {
-                if (node.type === 'Identifier') {
+                if (node.subtemplate) {
+                    this.skip();
+                }
+                else if (node.type === 'Identifier') {
                     if (parent.type === 'VariableDeclarator') {
                         declared.add(node.name);
                     } else if (
@@ -675,11 +678,9 @@ function recurse(ast, declared, undeclared) {
                     node.type === 'FunctionExpression' ||
                     node.type === 'ArrowFunctionExpression'
                 ) {
-                    if(!node.subtemplate) {
-                        ast_fns.push(node);
-                        if (node.id != null) {
-                            declared.add(node.id.name);
-                        }
+                    ast_fns.push(node);
+                    if (node.id != null) {
+                        declared.add(node.id.name);
                     }
                     this.skip();
                 }
@@ -1121,8 +1122,10 @@ class Module {
         binders.forEach(b => this.addBinder(b));
         
         const statements = makeTemplateStatements({ binders, index });
+        statements.forEach(node => node.subtemplate = true);
         
-        // TODO: this.currentFn gets set by the observables handlers,
+        // TODO: this.currentFn gets set by the observables handlers
+        // (currentReturnStmt gets set by templates handlers),
         // which means this is coupled those set of handlers.
         const { currentFn, currentReturnStmt } = this;
         if(currentFn) {

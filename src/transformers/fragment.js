@@ -16,7 +16,7 @@ import {
     MAKE_FRAGMENT_IMPORT } from './identifiers';
 import { VALUE } from '../binders/binding-types';
 
-// const __render${index} = __renderer(__makeFragment(`${html}`));
+// const __render${index} = __renderer(__rawHtml(`${html}`));
 export const renderer = (html, index) =>{
     
     const makeFragment = callExpression({
