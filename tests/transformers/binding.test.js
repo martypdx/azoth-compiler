@@ -241,7 +241,7 @@ describe('transform - binding', () => {
             assert.deepEqual(statements, [
                 'const __sub0b = Component();',
                 '__propBinder(__sub0b, \'foo\')(foo);',
-                '__sub0b.onanchor(__componentBinder(__child0));'
+                '__sub0b.onanchor(__child0);'
             ]);
         });
         
@@ -261,7 +261,7 @@ describe('transform - binding', () => {
             assert.deepEqual(statements, [
                 'const __sub0b = Component();',
                 'const __sub0_0 = foo.subscribe(__propBinder(__sub0b, \'foo\'));',
-                '__sub0b.onanchor(__componentBinder(__child0));'
+                '__sub0b.onanchor(__child0);'
             ]);
         });
         
@@ -281,7 +281,7 @@ describe('transform - binding', () => {
             assert.deepEqual(statements, [
                 'const __sub0b = Component();',
                 'const __sub0_0 = foo.map(Foo).subscribe(__propBinder(__sub0b, \'foo\'));',
-                '__sub0b.onanchor(__componentBinder(__child0));'
+                '__sub0b.onanchor(__child0);'
             ]);
         });
 

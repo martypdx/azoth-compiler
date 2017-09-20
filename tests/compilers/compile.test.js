@@ -286,7 +286,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[2];
                 const __sub0b = Block({ name });
-                __sub0b.onanchor(__componentBinder(__child0));                
+                __sub0b.onanchor(__child0);                
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
@@ -320,7 +320,7 @@ describe('compiler', () => {
                     const __nodes = __render0();
                     return __nodes[__nodes.length];
                 });
-                __sub0b.onanchor(__componentBinder(__child0));
+                __sub0b.onanchor(__child0);
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
@@ -350,7 +350,7 @@ describe('compiler', () => {
                 const __child2 = __nodes[0].childNodes[3];
                 __textBinder(__child0)(foo);
                 const __sub1b = Block();
-                __sub1b.onanchor(__componentBinder(__child1));
+                __sub1b.onanchor(__child1);
                 __textBinder(__child2)(foo);
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
@@ -377,7 +377,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 const __sub0b = new Block(name);
-                __sub0b.onanchor(__componentBinder(__child0));
+                __sub0b.onanchor(__child0);
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
