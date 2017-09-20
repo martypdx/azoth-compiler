@@ -896,7 +896,7 @@ function binding(binder, i, observer = nodeBinding(binder, i)) {
                         object: id,
                         property: identifier('onanchor')
                     }),
-                    args: [observer]
+                    args: [literal({ raw: `${CHILD}${i}` })]
                 })
             }; 
             statements.push(onanchor);
