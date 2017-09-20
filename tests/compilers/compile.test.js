@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: off */
-/* globals _, $, __renderer, __rawHtml, __textBinder, __map, __componentBinder, __blockBinder */
+/* globals _, $, __renderer, __rawHtml, __textBinder, __map, __blockBinder */
 import codeEqual from '../helpers/code-equal';
 import compile from '../../src/compilers/compile';
 
@@ -281,7 +281,7 @@ describe('compiler', () => {
 
         const expected = `
             const __render0 = __renderer(__rawHtml(\`<span data-bind>Hello <!-- component start --><!-- component end --></span>\`));
-            import { Block, __renderer, __rawHtml, __componentBinder } from 'azoth';
+            import { Block, __renderer, __rawHtml } from 'azoth';
             const template = name => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[2];
@@ -309,7 +309,7 @@ describe('compiler', () => {
         const expected = `
             const __render0 = __renderer(__rawHtml(\`child-template\`));
             const __render1 = __renderer(__rawHtml(\`<span data-bind><!-- component start --><!-- component end --></span>\`));
-            import { Block, __renderer, __rawHtml, __componentBinder, __propBinder } from 'azoth';
+            import { Block, __renderer, __rawHtml, __propBinder } from 'azoth';
             const template = (name, foo) => {
                 const __nodes = __render1();
                 const __child0 = __nodes[0].childNodes[1];

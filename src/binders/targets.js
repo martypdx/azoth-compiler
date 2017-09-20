@@ -22,10 +22,10 @@ export const component = {
     html: '<#: ',
     childIndex: true,
     indexAdjustment: 1,
-    name: '__componentBinder',
+    name: '',
     init({ index }) {
         return {
-            name: '__componentBinder',
+            name: '',
             arg: index + 1
         };
     }
