@@ -22,7 +22,7 @@ class UniqueStrings {
         return index;
     }
 
-    get all() {
+    get keys() {
         return [...this.map.keys()];
     }
 
@@ -31,7 +31,7 @@ class UniqueStrings {
     }
 }
 
-const BINDER = '__bind';
+const CHILD = '__child';
 const FRAGMENT = '__fragment';
 const NODES = '__nodes';
 const RENDER = '__render';
@@ -329,205 +329,6 @@ var fragment = binders => {
     ];
 };
 
-function initBinder({ name, arg, index }) {
-    return declareConst({
-        name: `${BINDER}${index}`,
-        init: callExpression({
-            name,
-            args: [
-                literal({ value: arg })
-            ]
-        })
-    });
-}
-
-const bindings = {
-    [COMBINE]: combineBinding,
-    [COMBINE_FIRST]: combineFirstBinding,
-    [FIRST]: firstBinding,
-    [MAP]: mapBinding,
-    [MAP_FIRST]: mapFirstBinding,
-    [SUBSCRIBE]: subscribeBinding,
-    [VALUE]: valueBinding,
-};
-
-function binding(binder, i, observer = nodeBinding(binder)) {
-    const { type, target, properties } = binder;
-    const typeBinding = bindings[type];
-    const statements = [];
-
-    if(target.isBlock || target.isComponent) {
-        const id = identifier(`${SUB}${i}b`);
-        const init = target.isComponent ? binder.ast : observer;
-        const declare = declareConst({ id, init });
-        statements.push(declare);
-
-        if(target.isComponent) {
-            properties.forEach((p, j) => {
-                const selfObserver = componentBinding(p, id);
-                statements.push(...binding(p, `${i}_${j}`, selfObserver));
-            });
-            
-            const onanchor = {
-                type: 'ExpressionStatement',
-                expression: callExpression({
-                    callee: memberExpression({
-                        object: id,
-                        property: identifier('onanchor')
-                    }),
-                    args: [observer]
-                })
-            }; 
-            statements.push(onanchor);
-        }
-        else {
-            observer = memberExpression({
-                object: id,
-                property: identifier('observer')
-            });
-            statements.push(typeBinding(observer, binder, i));
-        }
-    }
-    else {
-        statements.push(typeBinding(observer, binder, i));
-    }
-
-    return statements;
-}
-
-// __bind${moduleIndex}(__nodes[${elIndex}])
-function nodeBinding({ moduleIndex, elIndex }) {
-    return callExpression({
-        callee: identifier(`${BINDER}${moduleIndex}`), 
-        args: [memberExpression({
-            name: NODES, 
-            property: literal({ value: elIndex }), 
-            computed: true
-        })]
-    });
-}
-
-// __bind${moduleIndex}(<identifier>)
-function componentBinding({ moduleIndex }, componentIdentifier) {
-    return callExpression({
-        callee: identifier(`${BINDER}${moduleIndex}`), 
-        args: [componentIdentifier]
-    });
-}
-
-// <nodeBinding>(<ast>);
-function valueBinding(nodeBinding, binder) {
-    const { ast } = binder;
-
-    return {
-        type: 'ExpressionStatement',
-        expression: callExpression({
-            callee: nodeBinding,
-            args: [ast]
-        })
-    };
-}
-
-// const __sub${index} = <init>
-function subscription(index, init) {
-    return declareConst({
-        name: `${SUB}${index}`, 
-        init
-    });
-}
-
-// const __sub${binderIndex} = (<ast>).subscribe(<nodeBinding>);
-function subscribeBinding(nodeBinding, binder, index) {
-    const { ast } = binder;
-
-    return subscription(
-        index, 
-        callExpression({
-            callee: memberExpression({ 
-                object: ast, 
-                property: identifier('subscribe')
-            }),
-            args: [nodeBinding]
-        }) 
-    );
-}
-
-// const __sub${binderIndex} = __first(observable, <nodeBinding>);
-function firstBinding(nodeBinding, binder, binderIndex) {
-    const { observables: [ name ] } = binder;
-    const observable = identifier(name);
-    const args = [
-        observable, 
-        nodeBinding
-    ];
-
-    return subscription(
-        binderIndex, 
-        callExpression({
-            name: FIRST_IMPORT,
-            args
-        }) 
-    );
-}
-
-function addOnce(args) {
-    args.push(literal({ value: true }));
-}
-
-function mapFirstBinding(nodeBinding, binder, binderIndex) {
-    return mapBinding(nodeBinding, binder, binderIndex, true);
-}
-
-// const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding> [, true]);
-function mapBinding(nodeBinding, binder, binderIndex, firstValue = false) {
-    const { ast, observables: [ name ] } = binder;
-    const observable = identifier(name);
-    const args = [
-        observable, 
-        arrowFunctionExpression({ 
-            body: ast,
-            params: [observable]
-        }),
-        nodeBinding
-    ];
-    if(firstValue) addOnce(args);
-
-    return subscription(
-        binderIndex, 
-        callExpression({
-            name: MAP_IMPORT,
-            args
-        }) 
-    );
-}
-
-function combineFirstBinding(nodeBinding, binder, binderIndex) {
-    return combineBinding(nodeBinding, binder, binderIndex, true);
-}
-
-// const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding> [, true]);
-function combineBinding(nodeBinding, binder, binderIndex, firstValue = false) {
-    const { ast, observables } = binder;
-    const params = observables.map(identifier);
-    const args =  [
-        arrayExpression({ elements: params }), 
-        arrowFunctionExpression({ 
-            body: ast,
-            params
-        }),
-        nodeBinding
-    ];
-    if(firstValue) addOnce(args);
-
-    return subscription(
-        binderIndex, 
-        callExpression({
-            name: COMBINE_IMPORT,
-            args
-        }) 
-    );
-}
-
 const AT = Symbol('@');
 const DOLLAR = Symbol('$');
 const NONE = Symbol('none');
@@ -610,6 +411,9 @@ const childNode = (binder, html, isBlock = false) => ({
     isBlock,
     isComponent: false,
     html,
+    childIndex: true,
+    name: binder,
+    indexAdjustment: 0,
     init({ index }) {
         return {
             name: binder,
@@ -625,6 +429,9 @@ const component = {
     isBlock: true,
     isComponent: true,
     html: '<#: ',
+    childIndex: true,
+    indexAdjustment: 1,
+    name: '__componentBinder',
     init({ index }) {
         return {
             name: '__componentBinder',
@@ -638,6 +445,9 @@ const attr = binder => ({
     isBlock: false,
     isComponent: false,
     html: '""',
+    childIndex: false,
+    indexAdjustment: 0,
+    name: binder,
     init({ name }) {
         return { 
             name: binder,
@@ -746,6 +556,18 @@ class Binder {
 
     get html() {
         return this.target.html;
+    }
+
+    get isChildIndex() {
+        return this.target.childIndex;
+    }
+
+    get childIndex() {
+        return this.index + this.target.indexAdjustment;
+    }
+
+    get binderName() {
+        return this.target.name;
     }
 
     get declaration() {
@@ -1019,6 +841,231 @@ function parseTemplate({ expressions, quasis }) {
     };
 }
 
+function childNode$1(binder, index ) {
+    if(!binder.isChildIndex) return;
+
+    // const __child${index} = __nodes[${binder.elIndex}].childNodes[${binder.index}];
+    return declareConst({
+        name: `${CHILD}${index}`,
+        init: memberExpression({
+            object: memberExpression({
+                object: memberExpression({
+                    name: NODES, 
+                    property: literal({ value: binder.elIndex }), 
+                    computed: true
+                }), 
+                property: literal({ raw: 'childNodes' }),
+            }),
+            property: literal({ value: binder.childIndex }),
+            computed: true
+        })
+    });
+}
+
+const bindings = {
+    [COMBINE]: combineBinding,
+    [COMBINE_FIRST]: combineFirstBinding,
+    [FIRST]: firstBinding,
+    [MAP]: mapBinding,
+    [MAP_FIRST]: mapFirstBinding,
+    [SUBSCRIBE]: subscribeBinding,
+    [VALUE]: valueBinding,
+};
+
+function binding(binder, i, observer = nodeBinding(binder, i)) {
+    const { type, target, properties } = binder;
+    const typeBinding = bindings[type];
+    const statements = [];
+
+    if(target.isBlock || target.isComponent) {
+        const id = identifier(`${SUB}${i}b`);
+        const init = target.isComponent ? binder.ast : observer;
+        const declare = declareConst({ id, init });
+        statements.push(declare);
+
+        if(target.isComponent) {
+            properties.forEach((p, j) => {
+                const selfObserver = componentBinding(p, id);
+                statements.push(...binding(p, `${i}_${j}`, selfObserver));
+            });
+            
+            const onanchor = {
+                type: 'ExpressionStatement',
+                expression: callExpression({
+                    callee: memberExpression({
+                        object: id,
+                        property: identifier('onanchor')
+                    }),
+                    args: [observer]
+                })
+            }; 
+            statements.push(onanchor);
+        }
+        else {
+            observer = memberExpression({
+                object: id,
+                property: identifier('observer')
+            });
+            statements.push(typeBinding(observer, binder, i));
+        }
+    }
+    else {
+        statements.push(typeBinding(observer, binder, i));
+    }
+
+    return statements;
+}
+
+function nodeBinding(binder, index) {
+    if(binder.isChildIndex) {
+        // ${binder.binderName}(__child${index})
+        return callExpression({
+            name: binder.binderName, 
+            args: [
+                literal({ raw: `${CHILD}${index}` })
+            ]
+        });
+    }
+    else {
+        // ${binder.binderName}(__nodes[${elIndex}], ${binder.name})
+        return callExpression({
+            name: binder.binderName, 
+            args: [
+                memberExpression({
+                    name: NODES, 
+                    property: literal({ value: binder.elIndex }), 
+                    computed: true
+                }),
+                literal({ value: binder.name })
+            ]
+        });
+    }
+}
+
+// ${binderName}(${name}, <identifier>)
+function componentBinding({ binderName, name }, componentIdentifier) {
+    return callExpression({
+        name: binderName, 
+        args: [
+            componentIdentifier,
+            literal({ value: name })            
+        ]
+    });
+}
+
+// <nodeBinding>(<ast>);
+function valueBinding(nodeBinding, binder) {
+    const { ast } = binder;
+
+    return {
+        type: 'ExpressionStatement',
+        expression: callExpression({
+            callee: nodeBinding,
+            args: [ast]
+        })
+    };
+}
+
+// const __sub${index} = <init>
+function subscription(index, init) {
+    return declareConst({
+        name: `${SUB}${index}`, 
+        init
+    });
+}
+
+// const __sub${binderIndex} = (<ast>).subscribe(<nodeBinding>);
+function subscribeBinding(nodeBinding, binder, index) {
+    const { ast } = binder;
+
+    return subscription(
+        index, 
+        callExpression({
+            callee: memberExpression({ 
+                object: ast, 
+                property: identifier('subscribe')
+            }),
+            args: [nodeBinding]
+        }) 
+    );
+}
+
+// const __sub${binderIndex} = __first(observable, <nodeBinding>);
+function firstBinding(nodeBinding, binder, binderIndex) {
+    const { observables: [ name ] } = binder;
+    const observable = identifier(name);
+    const args = [
+        observable, 
+        nodeBinding
+    ];
+
+    return subscription(
+        binderIndex, 
+        callExpression({
+            name: FIRST_IMPORT,
+            args
+        }) 
+    );
+}
+
+function addOnce(args) {
+    args.push(literal({ value: true }));
+}
+
+function mapFirstBinding(nodeBinding, binder, binderIndex) {
+    return mapBinding(nodeBinding, binder, binderIndex, true);
+}
+
+// const __sub${binderIndex} = __map(observable, observable => (<ast>), <nodeBinding> [, true]);
+function mapBinding(nodeBinding, binder, binderIndex, firstValue = false) {
+    const { ast, observables: [ name ] } = binder;
+    const observable = identifier(name);
+    const args = [
+        observable, 
+        arrowFunctionExpression({ 
+            body: ast,
+            params: [observable]
+        }),
+        nodeBinding
+    ];
+    if(firstValue) addOnce(args);
+
+    return subscription(
+        binderIndex, 
+        callExpression({
+            name: MAP_IMPORT,
+            args
+        }) 
+    );
+}
+
+function combineFirstBinding(nodeBinding, binder, binderIndex) {
+    return combineBinding(nodeBinding, binder, binderIndex, true);
+}
+
+// const __sub${binderIndex} = __combine([o1, o2, o3], (o1, o2, o3) => (<ast>), <nodeBinding> [, true]);
+function combineBinding(nodeBinding, binder, binderIndex, firstValue = false) {
+    const { ast, observables } = binder;
+    const params = observables.map(identifier);
+    const args =  [
+        arrayExpression({ elements: params }), 
+        arrowFunctionExpression({ 
+            body: ast,
+            params
+        }),
+        nodeBinding
+    ];
+    if(firstValue) addOnce(args);
+
+    return subscription(
+        binderIndex, 
+        callExpression({
+            name: COMBINE_IMPORT,
+            args
+        }) 
+    );
+}
+
 // const __nodes = __render${index}();
 const renderNodes = index => {
     return declareConst({ 
@@ -1035,6 +1082,10 @@ const templateToFunction = (node, block) => {
 };
 
 const makeTemplateStatements = ({ binders, index }) => {
+    const childNodes = binders
+        .map((b, i) => childNode$1(b, i))
+        .filter(c => c);
+
     const bindings = binders
         // binding takes additional params, so we can't directly pass to map
         .map((b, i) => binding(b, i))
@@ -1042,6 +1093,7 @@ const makeTemplateStatements = ({ binders, index }) => {
         
     return [
         renderNodes(index),
+        ...childNodes,
         ...bindings,
         ...fragment(binders)
     ];
@@ -1093,13 +1145,9 @@ class Module {
     }
 
     addDeclarations(body) {
-        const { fragments, binders } = this;
+        const { fragments } = this;
 
-        body.splice(0, 0, 
-            // TODO: rename: all --> keys
-            ...fragments.all.map(renderer), 
-            ...binders.values.map(initBinder)
-        );
+        body.splice(0, 0, ...fragments.keys.map(renderer));
     }
 
     // only used privately from makeTemplate

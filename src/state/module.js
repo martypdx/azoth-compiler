@@ -55,11 +55,9 @@ export class Module {
     }
 
     addDeclarations(body) {
-        const { fragments, binders } = this;
+        const { fragments } = this;
 
-        body.splice(0, 0, 
-            ...fragments.keys.map(renderer)
-        );
+        body.splice(0, 0, ...fragments.keys.map(renderer));
     }
 
     // only used privately from makeTemplate
