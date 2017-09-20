@@ -24,7 +24,10 @@ describe('transform - template', () => {
         getBinder({ ast: (() => three).toExpr(), sigil: AT }, { module: 1, element: 1 }),
     ];
     const scope = { one: true, three: true };
-    binders.forEach(b => b.matchObservables(scope));
+    binders.forEach((b, i) => {
+        b.init({ childIndex: i });        
+        b.matchObservables(scope);
+    });
 
     const makeProgram = code => ({
         type: 'Program',
@@ -58,9 +61,12 @@ describe('transform - template', () => {
         function expected() {
             () => {
                 const __nodes = __render2();
-                const __sub0 = one.subscribe(__bind0(__nodes[0]));
-                __bind1(__nodes[0])(two);
-                const __sub2 = three.subscribe(__bind1(__nodes[1]));
+                const __child0 = __nodes[0].childNodes[0];
+                const __child1 = __nodes[0].childNodes[1];
+                const __child2 = __nodes[1].childNodes[2];
+                const __sub0 = one.subscribe(__textBinder(__child0));
+                __textBinder(__child1)(two);
+                const __sub2 = three.subscribe(__textBinder(__child2));
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();

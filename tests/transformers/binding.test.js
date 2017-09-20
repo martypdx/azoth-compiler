@@ -17,7 +17,7 @@ describe('transform - binding', () => {
             );
             const [ ast ] = binding(binder, 0);
             const code = generate(ast);
-            assert.equal(code, '__bind1(__nodes[1])(foo);');
+            assert.equal(code, '__textBinder(__child0)(foo);');
         });
 
         it('no map with NONE', () => {
@@ -28,7 +28,7 @@ describe('transform - binding', () => {
 
             const [ ast ] = binding(binder, 1);
             const code = generate(ast);
-            assert.equal(code, '__bind1(__nodes[2])(x + 1);');
+            assert.equal(code, '__textBinder(__child1)(x + 1);');
         });
 
         it('no combine with NONE', () => {
@@ -39,7 +39,7 @@ describe('transform - binding', () => {
 
             const [ ast ] = binding(binder, 1);
             const code = generate(ast);
-            assert.equal(code, '__bind1(__nodes[3])(x + y);');
+            assert.equal(code, '__textBinder(__child1)(x + y);');
         });
 
         it('subscribe', () => {
@@ -50,7 +50,7 @@ describe('transform - binding', () => {
 
             const [ ast ] = binding(binder, 1);
             const code = generate(ast);
-            assert.equal(code, 'const __sub1 = foo.subscribe(__bind1(__nodes[3]));');
+            assert.equal(code, 'const __sub1 = foo.subscribe(__textBinder(__child1));');
         });
 
         it('first value', () => {
@@ -60,7 +60,7 @@ describe('transform - binding', () => {
             );
             const [ ast ] = binding(binder, 1);
             const code = generate(ast);
-            assert.equal(code, 'const __sub1 = __first(x, __bind1(__nodes[3]));');
+            assert.equal(code, 'const __sub1 = __first(x, __textBinder(__child1));');
         });
 
         it('first map', () => {
@@ -70,7 +70,7 @@ describe('transform - binding', () => {
             );
             const [ ast ] = binding(binder, 1);
             const code = generate(ast);
-            assert.equal(code, 'const __sub1 = __map(x, x => x + 1, __bind1(__nodes[3]), true);');
+            assert.equal(code, 'const __sub1 = __map(x, x => x + 1, __textBinder(__child1), true);');
         });
 
         it('first combine', () => {
@@ -80,7 +80,7 @@ describe('transform - binding', () => {
             );
             const [ ast ] = binding(binder, 1);
             const code = generate(ast);
-            assert.equal(code, 'const __sub1 = __combine([x, y], (x, y) => x + y, __bind1(__nodes[3]), true);');
+            assert.equal(code, 'const __sub1 = __combine([x, y], (x, y) => x + y, __textBinder(__child1), true);');
         });
 
         it('map', () => {
@@ -90,7 +90,7 @@ describe('transform - binding', () => {
             );
             const [ ast ] = binding(binder, 1);
             const code = generate(ast);
-            assert.equal(code, 'const __sub1 = __map(x, x => x + 1, __bind1(__nodes[3]));');
+            assert.equal(code, 'const __sub1 = __map(x, x => x + 1, __textBinder(__child1));');
         });
 
         it('combine', () => {
@@ -100,7 +100,7 @@ describe('transform - binding', () => {
             );
             const [ ast ] = binding(binder, 1);
             const code = generate(ast);
-            assert.equal(code, 'const __sub1 = __combine([x, y], (x, y) => x + y, __bind1(__nodes[3]));');
+            assert.equal(code, 'const __sub1 = __combine([x, y], (x, y) => x + y, __textBinder(__child1));');
         });
     });
 
@@ -113,7 +113,7 @@ describe('transform - binding', () => {
             );
             const statements = binding(binder, 0).map(generate);
             assert.deepEqual(statements, [
-                'const __sub0b = __bind1(__nodes[1]);',
+                'const __sub0b = __blockBinder(__child0);',
                 '__sub0b.observer(foo);'
             ]);
         });
@@ -126,7 +126,7 @@ describe('transform - binding', () => {
 
             const statements = binding(binder, 1).map(generate);
             assert.deepEqual(statements, [
-                'const __sub1b = __bind1(__nodes[2]);',
+                'const __sub1b = __blockBinder(__child1);',
                 '__sub1b.observer(x + 1);'
             ]);
         });
@@ -139,7 +139,7 @@ describe('transform - binding', () => {
 
             const statements = binding(binder, 1).map(generate);
             assert.deepEqual(statements, [
-                'const __sub1b = __bind1(__nodes[3]);',
+                'const __sub1b = __blockBinder(__child1);',
                 '__sub1b.observer(x + y);'
             ]);
         });
@@ -152,7 +152,7 @@ describe('transform - binding', () => {
 
             const statements = binding(binder, 1).map(generate);
             assert.deepEqual(statements, [
-                'const __sub1b = __bind1(__nodes[3]);',
+                'const __sub1b = __blockBinder(__child1);',
                 'const __sub1 = foo.subscribe(__sub1b.observer);'
             ]);
         });
@@ -165,7 +165,7 @@ describe('transform - binding', () => {
 
             const statements = binding(binder, 1).map(generate);
             assert.deepEqual(statements, [
-                'const __sub1b = __bind1(__nodes[3]);',
+                'const __sub1b = __blockBinder(__child1);',
                 'const __sub1 = __first(x, __sub1b.observer);'
             ]);
         });
@@ -178,7 +178,7 @@ describe('transform - binding', () => {
 
             const statements = binding(binder, 1).map(generate);
             assert.deepEqual(statements, [
-                'const __sub1b = __bind1(__nodes[3]);',
+                'const __sub1b = __blockBinder(__child1);',
                 'const __sub1 = __map(x, x => x + 1, __sub1b.observer, true);'
             ]);
         });
@@ -191,7 +191,7 @@ describe('transform - binding', () => {
 
             const statements = binding(binder, 1).map(generate);
             assert.deepEqual(statements, [
-                'const __sub1b = __bind1(__nodes[3]);',
+                'const __sub1b = __blockBinder(__child1);',
                 'const __sub1 = __combine([x, y], (x, y) => x + y, __sub1b.observer, true);'
             ]);
         });
@@ -204,7 +204,7 @@ describe('transform - binding', () => {
 
             const statements = binding(binder, 1).map(generate);
             assert.deepEqual(statements, [
-                'const __sub1b = __bind1(__nodes[3]);',
+                'const __sub1b = __blockBinder(__child1);',
                 'const __sub1 = __map(x, x => x + 1, __sub1b.observer);'
             ]);
         });
@@ -217,7 +217,7 @@ describe('transform - binding', () => {
 
             const statements = binding(binder, 1).map(generate);
             assert.deepEqual(statements, [
-                'const __sub1b = __bind1(__nodes[3]);',
+                'const __sub1b = __blockBinder(__child1);',
                 'const __sub1 = __combine([x, y], (x, y) => x + y, __sub1b.observer);'
             ]);
         });
@@ -240,8 +240,8 @@ describe('transform - binding', () => {
             const statements = binding(binder, 0).map(generate);
             assert.deepEqual(statements, [
                 'const __sub0b = Component();',
-                '__bind1(__sub0b)(foo);',
-                '__sub0b.onanchor(__bind0(__nodes[1]));'
+                '__propBinder(__sub0b, \'foo\')(foo);',
+                '__sub0b.onanchor(__componentBinder(__child0));'
             ]);
         });
         
@@ -260,8 +260,8 @@ describe('transform - binding', () => {
             const statements = binding(binder, 0).map(generate);
             assert.deepEqual(statements, [
                 'const __sub0b = Component();',
-                'const __sub0_0 = foo.subscribe(__bind1(__sub0b));',
-                '__sub0b.onanchor(__bind0(__nodes[1]));'
+                'const __sub0_0 = foo.subscribe(__propBinder(__sub0b, \'foo\'));',
+                '__sub0b.onanchor(__componentBinder(__child0));'
             ]);
         });
         
@@ -280,8 +280,8 @@ describe('transform - binding', () => {
             const statements = binding(binder, 0).map(generate);
             assert.deepEqual(statements, [
                 'const __sub0b = Component();',
-                'const __sub0_0 = foo.map(Foo).subscribe(__bind1(__sub0b));',
-                '__sub0b.onanchor(__bind0(__nodes[1]));'
+                'const __sub0_0 = foo.map(Foo).subscribe(__propBinder(__sub0b, \'foo\'));',
+                '__sub0b.onanchor(__componentBinder(__child0));'
             ]);
         });
 

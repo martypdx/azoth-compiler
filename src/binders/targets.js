@@ -2,6 +2,9 @@ const childNode = (binder, html, isBlock = false) => ({
     isBlock,
     isComponent: false,
     html,
+    childIndex: true,
+    name: binder,
+    indexAdjustment: 0,
     init({ index }) {
         return {
             name: binder,
@@ -17,6 +20,9 @@ export const component = {
     isBlock: true,
     isComponent: true,
     html: '<#: ',
+    childIndex: true,
+    indexAdjustment: 1,
+    name: '__componentBinder',
     init({ index }) {
         return {
             name: '__componentBinder',
@@ -30,6 +36,9 @@ const attr = binder => ({
     isBlock: false,
     isComponent: false,
     html: '""',
+    childIndex: false,
+    indexAdjustment: 0,
+    name: binder,
     init({ name }) {
         return { 
             name: binder,

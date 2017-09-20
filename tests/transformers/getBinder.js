@@ -6,7 +6,7 @@ export default function getBinder(options, {
     name = '', 
     observables =[] 
 } = {}) {
-    const binder = new Binder(options, options.target);
+    const binder = new Binder(options);
     binder.elIndex = element;
     binder.moduleIndex = module;
     binder.name = name;

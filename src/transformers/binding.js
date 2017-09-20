@@ -7,7 +7,7 @@ import {
     literal, 
     memberExpression } from './common';
 import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from '../binders/binding-types';
-import { BINDER, NODES, SUB, FIRST_IMPORT, MAP_IMPORT, COMBINE_IMPORT } from './identifiers';
+import { BINDER, CHILD, NODES, SUB, FIRST_IMPORT, MAP_IMPORT, COMBINE_IMPORT } from './identifiers';
 
 export function initBinder({ name, arg, index }) {
     return declareConst({
@@ -17,6 +17,27 @@ export function initBinder({ name, arg, index }) {
             args: [
                 literal({ value: arg })
             ]
+        })
+    });
+}
+
+export function childNode(binder, index ) {
+    if(!binder.isChildIndex) return;
+
+    // const __child${index} = __nodes[${binder.elIndex}].childNodes[${binder.index}];
+    return declareConst({
+        name: `${CHILD}${index}`,
+        init: memberExpression({
+            object: memberExpression({
+                object: memberExpression({
+                    name: NODES, 
+                    property: literal({ value: binder.elIndex }), 
+                    computed: true
+                }), 
+                property: literal({ raw: 'childNodes' }),
+            }),
+            property: literal({ value: binder.childIndex }),
+            computed: true
         })
     });
 }
@@ -31,7 +52,7 @@ const bindings = {
     [VALUE]: valueBinding,
 };
 
-export default function binding(binder, i, observer = nodeBinding(binder)) {
+export default function binding(binder, i, observer = nodeBinding(binder, i)) {
     const { type, target, properties } = binder;
     const typeBinding = bindings[type];
     const statements = [];
@@ -75,23 +96,40 @@ export default function binding(binder, i, observer = nodeBinding(binder)) {
     return statements;
 }
 
-// __bind${moduleIndex}(__nodes[${elIndex}])
-function nodeBinding({ moduleIndex, elIndex }) {
-    return callExpression({
-        callee: identifier(`${BINDER}${moduleIndex}`), 
-        args: [memberExpression({
-            name: NODES, 
-            property: literal({ value: elIndex }), 
-            computed: true
-        })]
-    });
+function nodeBinding(binder, index) {
+    if(binder.isChildIndex) {
+        // ${binder.binderName}(__child${index})
+        return callExpression({
+            name: binder.binderName, 
+            args: [
+                literal({ raw: `${CHILD}${index}` })
+            ]
+        });
+    }
+    else {
+        // ${binder.binderName}(__nodes[${elIndex}], ${binder.name})
+        return callExpression({
+            name: binder.binderName, 
+            args: [
+                memberExpression({
+                    name: NODES, 
+                    property: literal({ value: binder.elIndex }), 
+                    computed: true
+                }),
+                literal({ value: binder.name })
+            ]
+        });
+    }
 }
 
-// __bind${moduleIndex}(<identifier>)
-function componentBinding({ moduleIndex }, componentIdentifier) {
+// ${binderName}(${name}, <identifier>)
+function componentBinding({ binderName, name }, componentIdentifier) {
     return callExpression({
-        callee: identifier(`${BINDER}${moduleIndex}`), 
-        args: [componentIdentifier]
+        name: binderName, 
+        args: [
+            componentIdentifier,
+            literal({ value: name })            
+        ]
     });
 }
 

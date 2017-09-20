@@ -21,7 +21,7 @@ describe('Unique strings', () => {
     });
 
     it('returns all as array', () => {
-        assert.deepEqual(collection.all, [
+        assert.deepEqual(collection.keys, [
             'some string',
             'another string',
             'new one',

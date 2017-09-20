@@ -12,7 +12,7 @@ export class UniqueStrings {
         return index;
     }
 
-    get all() {
+    get keys() {
         return [...this.map.keys()];
     }
 

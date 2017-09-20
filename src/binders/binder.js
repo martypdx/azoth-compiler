@@ -29,6 +29,18 @@ export default class Binder {
         return this.target.html;
     }
 
+    get isChildIndex() {
+        return this.target.childIndex;
+    }
+
+    get childIndex() {
+        return this.index + this.target.indexAdjustment;
+    }
+
+    get binderName() {
+        return this.target.name;
+    }
+
     get declaration() {
         return this.target.init(this);
     }

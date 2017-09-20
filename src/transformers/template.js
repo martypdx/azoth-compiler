@@ -4,7 +4,7 @@ import {
     declareConst, 
     identifier } from './common';
 import fragment from './fragment';
-import binding from './binding';
+import binding, { childNode } from './binding';
 import { NODES, RENDER } from './identifiers';
 
 // const __nodes = __render${index}();
@@ -23,6 +23,10 @@ export const templateToFunction = (node, block) => {
 };
 
 export const makeTemplateStatements = ({ binders, index }) => {
+    const childNodes = binders
+        .map((b, i) => childNode(b, i))
+        .filter(c => c);
+
     const bindings = binders
         // binding takes additional params, so we can't directly pass to map
         .map((b, i) => binding(b, i))
@@ -30,6 +34,7 @@ export const makeTemplateStatements = ({ binders, index }) => {
         
     return [
         renderNodes(index),
+        ...childNodes,
         ...bindings,
         ...fragment(binders)
     ];

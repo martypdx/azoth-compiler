@@ -1,7 +1,6 @@
 import { UniqueStrings } from './unique-strings';
 import { Imports } from './imports';
 import { renderer } from '../transformers/fragment';
-import { initBinder } from '../transformers/binding';
 import parse from '../parse/template';
 import { 
     templateToFunction, 
@@ -59,9 +58,7 @@ export class Module {
         const { fragments, binders } = this;
 
         body.splice(0, 0, 
-            // TODO: rename: all --> keys
-            ...fragments.all.map(renderer), 
-            ...binders.values.map(initBinder)
+            ...fragments.keys.map(renderer)
         );
     }
 
