@@ -93,6 +93,10 @@ function arrayExpression({ elements }) {
     };
 }
 
+
+
+
+
 function memberExpression({ name, object, property, computed = false }) {
     if(name) object = identifier(name);
     return {
@@ -693,6 +697,7 @@ function parseTemplate({ expressions, quasis }) {
         },
         onattribute(name, value) {
             currentAttr = name;
+            if(name==='oninit') return;
             currentEl.attributes[name] = value;
         },
         onopentag(name) {
@@ -837,6 +842,14 @@ function parseTemplate({ expressions, quasis }) {
     };
 }
 
+function nodeByIndex(elIndex) {
+    return memberExpression({
+        name: NODES, 
+        property: literal({ value: elIndex }), 
+        computed: true
+    });
+}
+
 function childNode$1(binder, index ) {
     if(!binder.isChildIndex) return;
 
@@ -845,13 +858,9 @@ function childNode$1(binder, index ) {
         name: `${CHILD}${index}`,
         init: memberExpression({
             object: memberExpression({
-                object: memberExpression({
-                    name: NODES, 
-                    property: literal({ value: binder.elIndex }), 
-                    computed: true
-                }), 
+                object: nodeByIndex(binder.elIndex), 
                 property: literal({ raw: 'childNodes' }),
-            }),
+            }),            
             property: literal({ value: binder.childIndex }),
             computed: true
         })
@@ -872,7 +881,7 @@ function binding(binder, i, observer = nodeBinding(binder, i)) {
     const { type, target, properties } = binder;
     const typeBinding = bindings[type];
     const statements = [];
-
+    
     if(target.isBlock || target.isComponent) {
         const id = identifier(`${SUB}${i}b`);
         const init = target.isComponent ? binder.ast : observer;
@@ -922,16 +931,23 @@ function nodeBinding(binder, index) {
             ]
         });
     }
+    // ast => ast(__nodes[0]) 
+    else if(binder.name === 'oninit') {
+        const oninit = identifier('oninit');
+        return arrowFunctionExpression({ 
+            body: callExpression({
+                callee: oninit,
+                args: [nodeByIndex(binder.elIndex)]
+            }),
+            params: [oninit]
+        });
+    } 
     else {
         // ${binder.binderName}(__nodes[${elIndex}], ${binder.name})
         return callExpression({
             name: binder.binderName, 
             args: [
-                memberExpression({
-                    name: NODES, 
-                    property: literal({ value: binder.elIndex }), 
-                    computed: true
-                }),
+                nodeByIndex(binder.elIndex),
                 literal({ value: binder.name })
             ]
         });
