@@ -3,11 +3,9 @@ import {
     arrowFunctionExpression,
     callExpression, 
     declareConst, 
-    expressionStatement,
     identifier,
     literal, 
-    memberExpression,
-    parenthesizedExpression } from './common';
+    memberExpression } from './common';
 import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from '../binders/binding-types';
 import { BINDER, CHILD, NODES, SUB, FIRST_IMPORT, MAP_IMPORT, COMBINE_IMPORT } from './identifiers';
 
