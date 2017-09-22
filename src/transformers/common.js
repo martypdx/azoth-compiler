@@ -44,6 +44,20 @@ export function arrayExpression({ elements }) {
     };
 }
 
+export function expressionStatement({ expression }) {
+    return {
+        type: 'ExpressionStatement',
+        expression
+    };
+}
+
+export function parenthesizedExpression({ expression }) {
+    return {
+        type: 'ParenthesizedExpression',
+        expression
+    };
+}
+
 export function memberExpression({ name, object, property, computed = false }) {
     if(name) object = identifier(name);
     return {

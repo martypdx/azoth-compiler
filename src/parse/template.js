@@ -55,6 +55,7 @@ export default function parseTemplate({ expressions, quasis }) {
         },
         onattribute(name, value) {
             currentAttr = name;
+            if(name==='oninit') return;
             currentEl.attributes[name] = value;
         },
         onopentag(name) {

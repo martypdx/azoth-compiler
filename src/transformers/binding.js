@@ -3,9 +3,11 @@ import {
     arrowFunctionExpression,
     callExpression, 
     declareConst, 
+    expressionStatement,
     identifier,
     literal, 
-    memberExpression } from './common';
+    memberExpression,
+    parenthesizedExpression } from './common';
 import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from '../binders/binding-types';
 import { BINDER, CHILD, NODES, SUB, FIRST_IMPORT, MAP_IMPORT, COMBINE_IMPORT } from './identifiers';
 
@@ -21,6 +23,14 @@ export function initBinder({ name, arg, index }) {
     });
 }
 
+function nodeByIndex(elIndex) {
+    return memberExpression({
+        name: NODES, 
+        property: literal({ value: elIndex }), 
+        computed: true
+    });
+}
+
 export function childNode(binder, index ) {
     if(!binder.isChildIndex) return;
 
@@ -29,13 +39,9 @@ export function childNode(binder, index ) {
         name: `${CHILD}${index}`,
         init: memberExpression({
             object: memberExpression({
-                object: memberExpression({
-                    name: NODES, 
-                    property: literal({ value: binder.elIndex }), 
-                    computed: true
-                }), 
+                object: nodeByIndex(binder.elIndex), 
                 property: literal({ raw: 'childNodes' }),
-            }),
+            }),            
             property: literal({ value: binder.childIndex }),
             computed: true
         })
@@ -56,7 +62,7 @@ export default function binding(binder, i, observer = nodeBinding(binder, i)) {
     const { type, target, properties } = binder;
     const typeBinding = bindings[type];
     const statements = [];
-
+    
     if(target.isBlock || target.isComponent) {
         const id = identifier(`${SUB}${i}b`);
         const init = target.isComponent ? binder.ast : observer;
@@ -106,16 +112,23 @@ function nodeBinding(binder, index) {
             ]
         });
     }
+    // ast => ast(__nodes[0]) 
+    else if(binder.name === 'oninit') {
+        const oninit = identifier('oninit');
+        return arrowFunctionExpression({ 
+            body: callExpression({
+                callee: oninit,
+                args: [nodeByIndex(binder.elIndex)]
+            }),
+            params: [oninit]
+        });
+    } 
     else {
         // ${binder.binderName}(__nodes[${elIndex}], ${binder.name})
         return callExpression({
             name: binder.binderName, 
             args: [
-                memberExpression({
-                    name: NODES, 
-                    property: literal({ value: binder.elIndex }), 
-                    computed: true
-                }),
+                nodeByIndex(binder.elIndex),
                 literal({ value: binder.name })
             ]
         });

@@ -29,6 +29,25 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
+    it('oninit', () => {
+        function source() {
+            const t = () => _`<span oninit=${node => node.innerText= 'Foo'}></span>`;
+        }
+
+        const compiled = compile(source.toCode());
+
+        const expected = () => {
+            const __render0 = __renderer(__rawHtml(`<span data-bind></span>`));
+            const t = () => {
+                const __nodes = __render0();
+                (oninit => oninit(__nodes[0]))(node => node.innerText = 'Foo');
+                return __nodes[__nodes.length];
+            };
+        };
+
+        codeEqual(compiled, expected);
+    }); 
+
     it('hello attribute', () => {
         const source = `
             import { html as _ } from 'azoth';
