@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: off */
-/* globals _, $, __renderer, __rawHtml, __textBinder, __map, __blockBinder */
+/* globals _, $, __renderer, __rawHtml, __textBinder, __map, __blockBinder, __attrBinder */
 import codeEqual from '../helpers/code-equal';
 import compile from '../../src/compilers/compile';
 
@@ -313,6 +313,36 @@ describe('compiler', () => {
                 return __fragment;
             };
         `;
+
+        codeEqual(compiled, expected);
+    }); 
+
+    it.skip('block component with children', () => {
+        const source = () => {
+            const template = foo => _`<#:${Block()}><span>${foo}</span></#:>`;
+        };
+
+        const compiled = compile(source.toCode());
+
+        const expected = () => {
+            const __render0 = __renderer(__rawHtml(`<span data-bind><text-node></text-node></span>`));
+            const __render1 = __renderer(__rawHtml(`<!-- component start --><!-- component end -->`));
+            const template = foo => {
+                const __nodes = __render0();
+                const __child0 = __nodes[0].childNodes[0];
+                const __child1 = __nodes[0].childNodes[2];
+                const __child2 = __nodes[0].childNodes[3];
+                __textBinder(__child0)(foo);
+                const __sub1b = Block();
+                __sub1b.onanchor(__child1);
+                __textBinder(__child2)(foo);
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub1b.unsubscribe();
+                };
+                return __fragment;
+            };
+        };
 
         codeEqual(compiled, expected);
     }); 
