@@ -13,6 +13,7 @@
     "pretest": "rollup -c rollup/rollup.config.tests.js",
     "test:watch:nodemon": "nodemon --watch src --watch tests --exec 'npm test'",
     "test:watch": "npm test -- -w",
+    "test:ava": "ava tests/compilers/compile.test.ava.js",
     "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha build/tests-bundle.js --reporter mocha-better-spec-reporter",
     "start": "npm run test:watch:nodemon",
     "prepublish": "npm run build && npm test"
@@ -20,6 +21,10 @@
   "author": "Marty Nelson <marty@martypdx.com> (@martypdx)",
   "license": "MIT",
   "devDependencies": {
+    "ava": "^0.22.0",
+    "babel-core": "^6.26.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+    "babel-register": "^6.26.0",
     "chai": "^3.5.0",
     "eslint": "^3.19.0",
     "mocha": "^3.4.2",
@@ -37,5 +42,15 @@
     "astring": "^1.0.3",
     "estraverse": "^4.2.0",
     "htmlparser2": "^3.9.2"
+  },
+  "ava": {
+    "require": [
+      "babel-register"
+    ]
+  },
+  "babel": {
+    "plugins": [
+      "transform-es2015-modules-commonjs"
+    ]
   }
 }
