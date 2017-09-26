@@ -44,9 +44,8 @@
     "htmlparser2": "^3.9.2"
   },
   "ava": {
-    "require": [
-      "babel-register"
-    ]
+      "require": ["babel-register", "./babel-register-config"]
+      
   },
   "babel": {
     "plugins": [
