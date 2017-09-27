@@ -13,7 +13,7 @@
     "pretest": "rollup -c rollup/rollup.config.tests.js",
     "test:watch:nodemon": "nodemon --watch src --watch tests --exec 'npm test'",
     "test:watch": "npm test -- -w",
-    "test:ava": "ava tests/compilers/compile.test.ava.js",
+    "test:ava": "ava test",
     "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha build/tests-bundle.js --reporter mocha-better-spec-reporter",
     "start": "npm run test:watch:nodemon",
     "prepublish": "npm run build && npm test"
@@ -44,7 +44,7 @@
     "htmlparser2": "^3.9.2"
   },
   "ava": {
-      "require": ["babel-register", "./babel-register-config"]  
+      "require": ["./test-setup/babel-register.config.js"]  
   },
   "babel": {
     "plugins": [

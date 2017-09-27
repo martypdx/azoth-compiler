@@ -1,3 +1,4 @@
+/*eslint no-unused-vars: off */
 import test from 'ava';
 import compile from '../../src/compilers/compile.js';
 

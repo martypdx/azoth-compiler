@@ -25,50 +25,86 @@ const literalProperty = (name, value) => getBinder({
     ast: literal({ value })
 });
 
+const makeTemplate = template => {
+    const binders = template.allBinders.reduce((all, binders, i) => {
+        binders.forEach(b => b.elIndex = i);
+        all.push(...binders);
+        return all;
+    }, []);
+
+    return { 
+        html: template.html.join(''),
+        binders
+    };
+};
+
 export default function parseTemplate({ expressions, quasis }) {
 
-    const fragment = getEl();
-    const html = [];
-    const stack = [];
+    // const fragment = getEl();
+    // const html = [];
+    // const stack = [];
 
-    let currentEl = fragment;
-    let inAttributes = false;
-    let currentAttr = null;
+    // let currentEl = fragment;
+    // let inAttributes = false;
+    // let currentAttr = null;
 
-    let allBinders = null;
+    // let allBinders = null;
+
+    const getTemplate = () => {
+        const root = getEl();
+        return {
+            fragment: root,
+            html: [],
+            stack: [],
+            currentEl: root,
+            inAttributes: false,
+            //TODO: default should be ''
+            currentAttr: null,
+            allBinders: null
+        };
+    };
+
+    const templateStack = [];
+    let template = getTemplate();
     
     const handler = {
         onopentagname(name) {
-            const el = currentEl;
-            if(el.component) throw new Error('text/html children not yet supported for components');
+            const el = template.currentEl;
+            if(el.component) throw new Error('text/html children for components should spawn child template');
             
             const childIndex = ++el.childIndex;
-            stack.push(el);
+            template.stack.push(el);
 
-            currentEl = getEl(name);
-            if(currentEl.component = name === '#:') currentEl.childIndex = childIndex;
-            inAttributes = true;
+            template.currentEl = getEl(name);
+            if(template.currentEl.component = name === '#:') template.currentEl.childIndex = childIndex;
+            template.inAttributes = true;
         },
         oncomment(comment) {
-            html.push(`<!--${comment}-->`);
-            if(currentEl) currentEl.childIndex++;
+            template.html.push(`<!--${comment}-->`);
+            if(template.currentEl) template.currentEl.childIndex++;
         },
         onattribute(name, value) {
-            currentAttr = name;
+            template.currentAttr = name;
             if(name==='oninit') return;
-            currentEl.attributes[name] = value;
+            template.currentEl.attributes[name] = value;
         },
         onopentag(name) {
-            const el = currentEl;
+            const el = template.currentEl;
             el.opened = true;
             const { attributes } = el;
             const entries = Object.entries(attributes);
+
+            template.currentAttr = null;
+            template.inAttributes = false;
 
             if(el.component) {
                 el.binder.properties = entries.map(([key, value]) => {
                     return typeof value === 'string' ? literalProperty(key, value) : value;
                 });
-                html.push(`<!-- component start -->`);
+                template.html.push(`<!-- component start -->`);
+
+                templateStack.push(template);
+                template = getTemplate();
             }
             else {                
                 // NOTE: html spec and htmlparser2 implementation treat 
@@ -77,46 +113,41 @@ export default function parseTemplate({ expressions, quasis }) {
                     return `${text} ${key}="${value}"`;
                 },'');
 
-                el.htmlIndex = -2 + html.push(
+                el.htmlIndex = -2 + template.html.push(
                     `<${name}${attrsText}`,
                     '',
                     `>`
                 );
             }
-
-            currentAttr = null;
-            inAttributes = false;
         },
         ontext(text) {
-            const el = currentEl;
+            const el = template.currentEl;
             if(el.component) {
-                if(text.trim()) throw new Error('text/html children not yet supported for components');
+                if(text.trim()) throw new Error('text/html children for components should spawn child template');
             }
             else {
-                html.push(text);
+                template.html.push(text);
                 if(el) el.childIndex++;
             }
         },
         add(binder) { 
-            const el = currentEl;
+            const el = template.currentEl;
             // this works for components, but is misleading
             // because child index in other cases is relative
             // to current el, but for components really is el
             // index of parent el (set in onopentagname)
-            binder.init(el, currentAttr || '');
+            binder.init(el, template.currentAttr || binder.name);
 
             if(el.component && !el.binder) {
-                stack[stack.length - 1].binders.push(binder);
+                template.stack[template.stack.length - 1].binders.push(binder);
                 el.binder = binder;
             }
             else if(el.component) {
-                if(inAttributes) {
+                if(template.inAttributes) {
                     if(!binder.name) throw new Error('Expected binder to have name');
                     this.onattribute(binder.name, binder);
                 }
                 else {
-                    binder.target = property;
-                    binder.init(el, 'children');
                     el.binder.properties.push(binder);
                 }
             }
@@ -125,34 +156,59 @@ export default function parseTemplate({ expressions, quasis }) {
             }
         },
         onclosetag(name) {
-            const el = currentEl;
-            if(!el.component && !voidElements[name] && el.opened) html.push(`</${name}>`);
-            else if(el.component) {
-                html.push('<!-- component end -->');
-                stack[stack.length - 1].childIndex++;
+            let el = template.currentEl;
+            let parentEl = template.stack.pop();
+            
+            // (Child) template complete!
+            if(!parentEl) {
+                const parentTemplate = templateStack.pop();
+
+                // top-level will be processed via end()
+                if(parentTemplate) this.complete();
+                
+                
+                const binder = getBinder({
+                    target: property,
+                    name: 'content',
+                    childTemplate: makeTemplate(template)
+                });
+                
+                el = parentTemplate.currentEl;
+                template = parentTemplate;
+                parentEl = template.stack.pop();
+
+                this.add(binder);
             }
 
-            currentEl = stack.pop();
+            if(!el.component && !voidElements[name] && el.opened) template.html.push(`</${name}>`);
+            else if(el.component) {
+                template.html.push('<!-- component end -->');
+                template.stack[template.stack.length - 1].childIndex++;
+            }
+
+            template.currentEl = parentEl;
 
             //Notice array of arrays. 
             //Binders from each el are being pushed.
             //Order matters as well because this is how we get 
             //element binding index in right order.
-
             if(el.binders.length > 0) {
-                const target = el.htmlIndex > -1 ? el : currentEl;
-                html[target.htmlIndex] = ` data-bind`;
-                currentEl.childBinders.push(el.binders);
+                const target = el.htmlIndex > -1 ? el : template.currentEl;
+                template.html[target.htmlIndex] = ` data-bind`;
+                template.currentEl.childBinders.push(el.binders);
             }
 
             if (el.childBinders.length > 0) {
-                currentEl.childBinders.push(...el.childBinders);
+                template.currentEl.childBinders.push(...el.childBinders);
             }
         },
         onend() {
             // fragment is indexed at the end of the nodes array,
             // which is why its binders go _after_ its child binders
-            allBinders = [...fragment.childBinders, fragment.binders];
+            this.complete();
+        },
+        complete() {
+            template.allBinders = [...template.fragment.childBinders, template.fragment.binders];
         }
     };
 
@@ -167,6 +223,7 @@ export default function parseTemplate({ expressions, quasis }) {
         if(text) parser.write(text);
 
         let block = false;
+        // look ahead, block sigil # after ${}
         if(i < quasis.length) {
             const value = quasis[i + 1].value;
             const result = getBlock(value.raw);
@@ -177,25 +234,16 @@ export default function parseTemplate({ expressions, quasis }) {
         const binder = getBinder({
             block,
             sigil,
-            inAttributes,
-            component: currentEl.component,
+            inAttributes: template.inAttributes,
+            component: template.currentEl.component,
             ast: expressions[i]
         });
 
-        if(!currentEl.component || inAttributes) parser.write(binder.html);
+        if(!template.currentEl.component || template.inAttributes) parser.write(binder.html);
         handler.add(binder);
     });
 
     parser.end();
 
-    const binders = allBinders.reduce((all, binders, i) => {
-        binders.forEach(b => b.elIndex = i);
-        all.push(...binders);
-        return all;
-    }, []);
-
-    return { 
-        html: html.join(''),
-        binders
-    };
+    return makeTemplate(template);
 }

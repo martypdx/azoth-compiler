@@ -5,7 +5,7 @@ import matchObservables from './match-observables';
 
 export default class Binder {
 
-    constructor({ sigil = NONE, ast = null, target = text, name = '' } = {}) {        
+    constructor({ sigil = NONE, ast = null, target = text, name = '', childTemplate = null } = {}) {        
         this.sigil = sigil;
         this.ast = ast;
         this.target = target;
@@ -18,6 +18,7 @@ export default class Binder {
         this.name = name;
         
         this.properties = [];
+        this.childTemplate = childTemplate;
     }
 
     init(el, attr) {

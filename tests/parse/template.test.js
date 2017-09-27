@@ -26,7 +26,7 @@ const parseSource = source => {
     return template(quasi);
 };
 
-/* globals _, Block, Stream, foo */
+/* globals _, Block, Widget, Stream, foo */
 describe('parse template', () => {
 
     function testBinder(binder, {
@@ -37,6 +37,7 @@ describe('parse template', () => {
         sigil = NONE,
         ref = '',
         observables = [],
+        childTemplate = null,
         expectedType = 'Identifier'    
     } = {}) {
         assert.ok(binder, 'binder does not exist');
@@ -49,7 +50,7 @@ describe('parse template', () => {
         
         assert.deepEqual(
             binder, 
-            { elIndex, moduleIndex, index, name, sigil, observables }, 
+            { elIndex, moduleIndex, index, name, sigil, observables, childTemplate }, 
             `name: ${name || ref}`
         );
     }
@@ -257,19 +258,38 @@ describe('parse template', () => {
 
         });
 
-        //TODO: should this be allowed???
-        // it.skip('block component with children', () => {
-        //     function source() {
-        //         const template = foo => _`<div><#:${Block}><span>${foo}</span></#:></div>`;
-        //     }
-        //     const { html, binders } = parseSource(source);
-        //     assert.equal(html, '<div data-bind><!-- component start --><span data-bind><text-node></text-node></span><!-- component end --></div>');
-        //     assert.equal(binders.length, 2);
-        //     testText(binders[0], { ref: 'Block', sigil: ELEMENT });
-        //     testText(binders[1], { ref: 'foo', sigil: NONE, elIndex: 1 });
-        // });
+        it('block component with content', () => {
+            function source() {
+                const template = foo => _`<#:${Widget}><span>${foo}</span></#:>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<!-- component start --><!-- component end -->');
+            const properties = binders[0].properties;
+            testFirstText(binders, { ref: 'Widget', sigil: ELEMENT });
+            assert.equal(properties.length, 1);
+            const [ { childTemplate } ]  = properties;
 
-        it('block component with child function', () => {
+            assert.equal(childTemplate.html, '<span data-bind><text-node></text-node></span>');
+            testFirstText(childTemplate.binders, { ref: 'foo', sigil: NONE });
+        });
+
+        it.only('wrapped block component with content', () => {
+            function source() {
+                const template = foo => _`<div><#:${Widget}><span>${foo}</span></#:></div>`;
+            }
+            const { html, binders } = parseSource(source);
+            assert.equal(html, '<div data-bind><!-- component start --><!-- component end --></div>');
+            const properties = binders[0].properties;
+            testFirstText(binders, { ref: 'Widget', sigil: ELEMENT });
+            assert.equal(properties.length, 1);
+            const [ { childTemplate } ]  = properties;
+
+            assert.equal(childTemplate.html, '<span data-bind><text-node></text-node></span>');
+            testFirstText(childTemplate.binders, { ref: 'foo', sigil: NONE });
+        });
+
+        // TODO: not sure if this makes any sense any more
+        it('block component with child function in interpolator', () => {
             function source() {
                 const template = items => _`<#:${Stream(items)}>${item => _`<li>${item}</li>`}</#:>`;
             }
@@ -278,13 +298,8 @@ describe('parse template', () => {
             
             const properties = binders[0].properties;
             testFirstText(binders, { expectedType: 'CallExpression', ref: '', sigil: ELEMENT });
-            assert.equal(properties.length, 1);
-            testProp(properties[0], { 
-                expectedType: 'ArrowFunctionExpression',
-                name: 'children', 
-                sigil: NONE, elIndex: 1 
-            });
         });
+
     });
 
     describe('attribute', () => {
