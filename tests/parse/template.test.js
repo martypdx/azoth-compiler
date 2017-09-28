@@ -273,7 +273,7 @@ describe('parse template', () => {
             testFirstText(childTemplate.binders, { ref: 'foo', sigil: NONE });
         });
 
-        it.only('wrapped block component with content', () => {
+        it('wrapped block component with content', () => {
             function source() {
                 const template = foo => _`<div><#:${Widget}><span>${foo}</span></#:></div>`;
             }
@@ -288,16 +288,15 @@ describe('parse template', () => {
             testFirstText(childTemplate.binders, { ref: 'foo', sigil: NONE });
         });
 
-        // TODO: not sure if this makes any sense any more
-        it('block component with child function in interpolator', () => {
+        it('block component with interpolator content', () => {
             function source() {
-                const template = items => _`<#:${Stream(items)}>${item => _`<li>${item}</li>`}</#:>`;
+                const template = foo => _`<#:${Block}>${foo}</#:>`;
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<!-- component start --><!-- component end -->');
             
             const properties = binders[0].properties;
-            testFirstText(binders, { expectedType: 'CallExpression', ref: '', sigil: ELEMENT });
+            testFirstText(binders, { expectedType: undefined, ref: 'Block', sigil: ELEMENT });
         });
 
     });

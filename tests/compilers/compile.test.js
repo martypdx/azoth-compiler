@@ -1,5 +1,6 @@
 /*eslint no-unused-vars: off */
-/* globals _, $, __renderer, __rawHtml, __textBinder, __map, __blockBinder, __attrBinder */
+/* globals _, $, __renderer, __rawHtml, __textBinder, 
+__map, __blockBinder, __attrBinder, __propBinder */
 import codeEqual from '../helpers/code-equal';
 import compile from '../../src/compilers/compile';
 
@@ -317,28 +318,30 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
-    it.skip('block component with children', () => {
+    it('Widget component with content', () => {
         const source = () => {
-            const template = foo => _`<#:${Block()}><span>${foo}</span></#:>`;
+            const template = foo => _`<#:${Widget}><span>${foo}</span></#:>`;
         };
 
         const compiled = compile(source.toCode());
 
         const expected = () => {
-            const __render0 = __renderer(__rawHtml(`<span data-bind><text-node></text-node></span>`));
-            const __render1 = __renderer(__rawHtml(`<!-- component start --><!-- component end -->`));
+            const __render0 = __renderer(__rawHtml(`<!-- component start --><!-- component end -->`));
+            const __render1 = __renderer(__rawHtml(`<span data-bind><text-node></text-node></span>`));
             const template = foo => {
                 const __nodes = __render0();
-                const __child0 = __nodes[0].childNodes[0];
-                const __child1 = __nodes[0].childNodes[2];
-                const __child2 = __nodes[0].childNodes[3];
-                __textBinder(__child0)(foo);
-                const __sub1b = Block();
-                __sub1b.onanchor(__child1);
-                __textBinder(__child2)(foo);
+                const __child0 = __nodes[0].childNodes[1];
+                const __sub0b = Widget;
+                __propBinder(__sub0b, 'content')(() => {
+                    const __nodes = __render1();
+                    const __child0 = __nodes[0].childNodes[0];
+                    __textBinder(__child0)(foo);
+                    return __nodes[__nodes.length];
+                });
+                __sub0b.onanchor(__child0);
                 const __fragment = __nodes[__nodes.length];
                 __fragment.unsubscribe = () => {
-                    __sub1b.unsubscribe();
+                    __sub0b.unsubscribe();
                 };
                 return __fragment;
             };
@@ -347,7 +350,7 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
-    it('block component with attributes and child function', () => {
+    it.skip('block component with attributes and child function', () => {
         const source = `
             import { _, Block } from 'azoth';
             const template = (name, foo=$) => _\`<span><#:\${Block({ name })} foo=*\${foo} bar="bar">\${() => _\`child-template\`}</#:></span>\`;
@@ -382,7 +385,7 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
-    /* globals Block */
+    /* globals Block, Widget */
     it('block component maintains correct child index', () => {
         const source = () => {
             const template = foo => _`<span>${foo}<#:${Block()}/>${foo}</span>`;

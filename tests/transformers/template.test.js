@@ -9,7 +9,6 @@ import '../helpers/to-code';
 import codeEqual from '../helpers/code-equal';
 import { parse } from '../../src/ast';
 
-// TODO: add templateToFunction tests
 import { 
     blockStatement,
     arrowFunctionExpression } from '../../src/transformers/common';

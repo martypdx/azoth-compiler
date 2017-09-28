@@ -3,7 +3,7 @@ import { Imports } from './imports';
 import { renderer } from '../transformers/fragment';
 import parse from '../parse/template';
 import { 
-    templateToFunction, 
+    blockToFunction, 
     makeTemplateStatements } from '../transformers/template';
 import { 
     addStatementsTo,
@@ -19,7 +19,6 @@ export class Module {
         // imports may modify tag and oTag based on found imports
         this.imports = new Imports({ tag, oTag });
         this.fragments = new UniqueStrings();
-        this.binders = new UniqueStrings();
         
         // track scope and current function
         this.scope = this.functionScope = Object.create(null);
@@ -62,33 +61,23 @@ export class Module {
 
     // only used privately from makeTemplate
     addBinder(binder) {
+        if(binder.childTemplate) {
+            if(binder.ast) throw new Error('Binders with child templates not expected to have ast');
+            const statements = this.addTemplate(binder.childTemplate);
+            binder.ast = blockToFunction(statements);
+        }
 
         binder.matchObservables(this.scope);
         this.imports.addBinder(binder);
-
-        const { declarations } = binder;
-        let index = -1;
-        declarations.forEach((d, i) => {
-            const unique = JSON.stringify(d);
-            const at = this.binders.add(unique, d);
-            if(i === 0) index = at;
-        });
-        binder.moduleIndex = index;
         binder.properties.forEach(p => this.addBinder(p));
     }
 
     makeTemplate(node) {
-        const { html, binders } = parse(node.quasi);
-        const index = this.fragments.add(html);
-         
-        binders.forEach(b => this.addBinder(b));
-        
-        const statements = makeTemplateStatements({ binders, index });
-        statements.forEach(node => node.subtemplate = true);
-        
+        const statements = this.addTemplate(parse(node.quasi));
+
         // TODO: this.currentFn gets set by the observables handlers
         // (currentReturnStmt gets set by templates handlers),
-        // which means this is coupled those set of handlers.
+        // which means its use makes this coupled those set of handlers.
         const { currentFn, currentReturnStmt } = this;
         if(currentFn) {
             if(currentFn.body === node) {
@@ -102,6 +91,16 @@ export class Module {
         
         if(!currentFn.subtemplate) node.subtemplate = true;
 
-        templateToFunction(node, statements);
+        blockToFunction(statements, node);
+    }
+
+    addTemplate({ html, binders }) {
+        const index = this.fragments.add(html);
+        binders.forEach(b => this.addBinder(b));
+        
+        const statements = makeTemplateStatements({ binders, index });
+        statements.forEach(node => node.subtemplate = true);
+        
+        return statements;
     }
 }

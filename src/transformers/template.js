@@ -17,9 +17,10 @@ const renderNodes = index => {
     });
 };
 
-export const templateToFunction = (node, block) => {
+export const blockToFunction = (block, node = {}) => {
     const ast = arrowFunctionExpression({ block });
     Object.assign(node, ast);
+    return node;
 };
 
 export const makeTemplateStatements = ({ binders, index }) => {

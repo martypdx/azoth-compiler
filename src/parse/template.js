@@ -166,24 +166,28 @@ export default function parseTemplate({ expressions, quasis }) {
                 // top-level will be processed via end()
                 if(parentTemplate) this.complete();
                 
-                
-                const binder = getBinder({
-                    target: property,
-                    name: 'content',
-                    childTemplate: makeTemplate(template)
-                });
+                const childTemplate = makeTemplate(template);
+                let binder = null;
+
+                if(childTemplate.html) {
+                    binder = getBinder({
+                        target: property,
+                        name: 'content',
+                        childTemplate: makeTemplate(template)
+                    });
+                }
                 
                 el = parentTemplate.currentEl;
                 template = parentTemplate;
                 parentEl = template.stack.pop();
 
-                this.add(binder);
+                if(binder) this.add(binder);
             }
 
             if(!el.component && !voidElements[name] && el.opened) template.html.push(`</${name}>`);
             else if(el.component) {
                 template.html.push('<!-- component end -->');
-                template.stack[template.stack.length - 1].childIndex++;
+                parentEl.childIndex++;
             }
 
             template.currentEl = parentEl;

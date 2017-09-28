@@ -12,7 +12,6 @@ export function declareConst({ name, id, init }) {
     };
 }
 
-
 export function identifier(name) {
     return { type: 'Identifier', name };
 }
@@ -89,8 +88,8 @@ export function callMethod({ object, property, arg }) {
     });
 }
 
-// (() => {<body>}())
-// () => {<body>}  ???
+// () => <body>
+// () => {<block>}
 export const arrowFunctionExpression = ({ body, block, params = [] }) => {
     if(block) { body = { type: 'BlockStatement', body: block }; }
 
@@ -104,7 +103,6 @@ export const arrowFunctionExpression = ({ body, block, params = [] }) => {
     };
 };
 
-// importMe
 export const specifier = name => ({
     type: 'Import Specifier',
     imported: identifier(name),
@@ -117,9 +115,11 @@ export function replaceStatements(block, match, statements) {
     return;
 }
 
+const isBlock = node => node.type === 'Program' || node.type === 'BlockStatement'; 
+
 export function addStatementsTo(node, statements, { returnBody = false } = {})  {
-    let body = node.type === 'Program' || node.type === 'BlockStatement' ? node : node.body;
-    if(body.type === 'BlockStatement' || body.type === 'Program') {
+    let body = isBlock(node) ? node : node.body;
+    if(isBlock(body)) {
         spliceStatements(body.body, statements);
     } else {
         node.body = replaceBody(body, statements, returnBody);
