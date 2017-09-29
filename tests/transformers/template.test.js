@@ -17,16 +17,21 @@ import { makeTemplateStatements } from '../../src/transformers/template';
 // TODO: there are trailing ";\n" issues in comparisons :(
 
 describe('transform - template', () => {
-    const binders = [
-        getBinder({ ast: (() => one).toExpr(), sigil: AT }, { module: 0, element: 0 }),
-        getBinder({ ast: (() => two).toExpr(), sigil: NONE }, { module: 1, element: 0 }),
-        getBinder({ ast: (() => three).toExpr(), sigil: AT }, { module: 1, element: 1 }),
-    ];
-    const scope = { one: true, three: true };
-    binders.forEach((b, i) => {
-        b.init({ childIndex: i });        
-        b.matchObservables(scope);
+    let binders = null;
+
+    before(() => {
+        binders = [
+            getBinder({ ast: (() => one).toExpr(), sigil: AT }, { module: 0, element: 0 }),
+            getBinder({ ast: (() => two).toExpr(), sigil: NONE }, { module: 1, element: 0 }),
+            getBinder({ ast: (() => three).toExpr(), sigil: AT }, { module: 1, element: 1 }),
+        ];
+        const scope = { one: true, three: true };
+        binders.forEach((b, i) => {
+            b.init({ childIndex: i });        
+            b.matchObservables(scope);
+        });
     });
+    
 
     const makeProgram = code => ({
         type: 'Program',
