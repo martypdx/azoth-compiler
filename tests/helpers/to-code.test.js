@@ -6,7 +6,7 @@ const _ = () => {};
 describe('toCode', () => {
 
     const code = `
-        (x, y) => _\`<span>*\${ x + y }</span>\`;
+        (x, y) => _\`<span>*\${x + y}</span>\`;
     `.trim();
 
     it('named function', () => {
@@ -34,15 +34,3 @@ describe('toCode', () => {
     });
 
 });
-
-
-
-// class Control extends _ {
-//     render() {
-//         return _`
-//             <div class=_{`control _{this.class}`}>
-//                 _{this.content}#
-//             </div>
-//         `;
-//     }
-// }
