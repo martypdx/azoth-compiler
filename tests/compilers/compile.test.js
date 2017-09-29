@@ -441,6 +441,39 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
+    it.skip('class component', () => {
+        const source = () => {
+            class Control extends _ {
+                render() {
+                    return _`
+                        <div class=${`control ${this.class}`}>
+                            ${this.content}#
+                        </div>
+                    `;
+                }
+            }
+        };
+
+        const compiled = compile(source.toCode());
+        
+        const expected = () => {
+            const __render0 = __renderer(__rawHtml(`<!-- component start --><!-- component end -->`));
+            const template = name => {
+                const __nodes = __render0();
+                const __child0 = __nodes[0].childNodes[1];
+                const __sub0b = new Block(name);
+                __sub0b.onanchor(__child0);
+                const __fragment = __nodes[__nodes.length];
+                __fragment.unsubscribe = () => {
+                    __sub0b.unsubscribe();
+                };
+                return __fragment;
+            };
+        };
+
+        codeEqual(compiled, expected);
+    });
+
     describe('no subscriptions for undeclareds in nested templates', () => {
         
         it('implicit return template', () => {

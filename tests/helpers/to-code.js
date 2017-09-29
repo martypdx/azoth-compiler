@@ -1,6 +1,6 @@
 import { parse } from '../../src/ast';
 
-Function.prototype.toCCode = function() {
+Function.prototype.toCode = function() {
     const trimmed = this.toString().trim();
     const length = trimmed.length;
 
