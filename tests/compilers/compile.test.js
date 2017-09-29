@@ -350,26 +350,26 @@ describe('compiler', () => {
         codeEqual(compiled, expected);
     }); 
 
-    it.skip('block component with attributes and child function', () => {
-        const source = `
-            import { _, Block } from 'azoth';
-            const template = (name, foo=$) => _\`<span><#:\${Block({ name })} foo=*\${foo} bar="bar">\${() => _\`child-template\`}</#:></span>\`;
-        `;
+    it('block component with attributes and content', () => {
+        const source = () => {
+            const template = (name, foo=$) => _`<span><#:${Block({ name })} foo=*${foo} bar="bar"><em>${name}</em></#:></span>`;
+        };
 
-        const compiled = compile(source);
+        const compiled = compile(source.toCode());
 
-        const expected = `
-            const __render0 = __renderer(__rawHtml(\`child-template\`));
-            const __render1 = __renderer(__rawHtml(\`<span data-bind><!-- component start --><!-- component end --></span>\`));
-            import { Block, __renderer, __rawHtml, __propBinder } from 'azoth';
+        const expected = () => {
+            const __render0 = __renderer(__rawHtml(`<span data-bind><!-- component start --><!-- component end --></span>`));
+            const __render1 = __renderer(__rawHtml(`<em data-bind><text-node></text-node></em>`));
             const template = (name, foo) => {
-                const __nodes = __render1();
+                const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 const __sub0b = Block({ name });
                 const __sub0_0 = foo.subscribe(__propBinder(__sub0b, 'foo'));
                 __propBinder(__sub0b, 'bar')('bar');
-                __propBinder(__sub0b, 'children')(() => {
-                    const __nodes = __render0();
+                __propBinder(__sub0b, 'content')(() => {
+                    const __nodes = __render1();
+                    const __child0 = __nodes[0].childNodes[0];
+                    __textBinder(__child0)(name);
                     return __nodes[__nodes.length];
                 });
                 __sub0b.onanchor(__child0);
@@ -380,7 +380,7 @@ describe('compiler', () => {
                 };
                 return __fragment;
             };
-        `;
+        };
 
         codeEqual(compiled, expected);
     }); 
