@@ -27,7 +27,7 @@
     "babel-register": "^6.26.0",
     "chai": "^3.5.0",
     "eslint": "^3.19.0",
-    "mocha": "^3.4.2",
+    "mocha": "^3.5.3",
     "mocha-better-spec-reporter": "^3.1.0",
     "nodemon": "^1.11.0",
     "rollup": "^0.43.0",
@@ -44,7 +44,9 @@
     "htmlparser2": "^3.9.2"
   },
   "ava": {
-      "require": ["./test-setup/babel-register.config.js"]  
+    "require": [
+      "./test-setup/babel-register.config.js"
+    ]
   },
   "babel": {
     "plugins": [

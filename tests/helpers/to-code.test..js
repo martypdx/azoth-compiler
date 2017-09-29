@@ -1,17 +1,17 @@
 import chai from 'chai';
 import './to-code';
 const assert = chai.assert;
-const $ = () => {};
+const _ = () => {};
 
 describe('toCode', () => {
 
     const code = `
-        (x, y) => $\`<span>*\${ x + y }</span>\`;
+        (x, y) => _\`<span>*\${ x + y }</span>\`;
     `.trim();
 
     it('named function', () => {
         function template () {
-            (x, y) => $`<span>*${x + y}</span>`;
+            (x, y) => _`<span>*${x + y}</span>`;
         }
          
         assert.equal(template.toCode(), code);
@@ -19,7 +19,7 @@ describe('toCode', () => {
 
     it('arrow with block', () => {
         const template = () => {
-            (x, y) => $`<span>*${x + y}</span>`;
+            (x, y) => _`<span>*${x + y}</span>`;
         };
 
         assert.equal(template.toCode(), code);
@@ -28,7 +28,7 @@ describe('toCode', () => {
 
     it('arrow no block', () => {
         const template = () => 
-            (x, y) => $`<span>*${x + y}</span>`;
+            (x, y) => _`<span>*${x + y}</span>`;
 
         assert.equal(template.toCode() + ';', code);
     });
@@ -36,3 +36,13 @@ describe('toCode', () => {
 });
 
 
+
+// class Control extends _ {
+//     render() {
+//         return _`
+//             <div class=_{`control _{this.class}`}>
+//                 _{this.content}#
+//             </div>
+//         `;
+//     }
+// }
