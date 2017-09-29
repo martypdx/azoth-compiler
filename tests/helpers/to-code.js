@@ -1,12 +1,11 @@
 import { parse } from '../../src/ast';
 
-Function.prototype.toCode = function() {
+Function.prototype.toCCode = function() {
     const trimmed = this.toString().trim();
     const length = trimmed.length;
 
     const tryBlockArrow = trimmed.replace(/^\(\) => {/, '');
     if(tryBlockArrow.length !== length) {
-        
         return tryBlockArrow
             .slice(0,-1)
             .trim();
