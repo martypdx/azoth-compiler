@@ -42,12 +42,15 @@ const NODES_LENGTH = memberExpression({
     property: identifier('length')
 });
 
-// NOTE: because we add fragment to NodeList manually,
-// length is actually off by one. hence NOT [<NODES_LENGTH> - 1]
-// __nodes[<NODES_LENGTH>]
+// __nodes[<NODES_LENGTH> - 1]
 const LAST_NODE = memberExpression({
     name: NODES, 
-    property: NODES_LENGTH,
+    property: {
+        type: 'BinaryExpression',
+        left: NODES_LENGTH,
+        operator: '-',
+        right: literal({ value: 1 })
+    },
     computed: true
 }); 
 

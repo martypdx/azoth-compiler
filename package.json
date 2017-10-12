@@ -8,11 +8,11 @@
     "test": "test"
   },
   "scripts": {
-    "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha tests --recursive --require ./test-setup/babel-register.config.js --reporter mocha-better-spec-reporter",
+    "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha tests --recursive --compilers ./test-setup/babel-register.config.js --reporter mocha-better-spec-reporter",
     "test:watch:nodemon": "nodemon --watch src --watch tests --exec 'npm test'",
     "test:watch": "npm test -- -w",
     "test:ava": "ava test",
-    "start": "npm run test:watch:nodemon",
+    "start": "npm run test:watch",
     "prebuild": "eslint src",
     "build": "rollup -c rollup/rollup.config.cjs.js && rollup -c rollup/rollup.config.es.js",
     "prepublish": "npm run build && npm test"
@@ -22,6 +22,7 @@
   "devDependencies": {
     "ava": "^0.22.0",
     "babel-core": "^6.26.0",
+    "babel-plugin-syntax-decorators": "^6.13.0",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
     "babel-register": "^6.26.0",
     "chai": "^3.5.0",
@@ -49,7 +50,8 @@
   },
   "babel": {
     "plugins": [
-      "transform-es2015-modules-commonjs"
+      "transform-es2015-modules-commonjs",
+      "syntax-decorators"
     ]
   }
 }

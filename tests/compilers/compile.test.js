@@ -23,7 +23,7 @@ describe('compiler', () => {
                 const __child1 = __nodes[0].childNodes[2];
                 __textBinder(__child0)(greeting);
                 __textBinder(__child1)(name);
-                return __nodes[__nodes.length];
+                return __nodes[__nodes.length - 1];
             };
         `;
 
@@ -42,7 +42,7 @@ describe('compiler', () => {
             const t = () => {
                 const __nodes = __render0();
                 (oninit => oninit(__nodes[0]))(node => node.innerText = 'Foo');
-                return __nodes[__nodes.length];
+                return __nodes[__nodes.length - 1];
             };
         };
 
@@ -63,7 +63,7 @@ describe('compiler', () => {
             const template = name => {
                 const __nodes = __render0();
                 __attrBinder(__nodes[0], 'class')(name);
-                return __nodes[__nodes.length];
+                return __nodes[__nodes.length - 1];
             };
         `;
 
@@ -83,7 +83,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 __textBinder(__child0)(name);
-                return __nodes[__nodes.length];
+                return __nodes[__nodes.length - 1];
             };
         `;
 
@@ -110,14 +110,14 @@ describe('compiler', () => {
                     const __nodes = __render0();
                     const __child0 = __nodes[0].childNodes[1];
                     __textBinder(__child0)(bar);
-                    return __nodes[__nodes.length];
+                    return __nodes[__nodes.length - 1];
                 } : () => {
                     const __nodes = __render1();
                     const __child0 = __nodes[0].childNodes[1];
                     __textBinder(__child0)(bar);
-                    return __nodes[__nodes.length];
+                    return __nodes[__nodes.length - 1];
                 });
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                 };
@@ -143,7 +143,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 const __sub0 = name.subscribe(__textBinder(__child0))
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -169,7 +169,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 const __sub0 = __first(name, __textBinder(__child0));
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -195,7 +195,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0 = __map(x, x => x * x, __textBinder(__child0));
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -223,7 +223,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0 = name.subscribe(__textBinder(__child0));
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -254,7 +254,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0 = first.subscribe(__textBinder(__child0));
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -280,7 +280,7 @@ describe('compiler', () => {
                 const __nodes = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0 = __combine([x, y], (x, y) => x + y, __textBinder(__child0));
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -307,7 +307,7 @@ describe('compiler', () => {
                 const __child0 = __nodes[0].childNodes[2];
                 const __sub0b = Block({ name });
                 __sub0b.onanchor(__child0);                
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                 };
@@ -336,10 +336,10 @@ describe('compiler', () => {
                     const __nodes = __render1();
                     const __child0 = __nodes[0].childNodes[0];
                     __textBinder(__child0)(foo);
-                    return __nodes[__nodes.length];
+                    return __nodes[__nodes.length - 1];
                 });
                 __sub0b.onanchor(__child0);
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                 };
@@ -370,10 +370,10 @@ describe('compiler', () => {
                     const __nodes = __render1();
                     const __child0 = __nodes[0].childNodes[0];
                     __textBinder(__child0)(name);
-                    return __nodes[__nodes.length];
+                    return __nodes[__nodes.length - 1];
                 });
                 __sub0b.onanchor(__child0);
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                     __sub0_0.unsubscribe();
@@ -404,7 +404,7 @@ describe('compiler', () => {
                 const __sub1b = Block();
                 __sub1b.onanchor(__child1);
                 __textBinder(__child2)(foo);
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub1b.unsubscribe();
                 };
@@ -430,7 +430,7 @@ describe('compiler', () => {
                 const __child0 = __nodes[0].childNodes[1];
                 const __sub0b = new Block(name);
                 __sub0b.onanchor(__child0);
-                const __fragment = __nodes[__nodes.length];
+                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                 };
@@ -443,7 +443,8 @@ describe('compiler', () => {
 
     it.skip('class component', () => {
         const source = () => {
-            class Control extends _ {
+            // @Widget
+            class Control {
                 render() {
                     return _`
                         <div class=${`control ${this.class}`}>
@@ -457,18 +458,25 @@ describe('compiler', () => {
         const compiled = compile(source.toCode());
         
         const expected = () => {
-            const __render0 = __renderer(__rawHtml(`<!-- component start --><!-- component end -->`));
-            const template = name => {
-                const __nodes = __render0();
-                const __child0 = __nodes[0].childNodes[1];
-                const __sub0b = new Block(name);
-                __sub0b.onanchor(__child0);
-                const __fragment = __nodes[__nodes.length];
-                __fragment.unsubscribe = () => {
-                    __sub0b.unsubscribe();
-                };
-                return __fragment;
-            };
+            const __render0 = __renderer(__rawHtml(`
+                        <div class="" data-bind>
+                            <!-- block -->
+                        </div>
+                    `));
+            class Control extends _ {
+                render() {
+                    const __nodes = __render0();
+                    const __child1 = __nodes[0].childNodes[1];
+                    __attrBinder(__nodes[0], 'class')(`control ${this.class}`);
+                    const __sub1b = __blockBinder(__child1);
+                    __sub1b.observer(this.content);
+                    const __fragment = __nodes[__nodes.length - 1];
+                    __fragment.unsubscribe = () => {
+                        __sub1b.unsubscribe();
+                    };
+                    return __fragment;
+                }
+            }
         };
 
         codeEqual(compiled, expected);
@@ -499,13 +507,13 @@ describe('compiler', () => {
                         const __nodes = __render0();
                         const __child0 = __nodes[0].childNodes[0];
                         const __sub0 = bar.subscribe(__textBinder(__child0));
-                        const __fragment = __nodes[__nodes.length];
+                        const __fragment = __nodes[__nodes.length - 1];
                         __fragment.unsubscribe = () => {
                             __sub0.unsubscribe();
                         };
                         return __fragment;
                     }), __sub0b.observer);
-                    const __fragment = __nodes[__nodes.length];
+                    const __fragment = __nodes[__nodes.length - 1];
                     __fragment.unsubscribe = () => {
                         __sub0.unsubscribe();
                         __sub0b.unsubscribe();
@@ -544,13 +552,13 @@ describe('compiler', () => {
                         const __nodes = __render0();
                         const __child0 = __nodes[0].childNodes[0];
                         const __sub0 = __map(bar, bar => bar + a, __textBinder(__child0));
-                        const __fragment = __nodes[__nodes.length];
+                        const __fragment = __nodes[__nodes.length - 1];
                         __fragment.unsubscribe = () => {
                             __sub0.unsubscribe();
                         };
                         return __fragment;
                     }), __sub0b.observer, true);
-                    const __fragment = __nodes[__nodes.length];
+                    const __fragment = __nodes[__nodes.length - 1];
                     __fragment.unsubscribe = () => {
                         __sub0.unsubscribe();
                         __sub0b.unsubscribe();
