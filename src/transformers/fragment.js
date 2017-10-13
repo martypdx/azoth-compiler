@@ -54,13 +54,13 @@ const LAST_NODE = memberExpression({
     computed: true
 }); 
 
-// const __fragment = __nodes[__nodes.length];
+// const __fragment = __nodes[__nodes.length - 1];
 const DECLARE_FRAGMENT = declareConst({ name: FRAGMENT, init: LAST_NODE });  
 
 // return __fragment;
 const RETURN_FRAGMENT = returnStatement({ arg: identifier(FRAGMENT) });
 
-// return __nodes[__nodes.length];
+// return __nodes[__nodes.length - 1];
 const DIRECT_RETURN = returnStatement({ arg: LAST_NODE });
 
 // __sub${index}${suffix}.unsubscribe();
