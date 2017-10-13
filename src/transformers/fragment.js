@@ -45,13 +45,12 @@ const NODES_LENGTH = memberExpression({
 // __nodes[<NODES_LENGTH> - 1]
 const LAST_NODE = memberExpression({
     name: NODES, 
-    property: NODES_LENGTH,
-    // property: {
-    //     type: 'BinaryExpression',
-    //     left: NODES_LENGTH,
-    //     operator: '-',
-    //     right: literal({ value: 1 })
-    // },
+    property: {
+        type: 'BinaryExpression',
+        left: NODES_LENGTH,
+        operator: '-',
+        right: literal({ value: 1 })
+    },
     computed: true
 }); 
 
