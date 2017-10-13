@@ -45,22 +45,23 @@ const NODES_LENGTH = memberExpression({
 // __nodes[<NODES_LENGTH> - 1]
 const LAST_NODE = memberExpression({
     name: NODES, 
-    property: {
-        type: 'BinaryExpression',
-        left: NODES_LENGTH,
-        operator: '-',
-        right: literal({ value: 1 })
-    },
+    property: NODES_LENGTH,
+    // property: {
+    //     type: 'BinaryExpression',
+    //     left: NODES_LENGTH,
+    //     operator: '-',
+    //     right: literal({ value: 1 })
+    // },
     computed: true
 }); 
 
-// const __fragment = __nodes[__nodes.length - 1];
+// const __fragment = __nodes[__nodes.length];
 const DECLARE_FRAGMENT = declareConst({ name: FRAGMENT, init: LAST_NODE });  
 
 // return __fragment;
 const RETURN_FRAGMENT = returnStatement({ arg: identifier(FRAGMENT) });
 
-// return __nodes[__nodes.length - 1];
+// return __nodes[__nodes.length];
 const DIRECT_RETURN = returnStatement({ arg: LAST_NODE });
 
 // __sub${index}${suffix}.unsubscribe();

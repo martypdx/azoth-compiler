@@ -61,7 +61,6 @@ function declareConst({ name, id, init }) {
     };
 }
 
-
 function identifier(name) {
     return { type: 'Identifier', name };
 }
@@ -128,8 +127,8 @@ function callMethod({ object, property, arg }) {
     });
 }
 
-// (() => {<body>}())
-// () => {<body>}  ???
+// () => <body>
+// () => {<block>}
 const arrowFunctionExpression = ({ body, block, params = [] }) => {
     if(block) { body = { type: 'BlockStatement', body: block }; }
 
@@ -143,7 +142,6 @@ const arrowFunctionExpression = ({ body, block, params = [] }) => {
     };
 };
 
-// importMe
 const specifier = name => ({
     type: 'Import Specifier',
     imported: identifier(name),
@@ -156,9 +154,11 @@ function replaceStatements(block, match, statements) {
     return;
 }
 
+const isBlock = node => node.type === 'Program' || node.type === 'BlockStatement'; 
+
 function addStatementsTo(node, statements, { returnBody = false } = {})  {
-    let body = node.type === 'Program' || node.type === 'BlockStatement' ? node : node.body;
-    if(body.type === 'BlockStatement' || body.type === 'Program') {
+    let body = isBlock(node) ? node : node.body;
+    if(isBlock(body)) {
         spliceStatements(body.body, statements);
     } else {
         node.body = replaceBody(body, statements, returnBody);
@@ -257,22 +257,26 @@ const NODES_LENGTH = memberExpression({
     property: identifier('length')
 });
 
-// NOTE: because we add fragment to NodeList manually,
-// length is actually off by one. hence NOT [<NODES_LENGTH> - 1]
-// __nodes[<NODES_LENGTH>]
+// __nodes[<NODES_LENGTH> - 1]
 const LAST_NODE = memberExpression({
     name: NODES, 
     property: NODES_LENGTH,
+    // property: {
+    //     type: 'BinaryExpression',
+    //     left: NODES_LENGTH,
+    //     operator: '-',
+    //     right: literal({ value: 1 })
+    // },
     computed: true
 }); 
 
-// const __fragment = __nodes[__nodes.length - 1];
+// const __fragment = __nodes[__nodes.length];
 const DECLARE_FRAGMENT = declareConst({ name: FRAGMENT, init: LAST_NODE });  
 
 // return __fragment;
 const RETURN_FRAGMENT = returnStatement({ arg: identifier(FRAGMENT) });
 
-// return __nodes[__nodes.length - 1];
+// return __nodes[__nodes.length];
 const DIRECT_RETURN = returnStatement({ arg: LAST_NODE });
 
 // __sub${index}${suffix}.unsubscribe();
@@ -534,7 +538,7 @@ function match(ast, scope) {
 
 class Binder {
 
-    constructor({ sigil = NONE, ast = null, target = text, name = '' } = {}) {        
+    constructor({ sigil = NONE, ast = null, target = text, name = '', childTemplate = null } = {}) {        
         this.sigil = sigil;
         this.ast = ast;
         this.target = target;
@@ -547,6 +551,7 @@ class Binder {
         this.name = name;
         
         this.properties = [];
+        this.childTemplate = childTemplate;
     }
 
     init(el, attr) {
@@ -609,13 +614,13 @@ function getBinder(options) {
     if(options.sigil === ELEMENT) {
         options.target = component;
     }
-    else if (options.inAttributes) {
-        if (options.block) {
+    else if(options.inAttributes) {
+        if(options.block) {
             throw new Error('Attribute Blocks not yet supported');
         }
         options.target = options.component ? property : attribute;
     }
-    else {
+    else if(!options.target) {
         options.target = options.block ? block : text;
     }
 
@@ -667,50 +672,86 @@ const literalProperty = (name, value) => getBinder({
     ast: literal({ value })
 });
 
+const makeTemplate = template => {
+    const binders = template.allBinders.reduce((all, binders, i) => {
+        binders.forEach(b => b.elIndex = i);
+        all.push(...binders);
+        return all;
+    }, []);
+
+    return { 
+        html: template.html.join(''),
+        binders
+    };
+};
+
 function parseTemplate({ expressions, quasis }) {
 
-    const fragment = getEl();
-    const html = [];
-    const stack = [];
+    // const fragment = getEl();
+    // const html = [];
+    // const stack = [];
 
-    let currentEl = fragment;
-    let inAttributes = false;
-    let currentAttr = null;
+    // let currentEl = fragment;
+    // let inAttributes = false;
+    // let currentAttr = null;
 
-    let allBinders = null;
+    // let allBinders = null;
+
+    const getTemplate = () => {
+        const root = getEl();
+        return {
+            fragment: root,
+            html: [],
+            stack: [],
+            currentEl: root,
+            inAttributes: false,
+            //TODO: default should be ''
+            currentAttr: null,
+            allBinders: null
+        };
+    };
+
+    const templateStack = [];
+    let template = getTemplate();
     
     const handler = {
         onopentagname(name) {
-            const el = currentEl;
-            if(el.component) throw new Error('text/html children not yet supported for components');
+            const el = template.currentEl;
+            if(el.component) throw new Error('text/html children for components should spawn child template');
             
             const childIndex = ++el.childIndex;
-            stack.push(el);
+            template.stack.push(el);
 
-            currentEl = getEl(name);
-            if(currentEl.component = name === '#:') currentEl.childIndex = childIndex;
-            inAttributes = true;
+            template.currentEl = getEl(name);
+            if(template.currentEl.component = name === '#:') template.currentEl.childIndex = childIndex;
+            template.inAttributes = true;
         },
         oncomment(comment) {
-            html.push(`<!--${comment}-->`);
-            if(currentEl) currentEl.childIndex++;
+            template.html.push(`<!--${comment}-->`);
+            if(template.currentEl) template.currentEl.childIndex++;
         },
         onattribute(name, value) {
-            currentAttr = name;
+            template.currentAttr = name;
             if(name==='oninit') return;
-            currentEl.attributes[name] = value;
+            template.currentEl.attributes[name] = value;
         },
         onopentag(name) {
-            const el = currentEl;
+            const el = template.currentEl;
             el.opened = true;
             const { attributes } = el;
             const entries = Object.entries(attributes);
+
+            template.currentAttr = null;
+            template.inAttributes = false;
 
             if(el.component) {
                 el.binder.properties = entries.map(([key, value]) => {
                     return typeof value === 'string' ? literalProperty(key, value) : value;
                 });
-                html.push(`<!-- component start -->`);
+                template.html.push(`<!-- component start -->`);
+
+                templateStack.push(template);
+                template = getTemplate();
             }
             else {                
                 // NOTE: html spec and htmlparser2 implementation treat 
@@ -719,46 +760,41 @@ function parseTemplate({ expressions, quasis }) {
                     return `${text$$1} ${key}="${value}"`;
                 },'');
 
-                el.htmlIndex = -2 + html.push(
+                el.htmlIndex = -2 + template.html.push(
                     `<${name}${attrsText}`,
                     '',
                     `>`
                 );
             }
-
-            currentAttr = null;
-            inAttributes = false;
         },
         ontext(text$$1) {
-            const el = currentEl;
+            const el = template.currentEl;
             if(el.component) {
-                if(text$$1.trim()) throw new Error('text/html children not yet supported for components');
+                if(text$$1.trim()) throw new Error('text/html children for components should spawn child template');
             }
             else {
-                html.push(text$$1);
+                template.html.push(text$$1);
                 if(el) el.childIndex++;
             }
         },
         add(binder) { 
-            const el = currentEl;
+            const el = template.currentEl;
             // this works for components, but is misleading
             // because child index in other cases is relative
             // to current el, but for components really is el
             // index of parent el (set in onopentagname)
-            binder.init(el, currentAttr || '');
+            binder.init(el, template.currentAttr || binder.name);
 
             if(el.component && !el.binder) {
-                stack[stack.length - 1].binders.push(binder);
+                template.stack[template.stack.length - 1].binders.push(binder);
                 el.binder = binder;
             }
             else if(el.component) {
-                if(inAttributes) {
+                if(template.inAttributes) {
                     if(!binder.name) throw new Error('Expected binder to have name');
                     this.onattribute(binder.name, binder);
                 }
                 else {
-                    binder.target = property;
-                    binder.init(el, 'children');
                     el.binder.properties.push(binder);
                 }
             }
@@ -767,34 +803,63 @@ function parseTemplate({ expressions, quasis }) {
             }
         },
         onclosetag(name) {
-            const el = currentEl;
-            if(!el.component && !voidElements[name] && el.opened) html.push(`</${name}>`);
-            else if(el.component) {
-                html.push('<!-- component end -->');
-                stack[stack.length - 1].childIndex++;
+            let el = template.currentEl;
+            let parentEl = template.stack.pop();
+            
+            // (Child) template complete!
+            if(!parentEl) {
+                const parentTemplate = templateStack.pop();
+
+                // top-level will be processed via end()
+                if(parentTemplate) this.complete();
+                
+                const childTemplate = makeTemplate(template);
+                let binder = null;
+
+                if(childTemplate.html) {
+                    binder = getBinder({
+                        target: property,
+                        name: 'content',
+                        childTemplate: makeTemplate(template)
+                    });
+                }
+                
+                el = parentTemplate.currentEl;
+                template = parentTemplate;
+                parentEl = template.stack.pop();
+
+                if(binder) this.add(binder);
             }
 
-            currentEl = stack.pop();
+            if(!el.component && !voidElements[name] && el.opened) template.html.push(`</${name}>`);
+            else if(el.component) {
+                template.html.push('<!-- component end -->');
+                parentEl.childIndex++;
+            }
+
+            template.currentEl = parentEl;
 
             //Notice array of arrays. 
             //Binders from each el are being pushed.
             //Order matters as well because this is how we get 
             //element binding index in right order.
-
             if(el.binders.length > 0) {
-                const target = el.htmlIndex > -1 ? el : currentEl;
-                html[target.htmlIndex] = ` data-bind`;
-                currentEl.childBinders.push(el.binders);
+                const target = el.htmlIndex > -1 ? el : template.currentEl;
+                template.html[target.htmlIndex] = ` data-bind`;
+                template.currentEl.childBinders.push(el.binders);
             }
 
             if (el.childBinders.length > 0) {
-                currentEl.childBinders.push(...el.childBinders);
+                template.currentEl.childBinders.push(...el.childBinders);
             }
         },
         onend() {
             // fragment is indexed at the end of the nodes array,
             // which is why its binders go _after_ its child binders
-            allBinders = [...fragment.childBinders, fragment.binders];
+            this.complete();
+        },
+        complete() {
+            template.allBinders = [...template.fragment.childBinders, template.fragment.binders];
         }
     };
 
@@ -809,6 +874,7 @@ function parseTemplate({ expressions, quasis }) {
         if(text$$1) parser.write(text$$1);
 
         let block$$1 = false;
+        // look ahead, block sigil # after ${}
         if(i < quasis.length) {
             const value = quasis[i + 1].value;
             const result = getBlock(value.raw);
@@ -819,27 +885,18 @@ function parseTemplate({ expressions, quasis }) {
         const binder = getBinder({
             block: block$$1,
             sigil,
-            inAttributes,
-            component: currentEl.component,
+            inAttributes: template.inAttributes,
+            component: template.currentEl.component,
             ast: expressions[i]
         });
 
-        if(!currentEl.component || inAttributes) parser.write(binder.html);
+        if(!template.currentEl.component || template.inAttributes) parser.write(binder.html);
         handler.add(binder);
     });
 
     parser.end();
 
-    const binders = allBinders.reduce((all, binders, i) => {
-        binders.forEach(b => b.elIndex = i);
-        all.push(...binders);
-        return all;
-    }, []);
-
-    return { 
-        html: html.join(''),
-        binders
-    };
+    return makeTemplate(template);
 }
 
 function nodeByIndex(elIndex) {
@@ -1088,9 +1145,10 @@ const renderNodes = index => {
     });
 };
 
-const templateToFunction = (node, block) => {
+const blockToFunction = (block, node = {}) => {
     const ast = arrowFunctionExpression({ block });
     Object.assign(node, ast);
+    return node;
 };
 
 const makeTemplateStatements = ({ binders, index }) => {
@@ -1121,7 +1179,6 @@ class Module {
         // imports may modify tag and oTag based on found imports
         this.imports = new Imports({ tag, oTag });
         this.fragments = new UniqueStrings();
-        this.binders = new UniqueStrings();
         
         // track scope and current function
         this.scope = this.functionScope = Object.create(null);
@@ -1164,33 +1221,23 @@ class Module {
 
     // only used privately from makeTemplate
     addBinder(binder) {
+        if(binder.childTemplate) {
+            if(binder.ast) throw new Error('Binders with child templates not expected to have ast');
+            const statements = this.addTemplate(binder.childTemplate);
+            binder.ast = blockToFunction(statements);
+        }
 
         binder.matchObservables(this.scope);
         this.imports.addBinder(binder);
-
-        const { declarations } = binder;
-        let index = -1;
-        declarations.forEach((d, i) => {
-            const unique = JSON.stringify(d);
-            const at = this.binders.add(unique, d);
-            if(i === 0) index = at;
-        });
-        binder.moduleIndex = index;
         binder.properties.forEach(p => this.addBinder(p));
     }
 
     makeTemplate(node) {
-        const { html, binders } = parseTemplate(node.quasi);
-        const index = this.fragments.add(html);
-         
-        binders.forEach(b => this.addBinder(b));
-        
-        const statements = makeTemplateStatements({ binders, index });
-        statements.forEach(node => node.subtemplate = true);
-        
+        const statements = this.addTemplate(parseTemplate(node.quasi));
+
         // TODO: this.currentFn gets set by the observables handlers
         // (currentReturnStmt gets set by templates handlers),
-        // which means this is coupled those set of handlers.
+        // which means its use makes this coupled those set of handlers.
         const { currentFn, currentReturnStmt } = this;
         if(currentFn) {
             if(currentFn.body === node) {
@@ -1204,7 +1251,17 @@ class Module {
         
         if(!currentFn.subtemplate) node.subtemplate = true;
 
-        templateToFunction(node, statements);
+        blockToFunction(statements, node);
+    }
+
+    addTemplate({ html, binders }) {
+        const index = this.fragments.add(html);
+        binders.forEach(b => this.addBinder(b));
+        
+        const statements = makeTemplateStatements({ binders, index });
+        statements.forEach(node => node.subtemplate = true);
+        
+        return statements;
     }
 }
 
