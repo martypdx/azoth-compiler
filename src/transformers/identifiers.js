@@ -10,5 +10,5 @@ export const MAP_IMPORT = '__map';
 export const COMBINE_IMPORT = '__combine';
 
 export const RENDERER_IMPORT = '__renderer';
-export const MAKE_FRAGMENT_IMPORT = '__rawHtml';
+export const MAKE_FRAGMENT_IMPORT = '__makeTemplate';
 
