@@ -29,6 +29,15 @@ const importSpecifiers = {
     [VALUE]: null,
 };
 
+function addSpecifier(specifiers, test) {
+    const index = specifiers.findIndex(({ imported }) => test.test(imported.name)); 
+    if(index > -1) {
+        const name = specifiers[index].local.name;
+        specifiers.splice(index, 1);
+        return name;
+    }
+}
+
 export class Imports {
     constructor({ tag, oTag }) {
         this.names = new Set(baseNames);
@@ -52,16 +61,8 @@ export class Imports {
 
     set specifiers(specifiers) {
         this.ast = specifiers;
-        const index = specifiers.findIndex(({ imported }) => TEMPLATE_SPECIFIER_NAME.test(imported.name)); 
-        if(index > -1) {
-            this.tag = specifiers[index].local.name;
-            specifiers.splice(index, 1);
-        }
-        const oIndex = specifiers.findIndex(({ imported }) => OBSERVABLE_SPECIFIER_NAME.test(imported.name)); 
-        if(oIndex > -1) {
-            this.oTag = specifiers[oIndex].local.name;
-            specifiers.splice(oIndex, 1);
-        }
+        this.tag = addSpecifier(specifiers, TEMPLATE_SPECIFIER_NAME);
+        this.oTag = addSpecifier(specifiers, OBSERVABLE_SPECIFIER_NAME);
         specifiers.push(...baseSpecifiers.slice());
     }
 }
