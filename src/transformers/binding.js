@@ -7,7 +7,15 @@ import {
     literal, 
     memberExpression } from './common';
 import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from '../binders/binding-types';
-import { BINDER, CHILD, NODES, SUB, FIRST_IMPORT, MAP_IMPORT, COMBINE_IMPORT } from './identifiers';
+import { 
+    BINDER, 
+    CHILD, 
+    NODES, 
+    SUB, 
+    FIRST_IMPORT, 
+    FRAGMENT,
+    MAP_IMPORT, 
+    COMBINE_IMPORT } from './identifiers';
 
 export function initBinder({ name, arg, index }) {
     return declareConst({
@@ -21,7 +29,10 @@ export function initBinder({ name, arg, index }) {
     });
 }
 
+const fragment = identifier(FRAGMENT);
+
 function nodeByIndex(elIndex) {
+    if(elIndex === -1) return fragment;
     return memberExpression({
         name: NODES, 
         property: literal({ value: elIndex }), 
@@ -56,7 +67,18 @@ const bindings = {
     [VALUE]: valueBinding,
 };
 
-export default function binding(binder, i, observer = nodeBinding(binder, i)) {
+export function binding(binder, i) {
+    if(binder.name === 'oninit') return;
+    return makeBinding(binder, i);
+}
+
+export function nodeInits(binder, i) {
+    if(binder.name !== 'oninit') return;
+    return makeBinding(binder, i);
+}
+
+function makeBinding(binder, i, observer = nodeBinding(binder, i)) {
+
     const { type, target, properties } = binder;
     const typeBinding = bindings[type];
     const statements = [];
@@ -70,7 +92,7 @@ export default function binding(binder, i, observer = nodeBinding(binder, i)) {
         if(target.isComponent) {
             properties.forEach((p, j) => {
                 const selfObserver = componentBinding(p, id);
-                statements.push(...binding(p, `${i}_${j}`, selfObserver));
+                statements.push(...makeBinding(p, `${i}_${j}`, selfObserver));
             });
             
             const onanchor = {

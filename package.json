@@ -12,7 +12,7 @@
     "test:watch:nodemon": "nodemon --watch src --watch tests --exec 'npm test'",
     "test:watch": "npm test -- -w",
     "test:ava": "ava test",
-    "start": "npm run test:watch",
+    "start": "npm run test:watch:nodemon",
     "prebuild": "eslint src",
     "build": "rollup -c rollup/rollup.config.cjs.js && rollup -c rollup/rollup.config.es.js",
     "prepublish": "npm run build && npm test"

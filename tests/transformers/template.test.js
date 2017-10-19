@@ -50,8 +50,7 @@ describe('transform - template', () => {
 
         function expected() {
             () => {
-                const __nodes = __render1();
-                return __nodes[__nodes.length - 1];
+                return __render1().__fragment;
             } // eslint-disable-line
         }
     });
@@ -64,14 +63,13 @@ describe('transform - template', () => {
 
         function expected() {
             () => {
-                const __nodes = __render2();
+                const {__fragment, __nodes} = __render2();
                 const __child0 = __nodes[0].childNodes[0];
                 const __child1 = __nodes[0].childNodes[1];
                 const __child2 = __nodes[1].childNodes[2];
                 const __sub0 = one.subscribe(__textBinder(__child0));
                 __textBinder(__child1)(two);
                 const __sub2 = three.subscribe(__textBinder(__child2));
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                     __sub2.unsubscribe();

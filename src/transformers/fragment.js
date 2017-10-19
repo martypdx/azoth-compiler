@@ -9,7 +9,6 @@ import {
 
 import { 
     FRAGMENT, 
-    NODES, 
     SUB, 
     RENDER,
     RENDERER_IMPORT, 
@@ -36,32 +35,8 @@ export const renderer = (html, index) =>{
     });  
 };
 
-// __nodes.length
-const NODES_LENGTH = memberExpression({
-    name: NODES, 
-    property: identifier('length')
-});
-
-// __nodes[<NODES_LENGTH> - 1]
-const LAST_NODE = memberExpression({
-    name: NODES, 
-    property: {
-        type: 'BinaryExpression',
-        left: NODES_LENGTH,
-        operator: '-',
-        right: literal({ value: 1 })
-    },
-    computed: true
-}); 
-
-// const __fragment = __nodes[__nodes.length - 1];
-const DECLARE_FRAGMENT = declareConst({ name: FRAGMENT, init: LAST_NODE });  
-
 // return __fragment;
 const RETURN_FRAGMENT = returnStatement({ arg: identifier(FRAGMENT) });
-
-// return __nodes[__nodes.length - 1];
-const DIRECT_RETURN = returnStatement({ arg: LAST_NODE });
 
 // __sub${index}${suffix}.unsubscribe();
 const unsubscribe = (index, suffix = '') => {
@@ -109,9 +84,8 @@ const fragmentUnsubscribe = unsubscribes => {
 
 export default binders => {
     const unsubs = unsubscribes(binders);
-    if(!unsubs.length) return [DIRECT_RETURN];
+    if(!unsubs.length) return [RETURN_FRAGMENT];
     return [
-        DECLARE_FRAGMENT,
         fragmentUnsubscribe(unsubs),
         RETURN_FRAGMENT
     ];

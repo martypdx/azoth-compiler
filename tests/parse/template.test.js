@@ -30,7 +30,7 @@ const parseSource = source => {
 describe('parse template', () => {
 
     function testBinder(binder, {
-        elIndex = 0,
+        elIndex = -1,
         moduleIndex = -1,
         name = '',
         index = -1,
@@ -126,7 +126,7 @@ describe('parse template', () => {
             assert.equal(html,
                 '<span data-bind>hello <text-node></text-node></span>'
             );
-            testFirstText(binders, { index: 1, ref: 'place' });
+            testFirstText(binders, { index: 1, elIndex: 0, ref: 'place' });
         });
 
         it('second element with text node', () => {
@@ -139,7 +139,7 @@ describe('parse template', () => {
             assert.equal(html,
                 '<span>hello</span> <span data-bind><text-node></text-node></span>'
             );
-            testFirstText(binders, { ref: 'place' });
+            testFirstText(binders, { ref: 'place', elIndex: 0 });
         });
 
         it('two elements with text node', () => {
@@ -153,7 +153,7 @@ describe('parse template', () => {
                 '<span data-bind><text-node></text-node></span> <span data-bind><text-node></text-node></span>'
             );
             assert.equal(binders.length, 2);
-            testText(binders[0], { ref: 'salutation' });
+            testText(binders[0], { ref: 'salutation', elIndex: 0 });
             testText(binders[1], { elIndex: 1, ref: 'place' });
         });
 
@@ -168,8 +168,8 @@ describe('parse template', () => {
                 '<span data-bind><text-node></text-node> <text-node></text-node></span>'
             );
             assert.equal(binders.length, 2);
-            testText(binders[0], { ref: 'salutation' });
-            testText(binders[1], { index: 2, ref: 'place' });
+            testText(binders[0], { ref: 'salutation', elIndex: 0 });
+            testText(binders[1], { index: 2, ref: 'place', elIndex: 0 });
         });
 
         it('child element with text node', () => {
@@ -182,7 +182,7 @@ describe('parse template', () => {
             assert.equal(html,
                 '<div><span data-bind><text-node></text-node></span></div>'
             );
-            testFirstText(binders, { ref: 'foo' });
+            testFirstText(binders, { ref: 'foo', elIndex: 0 });
         });
 
         it('multiple nested elements with text node', () => {
@@ -270,7 +270,7 @@ describe('parse template', () => {
             const [ { childTemplate } ]  = properties;
 
             assert.equal(childTemplate.html, '<span data-bind><text-node></text-node></span>');
-            testFirstText(childTemplate.binders, { ref: 'foo', sigil: NONE });
+            testFirstText(childTemplate.binders, { ref: 'foo', elIndex: 0, sigil: NONE });
         });
 
         it('wrapped block component with content', () => {
@@ -280,12 +280,12 @@ describe('parse template', () => {
             const { html, binders } = parseSource(source);
             assert.equal(html, '<div data-bind><!-- component start --><!-- component end --></div>');
             const properties = binders[0].properties;
-            testFirstText(binders, { ref: 'Widget', sigil: ELEMENT });
+            testFirstText(binders, { ref: 'Widget', elIndex: 0, sigil: ELEMENT });
             assert.equal(properties.length, 1);
             const [ { childTemplate } ]  = properties;
 
             assert.equal(childTemplate.html, '<span data-bind><text-node></text-node></span>');
-            testFirstText(childTemplate.binders, { ref: 'foo', sigil: NONE });
+            testFirstText(childTemplate.binders, { ref: 'foo', elIndex: 0, sigil: NONE });
         });
 
         it('block component with interpolator content', () => {
@@ -314,7 +314,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<span bar="" data-bind></span>');
-            testFirstAttr(binders, { name: 'bar', ref: 'foo' });
+            testFirstAttr(binders, { name: 'bar', elIndex: 0, ref: 'foo' });
         });
 
         it('with statics, value and valueless', () => {
@@ -324,7 +324,7 @@ describe('parse template', () => {
             const { html, binders } = parseSource(source);
             // NOTE: empty string is equivalent to boolean attribute per spec.
             assert.equal(html, '<input class="" type="checkbox" checked="" data-bind>');
-            testFirstAttr(binders, { name: 'class', ref: 'foo' });
+            testFirstAttr(binders, { name: 'class', elIndex: 0, ref: 'foo' });
         });
 
         it('many', () => {
@@ -357,9 +357,9 @@ describe('parse template', () => {
             const { html, binders } = parseSource(source);
             assert.equal(html, '<span one="" two="" three="" data-bind></span>');
             assert.equal(binders.length, 3);
-            testAttr(binders[0], { sigil: NONE, name: 'one', ref: 'one' });
-            testAttr(binders[1], { sigil: STAR, name: 'two', ref: 'two' });
-            testAttr(binders[2], { sigil: AT, name: 'three', ref: 'three' });
+            testAttr(binders[0], { sigil: NONE, elIndex: 0, name: 'one', ref: 'one' });
+            testAttr(binders[1], { sigil: STAR, elIndex: 0, name: 'two', ref: 'two' });
+            testAttr(binders[2], { sigil: AT, elIndex: 0, name: 'three', ref: 'three' });
         });
     });
 

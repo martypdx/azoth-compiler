@@ -4,7 +4,7 @@ import getBinder from './getBinder';
 import { AT, DOLLAR, STAR, NONE, ELEMENT } from '../../src/parse/sigil-types';
 import { block, component, property } from '../../src/binders/targets';
 import { assert } from 'chai';
-import binding from '../../src/transformers/binding';
+import { binding } from '../../src/transformers/binding';
 
 describe('transform - binding', () => {
 

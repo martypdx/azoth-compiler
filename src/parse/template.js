@@ -25,30 +25,21 @@ const literalProperty = (name, value) => getBinder({
     ast: literal({ value })
 });
 
-const makeTemplate = template => {
-    const binders = template.allBinders.reduce((all, binders, i) => {
+const makeTemplate = ({ fragment, html }) => {
+    const binders = fragment.childBinders.reduce((all, binders, i) => {
         binders.forEach(b => b.elIndex = i);
         all.push(...binders);
         return all;
     }, []);
 
     return { 
-        html: template.html.join(''),
-        binders
+        // TODO: trim?
+        html: html.join(''),
+        binders: fragment.binders.concat(binders)
     };
 };
 
 export default function parseTemplate({ expressions, quasis }) {
-
-    // const fragment = getEl();
-    // const html = [];
-    // const stack = [];
-
-    // let currentEl = fragment;
-    // let inAttributes = false;
-    // let currentAttr = null;
-
-    // let allBinders = null;
 
     const getTemplate = () => {
         const root = getEl();
@@ -162,9 +153,6 @@ export default function parseTemplate({ expressions, quasis }) {
             // (Child) template complete!
             if(!parentEl) {
                 const parentTemplate = templateStack.pop();
-
-                // top-level will be processed via end()
-                if(parentTemplate) this.complete();
                 
                 const childTemplate = makeTemplate(template);
                 let binder = null;
@@ -205,14 +193,6 @@ export default function parseTemplate({ expressions, quasis }) {
             if (el.childBinders.length > 0) {
                 template.currentEl.childBinders.push(...el.childBinders);
             }
-        },
-        onend() {
-            // fragment is indexed at the end of the nodes array,
-            // which is why its binders go _after_ its child binders
-            this.complete();
-        },
-        complete() {
-            template.allBinders = [...template.fragment.childBinders, template.fragment.binders];
         }
     };
 

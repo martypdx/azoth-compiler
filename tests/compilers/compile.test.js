@@ -18,14 +18,59 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(\`<span data-bind><text-node></text-node> <text-node></text-node></span>\`));
             import { __renderer, __makeTemplate, __textBinder } from 'azoth';
             const template = (greeting, name) => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __child1 = __nodes[0].childNodes[2];
                 __textBinder(__child0)(greeting);
                 __textBinder(__child1)(name);
-                return __nodes[__nodes.length - 1];
+                return __fragment;
             };
         `;
+
+        codeEqual(compiled, expected);
+    }); 
+
+    it('hello world observable', () => {
+        const source = `
+            import { html as _ } from 'azoth';
+            const template = (name=$) => _\`<span>Hello *\${name}</span>\`;
+        `;
+
+        const compiled = compile(source);
+
+        const expected = `
+            const __render0 = __renderer(__makeTemplate(\`<span data-bind>Hello <text-node></text-node></span>\`));
+            import { __renderer, __makeTemplate, __textBinder } from 'azoth';
+            const template = name => {
+                const { __fragment, __nodes } = __render0();
+                const __child0 = __nodes[0].childNodes[1];
+                const __sub0 = name.subscribe(__textBinder(__child0));
+                __fragment.unsubscribe = () => {
+                    __sub0.unsubscribe();
+                };
+                return __fragment;
+            };
+        `;
+
+        codeEqual(compiled, expected);
+    });
+
+    it('orphan text', () => {
+        const source = () => {
+            const template = name => _`${name}`;
+        };
+
+        const compiled = compile(source.toCode());
+
+        const expected = () => {
+            const __render0 = __renderer(__makeTemplate(`<text-node></text-node>`));
+            const template = (name) => {
+                const { __fragment, __nodes } = __render0();
+                const __child0 = __fragment.childNodes[0];
+                __textBinder(__child0)(name);
+                return __fragment;
+            };
+        };
 
         codeEqual(compiled, expected);
     }); 
@@ -40,9 +85,30 @@ describe('compiler', () => {
         const expected = () => {
             const __render0 = __renderer(__makeTemplate(`<span data-bind></span>`));
             const t = () => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 (oninit => oninit(__nodes[0]))(node => node.innerText = 'Foo');
-                return __nodes[__nodes.length - 1];
+                return __fragment;
+            };
+        };
+
+        codeEqual(compiled, expected);
+    }); 
+
+    it('oninit with other binders', () => {
+        function source() {
+            const t = foo => _`<span oninit=${node => node.innerText += '!'}>${foo}</span>`;
+        }
+
+        const compiled = compile(source.toCode());
+
+        const expected = () => {
+            const __render0 = __renderer(__makeTemplate(`<span data-bind><text-node></text-node></span>`));
+            const t = (foo) => {
+                const { __fragment, __nodes } = __render0();
+                const __child1 = __nodes[0].childNodes[0];
+                __textBinder(__child1)(foo);
+                (oninit => oninit(__nodes[0]))(node => node.innerText += '!');
+                return __fragment;
             };
         };
 
@@ -61,9 +127,9 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(\`<span class="" data-bind>Hello World</span>\`));
             import { __renderer, __makeTemplate, __attrBinder } from 'azoth';
             const template = name => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 __attrBinder(__nodes[0], 'class')(name);
-                return __nodes[__nodes.length - 1];
+                return __fragment;
             };
         `;
 
@@ -80,36 +146,15 @@ describe('compiler', () => {
         const expected = `
             const __render0 = __renderer(__makeTemplate(\`<span data-bind>Hello <text-node></text-node></span>\`));
             const template = name => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 __textBinder(__child0)(name);
-                return __nodes[__nodes.length - 1];
+                return __fragment;
             };
         `;
 
         codeEqual(compiled, expected);
     });
-
-
-    it('orphan text', () => {
-        const source = () => {
-            const template = name => _`${name}`;
-        };
-
-        const compiled = compile(source.toCode());
-
-        const expected = () => {
-            const __render0 = __renderer(__makeTemplate(`<text-node></text-node>`));
-            const template = (name) => {
-                const __nodes = __render0();
-                const __child0 = __nodes[0].childNodes[0];
-                __textBinder(__child0)(name);
-                return __nodes[__nodes.length - 1];
-            };
-        };
-
-        codeEqual(compiled, expected);
-    }); 
 
     it('nested', () => {
         const source = `
@@ -124,21 +169,20 @@ describe('compiler', () => {
             const __render2 = __renderer(__makeTemplate(\`<div data-bind><!-- block --></div>\`));
             import { __renderer, __makeTemplate, __textBinder, __blockBinder } from 'azoth';
             const template = (foo, bar) => {
-                const __nodes = __render2();
+                const { __fragment, __nodes } = __render2();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0b = __blockBinder(__child0);
                 __sub0b.observer(foo ? () => {
-                    const __nodes = __render0();
+                    const { __fragment, __nodes } = __render0();
                     const __child0 = __nodes[0].childNodes[1];
                     __textBinder(__child0)(bar);
-                    return __nodes[__nodes.length - 1];
+                    return __fragment;
                 } : () => {
-                    const __nodes = __render1();
+                    const { __fragment, __nodes } = __render1();
                     const __child0 = __nodes[0].childNodes[1];
                     __textBinder(__child0)(bar);
-                    return __nodes[__nodes.length - 1];
+                    return __fragment;
                 });
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                 };
@@ -161,10 +205,9 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(\`<span data-bind>Hello <text-node></text-node></span>\`));
             import { __renderer, __makeTemplate, __textBinder } from 'azoth';
             const template = name => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 const __sub0 = name.subscribe(__textBinder(__child0))
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -187,10 +230,9 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(\`<span data-bind>Hello <text-node></text-node></span>\`));
             import { __renderer, __makeTemplate, __textBinder, __first } from 'azoth';
             const template = name => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 const __sub0 = __first(name, __textBinder(__child0));
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -213,10 +255,9 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(\`<span data-bind><text-node></text-node></span>\`));
             import { __renderer, __makeTemplate, __textBinder, __map } from 'azoth';
             const template = x => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0 = __map(x, x => x * x, __textBinder(__child0));
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -241,10 +282,9 @@ describe('compiler', () => {
             import {__renderer, __makeTemplate, __textBinder} from 'azoth';
             const template = __ref0 => {
                 const name = __ref0.child('name');
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0 = name.subscribe(__textBinder(__child0));
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -272,10 +312,9 @@ describe('compiler', () => {
             const template = person => {
                 const {name: __ref0} = person;
                 const first = __ref0.child('first');
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0 = first.subscribe(__textBinder(__child0));
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -298,10 +337,9 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(\`<span data-bind><text-node></text-node></span>\`));
             import { __renderer, __makeTemplate, __textBinder, __combine } from 'azoth';
             const template = (x, y) => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __sub0 = __combine([x, y], (x, y) => x + y, __textBinder(__child0));
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0.unsubscribe();
                 };
@@ -324,11 +362,10 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(\`<span data-bind>Hello <!-- component start --><!-- component end --></span>\`));
             import { Block, __renderer, __makeTemplate } from 'azoth';
             const template = name => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[2];
                 const __sub0b = Block({ name });
                 __sub0b.onanchor(__child0);                
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                 };
@@ -350,17 +387,16 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(`<!-- component start --><!-- component end -->`));
             const __render1 = __renderer(__makeTemplate(`<span data-bind><text-node></text-node></span>`));
             const template = foo => {
-                const __nodes = __render0();
-                const __child0 = __nodes[0].childNodes[1];
+                const { __fragment, __nodes } = __render0();
+                const __child0 = __fragment.childNodes[1];
                 const __sub0b = Widget;
                 __propBinder(__sub0b, 'content')(() => {
-                    const __nodes = __render1();
+                    const { __fragment, __nodes } = __render1();
                     const __child0 = __nodes[0].childNodes[0];
                     __textBinder(__child0)(foo);
-                    return __nodes[__nodes.length - 1];
+                    return __fragment;
                 });
                 __sub0b.onanchor(__child0);
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                 };
@@ -382,19 +418,18 @@ describe('compiler', () => {
             const __render0 = __renderer(__makeTemplate(`<span data-bind><!-- component start --><!-- component end --></span>`));
             const __render1 = __renderer(__makeTemplate(`<em data-bind><text-node></text-node></em>`));
             const template = (name, foo) => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[1];
                 const __sub0b = Block({ name });
                 const __sub0_0 = foo.subscribe(__propBinder(__sub0b, 'foo'));
                 __propBinder(__sub0b, 'bar')('bar');
                 __propBinder(__sub0b, 'content')(() => {
-                    const __nodes = __render1();
+                    const { __fragment, __nodes } = __render1();
                     const __child0 = __nodes[0].childNodes[0];
                     __textBinder(__child0)(name);
-                    return __nodes[__nodes.length - 1];
+                    return __fragment;
                 });
                 __sub0b.onanchor(__child0);
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                     __sub0_0.unsubscribe();
@@ -417,7 +452,7 @@ describe('compiler', () => {
         const expected = () => {
             const __render0 = __renderer(__makeTemplate(`<span data-bind><text-node></text-node><!-- component start --><!-- component end --><text-node></text-node></span>`));
             const template = foo => {
-                const __nodes = __render0();
+                const { __fragment, __nodes } = __render0();
                 const __child0 = __nodes[0].childNodes[0];
                 const __child1 = __nodes[0].childNodes[2];
                 const __child2 = __nodes[0].childNodes[3];
@@ -425,7 +460,6 @@ describe('compiler', () => {
                 const __sub1b = Block();
                 __sub1b.onanchor(__child1);
                 __textBinder(__child2)(foo);
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub1b.unsubscribe();
                 };
@@ -447,11 +481,10 @@ describe('compiler', () => {
         const expected = () => {
             const __render0 = __renderer(__makeTemplate(`<!-- component start --><!-- component end -->`));
             const template = name => {
-                const __nodes = __render0();
-                const __child0 = __nodes[0].childNodes[1];
+                const { __fragment, __nodes } = __render0();
+                const __child0 = __fragment.childNodes[1];
                 const __sub0b = new Block(name);
                 __sub0b.onanchor(__child0);
-                const __fragment = __nodes[__nodes.length - 1];
                 __fragment.unsubscribe = () => {
                     __sub0b.unsubscribe();
                 };
@@ -486,12 +519,11 @@ describe('compiler', () => {
                     `));
             class Control extends _ {
                 render() {
-                    const __nodes = __render0();
+                    const { __fragment, __nodes } = __render0();
                     const __child1 = __nodes[0].childNodes[1];
                     __attrBinder(__nodes[0], 'class')(`control ${this.class}`);
                     const __sub1b = __blockBinder(__child1);
                     __sub1b.observer(this.content);
-                    const __fragment = __nodes[__nodes.length - 1];
                     __fragment.unsubscribe = () => {
                         __sub1b.unsubscribe();
                     };
@@ -521,20 +553,18 @@ describe('compiler', () => {
                     <!-- block -->        
                 `));
                 const template = ({foo, bar}) => {
-                    const __nodes = __render1();
-                    const __child0 = __nodes[0].childNodes[1];
+                    const { __fragment, __nodes } = __render1();
+                    const __child0 = __fragment.childNodes[1];
                     const __sub0b = __blockBinder(__child0);
                     const __sub0 = __map(foo, foo => foo.map(f => {
-                        const __nodes = __render0();
-                        const __child0 = __nodes[0].childNodes[0];
+                        const { __fragment, __nodes } = __render0();
+                        const __child0 = __fragment.childNodes[0];
                         const __sub0 = bar.subscribe(__textBinder(__child0));
-                        const __fragment = __nodes[__nodes.length - 1];
                         __fragment.unsubscribe = () => {
                             __sub0.unsubscribe();
                         };
                         return __fragment;
                     }), __sub0b.observer);
-                    const __fragment = __nodes[__nodes.length - 1];
                     __fragment.unsubscribe = () => {
                         __sub0.unsubscribe();
                         __sub0b.unsubscribe();
@@ -565,21 +595,19 @@ describe('compiler', () => {
                     <!-- block -->
                 `));
                 const template = (foo, bar) => {
-                    const __nodes = __render1();
-                    const __child0 = __nodes[0].childNodes[1];
+                    const { __fragment, __nodes } = __render1();
+                    const __child0 = __fragment.childNodes[1];
                     const __sub0b = __blockBinder(__child0);
                     const __sub0 = __map(foo, foo => foo.map(f => {
                         const a = 12;
-                        const __nodes = __render0();
-                        const __child0 = __nodes[0].childNodes[0];
+                        const { __fragment, __nodes } = __render0();
+                        const __child0 = __fragment.childNodes[0];
                         const __sub0 = __map(bar, bar => bar + a, __textBinder(__child0));
-                        const __fragment = __nodes[__nodes.length - 1];
                         __fragment.unsubscribe = () => {
                             __sub0.unsubscribe();
                         };
                         return __fragment;
                     }), __sub0b.observer, true);
-                    const __fragment = __nodes[__nodes.length - 1];
                     __fragment.unsubscribe = () => {
                         __sub0.unsubscribe();
                         __sub0b.unsubscribe();

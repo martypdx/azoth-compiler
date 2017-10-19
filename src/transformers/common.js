@@ -12,6 +12,18 @@ export function declareConst({ name, id, init }) {
     };
 }
 
+export const property = ({ key, value = key }) => {
+    return {
+        type: 'Property',
+        method: false,
+        shorthand: true,
+        computed: false,
+        key,
+        kind: 'init',
+        value
+    };
+};
+
 export function identifier(name) {
     return { type: 'Identifier', name };
 }
