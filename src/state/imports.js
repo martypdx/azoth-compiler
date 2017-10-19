@@ -14,7 +14,7 @@ import {
     VALUE } from '../binders/binding-types';
 import { specifier } from '../transformers/common';
 
-const TEMPLATE_SPECIFIER_NAME = /html|_/;
+const TEMPLATE_SPECIFIER_NAME = /^html$|^_$/;
 const OBSERVABLE_SPECIFIER_NAME = /^\$$/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
