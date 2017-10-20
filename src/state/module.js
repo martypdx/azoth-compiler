@@ -1,45 +1,25 @@
 import { UniqueStrings } from './unique-strings';
-import { Imports } from './imports';
 import { renderer } from '../transformers/fragment';
 import parse from '../parse/template';
-import { 
-    blockToFunction, 
-    makeTemplateStatements } from '../transformers/template';
-import { 
-    addStatementsTo,
-    replaceStatements } from '../transformers/common';
-
-const TAG = '_';
-const OTAG = '$';
-const MODULE_NAME = 'azoth';
+import { blockToFunction, makeTemplateStatements } from '../transformers/template';
+import { addStatementsTo, replaceStatements } from '../transformers/common';
 
 export class Module {
-    constructor({ tag = TAG, oTag = OTAG } = {}) {
-        this.name = MODULE_NAME;
-        // imports may modify tag and oTag based on found imports
-        this.imports = new Imports({ tag, oTag });
+    constructor(imports) {
+        this.imports = imports;
         this.fragments = new UniqueStrings();
-        
+
         // track scope and current function
         this.scope = this.functionScope = Object.create(null);
         this.currentFn = null;
         this.currentReturnStmt = null;
 
-        //track added statements
+        // buffer added statements that will get flushed to node
         this.statements = null;
-        
-        // all purpose module-wide 
-        // ref counter for destructuring
-        let ref = 0;
-        this.getRef = () => `__ref${ref++}`;
     }
 
-    get tag() {
-        return this.imports.tag;
-    }
-
-    get oTag() {
-        return this.imports.oTag;
+    get templateTag() {
+        return this.imports.templateTag;
     }
 
     addStatements(statements, index = 0) {
@@ -54,13 +34,11 @@ export class Module {
     }
 
     addDeclarations(body) {
-        const { fragments } = this;
-
-        body.splice(0, 0, ...fragments.keys.map(renderer));
+        body.splice(0, 0, ...this.fragments.keys.map(renderer));
     }
 
     // only used privately from makeTemplate
-    addBinder(binder) {
+    _addBinder(binder) {
         if(binder.childTemplate) {
             if(binder.ast) throw new Error('Binders with child templates not expected to have ast');
             const statements = this.addTemplate(binder.childTemplate);
@@ -69,7 +47,7 @@ export class Module {
 
         binder.matchObservables(this.scope);
         this.imports.addBinder(binder);
-        binder.properties.forEach(p => this.addBinder(p));
+        binder.properties.forEach(p => this._addBinder(p));
     }
 
     makeTemplate(node) {
@@ -96,7 +74,7 @@ export class Module {
 
     addTemplate({ html, binders }) {
         const index = this.fragments.add(html);
-        binders.forEach(b => this.addBinder(b));
+        binders.forEach(b => this._addBinder(b));
         
         const statements = makeTemplateStatements({ binders, index });
         statements.forEach(node => node.subtemplate = true);

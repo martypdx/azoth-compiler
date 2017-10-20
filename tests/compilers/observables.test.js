@@ -1,4 +1,5 @@
 import createHandler from '../../src/compilers/observables';
+import createRefCounter from '../../src/compilers/ref-counter';
 import { Module } from '../../src/state/module';
 import { recursive, base } from 'acorn/dist/walk.es';
 import { assert } from 'chai';
@@ -6,28 +7,23 @@ import codeEqual from '../helpers/code-equal';
 
 function compile(ast, visitors) {
     const scope = Object.create(null);
-    let ref = 0;
-    const getRef = () => `__ref${ref++}`;
-    const Observables = createHandler({ getRef });
+    const Observables = createHandler(createRefCounter());
 
     const state = new Module();
 
-    const handlers = Object.assign(
-        {
-            Program(node, state, c) {
-                state.currentFn = node;
-                c(node, state, 'BlockStatement');
-            },
-
-            TaggedTemplateExpression(node, state, c) {
-                const { scope } = state;
-                const visitor = visitors[node.tag.name];
-                if (visitor) visitor(scope);
-                base.TaggedTemplateExpression(node, state, c);
-            }
+    const handlers = Object.assign({
+        Program(node, state, c) {
+            state.currentFn = node;
+            c(node, state, 'BlockStatement');
         },
-        Observables
-    );
+
+        TaggedTemplateExpression(node, state, c) {
+            const { scope } = state;
+            const visitor = visitors[node.tag.name];
+            if (visitor) visitor(scope);
+            base.TaggedTemplateExpression(node, state, c);
+        }
+    }, Observables);
 
     recursive(ast, state, handlers);
 }

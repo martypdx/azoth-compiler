@@ -1,5 +1,4 @@
 import destructureObservables from './destructure-observables';
-import { identifier } from '../transformers/common';
 
 function recursiveReplace(node, state, visitors) {
     function c(node, state){
@@ -9,7 +8,7 @@ function recursiveReplace(node, state, visitors) {
     return c(node, state);
 }
 
-export default function makeObservablesFrom({ getRef, newRef= () => identifier(getRef()), sigil='$' }) {
+export default function makeObservablesFrom({ newRef, sigil='$' }) {
 
     const destructure = destructureObservables({ newRef, sigil });
 

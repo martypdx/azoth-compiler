@@ -1,19 +1,14 @@
 import makeObservables from '../../src/compilers/observables-from';
+import createRefCounter from '../../src/compilers/ref-counter';
 import { recursive } from 'acorn/dist/walk.es';
 import { assert } from 'chai';
 import codeEqual from '../helpers/code-equal';
 import { generate } from '../../src/ast';
 
-const makeRef = () => {
-    let counter = 0;
-    return () => `__ref${counter++}`;
-};
-
 function test(expected) {
     const ast = expected.source.toAst();
-    const getRef = makeRef();
 
-    const { observables, statements, identifiers } = compile(ast, getRef);
+    const { observables, statements, identifiers } = compile(ast, createRefCounter());
     assert.deepEqual(observables, expected.observables || [], 'observables');
     assert.deepEqual(identifiers, expected.identifiers || [], 'identifiers');
     codeEqual(ast, expected.ast);
@@ -22,7 +17,7 @@ function test(expected) {
     }
 }
     
-function compile(ast, getRef) {
+function compile(ast, newRef) {
     const observables = [];
     const statements = [];
     const identifiers = [];
@@ -32,7 +27,7 @@ function compile(ast, getRef) {
         addIdentifier(i) { identifiers.push(i); }
     };
     
-    const compileObservables = makeObservables({ getRef });
+    const compileObservables = makeObservables({ newRef });
 
     recursive(ast, state, {
         Function(node, state, c) {

@@ -27,8 +27,8 @@ function getOptions(state) {
     };
 }
 
-export default function createHandlers({ getRef, sigil='$' }) {
-    const newRef = () => identifier(getRef());
+export default function createHandlers(newRef, sigil='$') {
+    
     const observablesFrom = makeObservablesFrom({ newRef, sigil });
 
     return {

@@ -5,7 +5,6 @@ import {
     MAP_IMPORT,
     COMBINE_IMPORT
 } from '../transformers/identifiers';
-
 import { 
     COMBINE, COMBINE_FIRST, 
     FIRST, 
@@ -19,7 +18,7 @@ const OBSERVABLE_SPECIFIER_NAME = /^\$$/;
 const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
 const baseSpecifiers = baseNames.map(specifier);
 
-const importSpecifiers = {
+const bindingTypeImportMap = {
     [COMBINE]: COMBINE_IMPORT,
     [COMBINE_FIRST]: COMBINE_IMPORT,
     [FIRST]: FIRST_IMPORT,
@@ -29,40 +28,52 @@ const importSpecifiers = {
     [VALUE]: null,
 };
 
-function addSpecifier(specifiers, test) {
-    const index = specifiers.findIndex(({ imported }) => test.test(imported.name)); 
+const addSpecifier = regex => specifiers => {
+    const index = specifiers.findIndex(({ imported }) => regex.test(imported.name)); 
     if(index > -1) {
         const name = specifiers[index].local.name;
         specifiers.splice(index, 1);
         return name;
     }
-}
+};
+
+const addTemplateSpecifier = addSpecifier(TEMPLATE_SPECIFIER_NAME);
+const addObservableSpecifier = addSpecifier(OBSERVABLE_SPECIFIER_NAME);
+
+const DEFAULT_TEMPLATE_TAG = '_';
+const DEFAULT_OBSERVABLE_TAG = '$';
+const azothModule = /^azoth$|\/azoth$/;
 
 export class Imports {
-    constructor({ tag, oTag }) {
+    constructor(ast) {
+        this.specifiers = [];
         this.names = new Set(baseNames);
-        this.ast = [];
-        this.tag = tag;
-        this.oTag = oTag;
+        this.templateTag = DEFAULT_TEMPLATE_TAG;
+        this.observableTag = DEFAULT_OBSERVABLE_TAG;
+
+        // This assumes top-level imports only.
+        // Reevaluate when async import lands in earnest
+        for (let statement of ast.body) {    
+            if(statement.type !== 'ImportDeclaration') continue;
+            const { source, specifiers } = statement;
+            if(!azothModule.test(source.value)) continue;
+            this.specifiers = specifiers;
+            this.templateTag = addTemplateSpecifier(specifiers);
+            this.observableTag = addObservableSpecifier(specifiers);
+            specifiers.push(...baseSpecifiers.slice());
+        }
     }
 
     addBinder({ declarations, type }) {
         declarations.forEach(d => d.name && this.addName(d.name));
-        const typeImport = importSpecifiers[type];
+        const typeImport = bindingTypeImportMap[type];
         if(typeImport) this.addName(typeImport);     
     }
 
     addName(name) {
-        const { ast, names } = this;
-        if(!ast || names.has(name)) return;
+        const { specifiers, names } = this;
+        if(!specifiers || names.has(name)) return;
         names.add(name);
-        this.ast.push(specifier(name));
-    }
-
-    set specifiers(specifiers) {
-        this.ast = specifiers;
-        this.tag = addSpecifier(specifiers, TEMPLATE_SPECIFIER_NAME);
-        this.oTag = addSpecifier(specifiers, OBSERVABLE_SPECIFIER_NAME);
-        specifiers.push(...baseSpecifiers.slice());
+        this.specifiers.push(specifier(name));
     }
 }

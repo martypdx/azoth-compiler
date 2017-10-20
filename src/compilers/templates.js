@@ -2,7 +2,8 @@ import { base } from 'acorn/dist/walk.es';
 
 export const TaggedTemplateExpression = (node, module, c) => {
     base.TaggedTemplateExpression(node, module, c);
-    if (node.tag.name !== module.tag) return;
+    debugger;
+    if (node.tag.name !== module.templateTag) return;
     module.makeTemplate(node);
 };
 
