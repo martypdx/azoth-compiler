@@ -1,5 +1,4 @@
 import { base } from 'acorn/dist/walk.es';
-import { identifier } from '../transformers/common';
 import makeObservablesFrom from './observables-from';
 
 function setScope({ declaration, scope, functionScope }, key) {
