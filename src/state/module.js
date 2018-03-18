@@ -1,13 +1,13 @@
-import { UniqueStrings } from './unique-strings';
-import { renderer } from '../transformers/fragment';
+import { InlineRenderer } from './fragment-renderers';
 import parse from '../parse/template';
 import { blockToFunction, makeTemplateStatements } from '../transformers/template';
 import { addStatementsTo, replaceStatements } from '../transformers/common';
 
 export class Module {
-    constructor(imports) {
+    constructor(imports, htmlRenderer = new InlineRenderer()) {
         this.imports = imports;
-        this.fragments = new UniqueStrings();
+        this.htmlRenderer = htmlRenderer;
+        if(imports) imports.addName(htmlRenderer.rendererImport);
 
         // track scope and current function
         this.scope = this.functionScope = Object.create(null);
@@ -34,7 +34,7 @@ export class Module {
     }
 
     addDeclarations(body) {
-        body.splice(0, 0, ...this.fragments.keys.map(renderer));
+        body.splice(0, 0, ...this.htmlRenderer.declarations);
     }
 
     // only used privately from makeTemplate
@@ -73,7 +73,7 @@ export class Module {
     }
 
     addTemplate({ html, binders }) {
-        const index = this.fragments.add(html);
+        const index = this.htmlRenderer.add(html);
         binders.forEach(b => this._addBinder(b));
         
         const statements = makeTemplateStatements({ binders, index });

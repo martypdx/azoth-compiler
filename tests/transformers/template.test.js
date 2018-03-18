@@ -2,7 +2,7 @@
 
 import { generate } from 'astring';
 import getBinder from './getBinder';
-import { NONE, AT } from '../../src/parse/sigil-types';
+import { NO_SIGIL, SUBSCRIBE_SIGIL } from '../../src/parse/sigil-types';
 
 import { assert } from 'chai';
 import '../helpers/to-code';
@@ -21,9 +21,9 @@ describe('transform - template', () => {
 
     before(() => {
         binders = [
-            getBinder({ ast: (() => one).toExpr(), sigil: AT }, { module: 0, element: 0 }),
-            getBinder({ ast: (() => two).toExpr(), sigil: NONE }, { module: 1, element: 0 }),
-            getBinder({ ast: (() => three).toExpr(), sigil: AT }, { module: 1, element: 1 }),
+            getBinder({ ast: (() => one).toExpr(), sigil: SUBSCRIBE_SIGIL }, { module: 0, element: 0 }),
+            getBinder({ ast: (() => two).toExpr(), sigil: NO_SIGIL }, { module: 1, element: 0 }),
+            getBinder({ ast: (() => three).toExpr(), sigil: SUBSCRIBE_SIGIL }, { module: 1, element: 1 }),
         ];
         const scope = { one: true, three: true };
         binders.forEach((b, i) => {

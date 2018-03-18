@@ -6,7 +6,14 @@ import {
     identifier,
     literal, 
     memberExpression } from './common';
-import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from '../binders/binding-types';
+import { 
+    COMBINE, 
+    COMBINE_FIRST, 
+    FIRST, 
+    MAP, 
+    MAP_FIRST, 
+    SUBSCRIBE, 
+    VALUE } from '../binders/binding-types';
 import { 
     BINDER, 
     CHILD, 

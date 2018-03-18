@@ -33,7 +33,6 @@ const makeTemplate = ({ fragment, html }) => {
     }, []);
 
     return { 
-        // TODO: trim?
         html: html.join(''),
         binders: fragment.binders.concat(binders)
     };
@@ -98,7 +97,7 @@ export default function parseTemplate({ expressions, quasis }) {
                 template = getTemplate();
             }
             else {                
-                // NOTE: html spec and htmlparser2 implementation treat 
+                // NOTE: html spec (and htmlparser2 implementation) treat 
                 // empty string and valueless attribute as equivalent
                 const attrsText = entries.reduce((text, [key, value]) => {
                     return `${text} ${key}="${value}"`;
@@ -180,10 +179,10 @@ export default function parseTemplate({ expressions, quasis }) {
 
             template.currentEl = parentEl;
 
-            //Notice array of arrays. 
-            //Binders from each el are being pushed.
-            //Order matters as well because this is how we get 
-            //element binding index in right order.
+            // Notice array of arrays! 
+            // Binders from each el are being pushed.
+            // Order matters! This is how we get 
+            // element binding index in right order.
             if(el.binders.length > 0) {
                 const target = el.htmlIndex > -1 ? el : template.currentEl;
                 template.html[target.htmlIndex] = ` data-bind`;

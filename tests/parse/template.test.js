@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: off */
-import { NONE, STAR, AT, ELEMENT } from '../../src/parse/sigil-types';
+import { NO_SIGIL, MAP_SIGIL, SUBSCRIBE_SIGIL, ELEMENT_SIGIL } from '../../src/parse/sigil-types';
 import template from '../../src/parse/template';
 import chai from 'chai';
 const assert = chai.assert;
@@ -34,7 +34,7 @@ describe('parse template', () => {
         moduleIndex = -1,
         name = '',
         index = -1,
-        sigil = NONE,
+        sigil = NO_SIGIL,
         ref = '',
         observables = [],
         childTemplate = null,
@@ -67,7 +67,7 @@ describe('parse template', () => {
 
     function testText(binder, options) {
         options.index = options.index || 0;
-        options.sigil = options.sigil || STAR;
+        options.sigil = options.sigil || MAP_SIGIL;
         testBinder(binder, options);
 
     }
@@ -95,7 +95,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<text-node></text-node>');
-            testFirstText(binders, { ref: 'foo', sigil: NONE });
+            testFirstText(binders, { ref: 'foo', sigil: NO_SIGIL });
         });
 
         it('block text node', () => {
@@ -104,7 +104,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<!-- block -->');
-            testFirstText(binders, { ref: 'foo', sigil: NONE });
+            testFirstText(binders, { ref: 'foo', sigil: NO_SIGIL });
         });
 
         it('block observer text node', () => {
@@ -222,7 +222,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<!-- component start --><!-- component end -->');
-            testFirstText(binders, { ref: 'Block', sigil: ELEMENT });
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT_SIGIL });
         });
 
         it('self-closing block component', () => {
@@ -231,7 +231,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<!-- component start --><!-- component end -->');
-            testFirstText(binders, { ref: 'Block', sigil: ELEMENT });
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT_SIGIL });
         });
 
         it('self-closing block component with siblings', () => {
@@ -240,7 +240,7 @@ describe('parse template', () => {
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<input><!-- component start --><!-- component end --><input>');
-            testFirstText(binders, { ref: 'Block', sigil: ELEMENT, index: 1 });
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT_SIGIL, index: 1 });
         });
 
         it('block component with properties', () => {
@@ -251,9 +251,9 @@ describe('parse template', () => {
             assert.equal(html, '<!-- component start --><!-- component end -->');
             
             const properties = binders[0].properties;
-            testFirstText(binders, { ref: 'Block', sigil: ELEMENT });
+            testFirstText(binders, { ref: 'Block', sigil: ELEMENT_SIGIL });
             assert.equal(properties.length, 2);
-            testProp(properties[0], { name: 'foo', ref: 'foo', sigil: STAR });
+            testProp(properties[0], { name: 'foo', ref: 'foo', sigil: MAP_SIGIL });
             testProp(properties[1], { name: 'bar', expectedType: 'Literal' });
 
         });
@@ -265,12 +265,12 @@ describe('parse template', () => {
             const { html, binders } = parseSource(source);
             assert.equal(html, '<!-- component start --><!-- component end -->');
             const properties = binders[0].properties;
-            testFirstText(binders, { ref: 'Widget', sigil: ELEMENT });
+            testFirstText(binders, { ref: 'Widget', sigil: ELEMENT_SIGIL });
             assert.equal(properties.length, 1);
             const [ { childTemplate } ]  = properties;
 
             assert.equal(childTemplate.html, '<span data-bind><text-node></text-node></span>');
-            testFirstText(childTemplate.binders, { ref: 'foo', elIndex: 0, sigil: NONE });
+            testFirstText(childTemplate.binders, { ref: 'foo', elIndex: 0, sigil: NO_SIGIL });
         });
 
         it('wrapped block component with content', () => {
@@ -280,12 +280,12 @@ describe('parse template', () => {
             const { html, binders } = parseSource(source);
             assert.equal(html, '<div data-bind><!-- component start --><!-- component end --></div>');
             const properties = binders[0].properties;
-            testFirstText(binders, { ref: 'Widget', elIndex: 0, sigil: ELEMENT });
+            testFirstText(binders, { ref: 'Widget', elIndex: 0, sigil: ELEMENT_SIGIL });
             assert.equal(properties.length, 1);
             const [ { childTemplate } ]  = properties;
 
             assert.equal(childTemplate.html, '<span data-bind><text-node></text-node></span>');
-            testFirstText(childTemplate.binders, { ref: 'foo', elIndex: 0, sigil: NONE });
+            testFirstText(childTemplate.binders, { ref: 'foo', elIndex: 0, sigil: NO_SIGIL });
         });
 
         it('block component with interpolator content', () => {
@@ -296,7 +296,7 @@ describe('parse template', () => {
             assert.equal(html, '<!-- component start --><!-- component end -->');
             
             const properties = binders[0].properties;
-            testFirstText(binders, { expectedType: undefined, ref: 'Block', sigil: ELEMENT });
+            testFirstText(binders, { expectedType: undefined, ref: 'Block', sigil: ELEMENT_SIGIL });
         });
 
     });
@@ -352,14 +352,14 @@ describe('parse template', () => {
 
         it('binding types', () => {
             function source() {
-                const template = (one, two, three) => _`<span one=${one} two=*${two} three=@${three}></span>`;
+                const template = (one, two, three) => _`<span one=${one} two=*${two} three=^${three}></span>`;
             }
             const { html, binders } = parseSource(source);
             assert.equal(html, '<span one="" two="" three="" data-bind></span>');
             assert.equal(binders.length, 3);
-            testAttr(binders[0], { sigil: NONE, elIndex: 0, name: 'one', ref: 'one' });
-            testAttr(binders[1], { sigil: STAR, elIndex: 0, name: 'two', ref: 'two' });
-            testAttr(binders[2], { sigil: AT, elIndex: 0, name: 'three', ref: 'three' });
+            testAttr(binders[0], { sigil: NO_SIGIL, elIndex: 0, name: 'one', ref: 'one' });
+            testAttr(binders[1], { sigil: MAP_SIGIL, elIndex: 0, name: 'two', ref: 'two' });
+            testAttr(binders[2], { sigil: SUBSCRIBE_SIGIL, elIndex: 0, name: 'three', ref: 'three' });
         });
     });
 

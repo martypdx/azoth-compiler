@@ -9,6 +9,7 @@ export const FIRST_IMPORT = '__first';
 export const MAP_IMPORT = '__map';
 export const COMBINE_IMPORT = '__combine';
 
-export const RENDERER_IMPORT = '__renderer';
+export const MAKE_RENDERER_IMPORT = '__makeRenderer';
+export const GET_RENDERER_IMPORT = '__getRenderer';
 export const MAKE_FRAGMENT_IMPORT = '__makeTemplate';
 

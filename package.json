@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "MOCHA_REPORTER_STACK_EXCLUDE=**/** mocha tests --recursive --compilers ./test-setup/babel-register.config.js --reporter mocha-better-spec-reporter",
+    "test": "mocha tests --recursive --compilers ./test-setup/babel-register.config.js --reporter mocha-better-spec-reporter",
     "test:watch:nodemon": "nodemon --watch src --watch tests --exec 'npm test'",
     "test:watch": "npm test -- -w",
     "test:ava": "ava test",
@@ -41,7 +41,8 @@
     "acorn": "^5.0.3",
     "astring": "^1.0.3",
     "estraverse": "^4.2.0",
-    "htmlparser2": "^3.9.2"
+    "htmlparser2": "^3.9.2",
+    "rev-hash": "^2.0.0"
   },
   "ava": {
     "require": [

@@ -1,7 +1,7 @@
 /*eslint no-undef: off */
 import { generate } from 'astring';
 import getBinder from './getBinder';
-import { AT, DOLLAR, STAR, NONE, ELEMENT } from '../../src/parse/sigil-types';
+import { SUBSCRIBE_SIGIL, ONCE_SIGIL, MAP_SIGIL, NO_SIGIL, ELEMENT_SIGIL } from '../../src/parse/sigil-types';
 import { block, component, property } from '../../src/binders/targets';
 import { assert } from 'chai';
 import { binding } from '../../src/transformers/binding';
@@ -12,7 +12,7 @@ describe('transform - binding', () => {
 
         it('value', () => {
             const binder = getBinder(
-                { ast: (() => foo).toExpr(), sigil: NONE },
+                { ast: (() => foo).toExpr(), sigil: NO_SIGIL },
                 { module: 1, element: 1 }
             );
             const [ ast ] = binding(binder, 0);
@@ -20,9 +20,9 @@ describe('transform - binding', () => {
             assert.equal(code, '__textBinder(__child0)(foo);');
         });
 
-        it('no map with NONE', () => {
+        it('no map with NO_SIGIL', () => {
             const binder = getBinder(
-                { ast: (() => x + 1).toExpr(), sigil: NONE },
+                { ast: (() => x + 1).toExpr(), sigil: NO_SIGIL },
                 { module: 1, element: 2, observables: ['x'] }
             );
 
@@ -31,9 +31,9 @@ describe('transform - binding', () => {
             assert.equal(code, '__textBinder(__child1)(x + 1);');
         });
 
-        it('no combine with NONE', () => {
+        it('no combine with NO_SIGIL', () => {
             const binder = getBinder(
-                { ast: (() => x + y).toExpr(), sigil: NONE },
+                { ast: (() => x + y).toExpr(), sigil: NO_SIGIL },
                 { module: 1, element: 3, observables: ['x', 'y'] }
             );
 
@@ -44,7 +44,7 @@ describe('transform - binding', () => {
 
         it('subscribe', () => {
             const binder = getBinder(
-                { ast: (() => foo).toExpr(), sigil: AT },
+                { ast: (() => foo).toExpr(), sigil: SUBSCRIBE_SIGIL },
                 { module: 1, element: 3, observables: ['foo'] }
             );
 
@@ -55,7 +55,7 @@ describe('transform - binding', () => {
 
         it('first value', () => {
             const binder = getBinder(
-                { ast: (() => x).toExpr(), sigil: DOLLAR },
+                { ast: (() => x).toExpr(), sigil: ONCE_SIGIL },
                 { module: 1, element: 3, observables: ['x'] }
             );
             const [ ast ] = binding(binder, 1);
@@ -65,7 +65,7 @@ describe('transform - binding', () => {
 
         it('first map', () => {
             const binder = getBinder(
-                { ast: (() => x + 1).toExpr(), sigil: DOLLAR },
+                { ast: (() => x + 1).toExpr(), sigil: ONCE_SIGIL },
                 { module: 1, element: 3, observables: ['x'] }
             );
             const [ ast ] = binding(binder, 1);
@@ -75,7 +75,7 @@ describe('transform - binding', () => {
 
         it('first combine', () => {
             const binder = getBinder(
-                { ast: (() => x + y).toExpr(), sigil: DOLLAR },
+                { ast: (() => x + y).toExpr(), sigil: ONCE_SIGIL },
                 { module: 1, element: 3, observables: ['x', 'y'] }
             );
             const [ ast ] = binding(binder, 1);
@@ -85,7 +85,7 @@ describe('transform - binding', () => {
 
         it('map', () => {
             const binder = getBinder(
-                { ast: (() => x + 1).toExpr(), sigil: STAR },
+                { ast: (() => x + 1).toExpr(), sigil: MAP_SIGIL },
                 { module: 1, element: 3, observables: ['x'] }
             );
             const [ ast ] = binding(binder, 1);
@@ -95,7 +95,7 @@ describe('transform - binding', () => {
 
         it('combine', () => {
             const binder = getBinder(
-                { ast: (() => x + y).toExpr(), sigil: STAR },
+                { ast: (() => x + y).toExpr(), sigil: MAP_SIGIL },
                 { module: 1, element: 3, observables: ['x', 'y'] }
             );
             const [ ast ] = binding(binder, 1);
@@ -108,7 +108,7 @@ describe('transform - binding', () => {
 
         it('value', () => {
             const binder = getBinder(
-                { ast: (() => foo).toExpr(), target: block, sigil: NONE },
+                { ast: (() => foo).toExpr(), target: block, sigil: NO_SIGIL },
                 { module: 1, element: 1 }
             );
             const statements = binding(binder, 0).map(generate);
@@ -118,9 +118,9 @@ describe('transform - binding', () => {
             ]);
         });
 
-        it('no map with NONE', () => {
+        it('no map with NO_SIGIL', () => {
             const binder = getBinder(
-                { ast: (() => x + 1).toExpr(), target: block, sigil: NONE },
+                { ast: (() => x + 1).toExpr(), target: block, sigil: NO_SIGIL },
                 { module: 1, element: 2, observables: ['x'] }
             );
 
@@ -131,9 +131,9 @@ describe('transform - binding', () => {
             ]);
         });
 
-        it('no combine with NONE', () => {
+        it('no combine with NO_SIGIL', () => {
             const binder = getBinder(
-                { ast: (() => x + y).toExpr(), target: block, sigil: NONE },
+                { ast: (() => x + y).toExpr(), target: block, sigil: NO_SIGIL },
                 { module: 1, element: 3, observables: ['x', 'y'] }
             );
 
@@ -146,7 +146,7 @@ describe('transform - binding', () => {
 
         it('subscribe', () => {
             const binder = getBinder(
-                { ast: (() => foo).toExpr(), target: block, sigil: AT },
+                { ast: (() => foo).toExpr(), target: block, sigil: SUBSCRIBE_SIGIL },
                 { module: 1, element: 3, observables: ['foo'] }
             );
 
@@ -159,7 +159,7 @@ describe('transform - binding', () => {
 
         it('first value', () => {
             const binder = getBinder(
-                { ast: (() => x).toExpr(), target: block, sigil: DOLLAR },
+                { ast: (() => x).toExpr(), target: block, sigil: ONCE_SIGIL },
                 { module: 1, element: 3, observables: ['x'] }
             );
 
@@ -172,7 +172,7 @@ describe('transform - binding', () => {
 
         it('first map', () => {
             const binder = getBinder(
-                { ast: (() => x + 1).toExpr(), target: block, sigil: DOLLAR },
+                { ast: (() => x + 1).toExpr(), target: block, sigil: ONCE_SIGIL },
                 { module: 1, element: 3, observables: ['x'] }
             );
 
@@ -185,7 +185,7 @@ describe('transform - binding', () => {
 
         it('first combine', () => {
             const binder = getBinder(
-                { ast: (() => x + y).toExpr(), target: block, sigil: DOLLAR },
+                { ast: (() => x + y).toExpr(), target: block, sigil: ONCE_SIGIL },
                 { module: 1, element: 3, observables: ['x', 'y'] }
             );
 
@@ -198,7 +198,7 @@ describe('transform - binding', () => {
 
         it('map', () => {
             const binder = getBinder(
-                { ast: (() => x + 1).toExpr(), target: block, sigil: STAR },
+                { ast: (() => x + 1).toExpr(), target: block, sigil: MAP_SIGIL },
                 { module: 1, element: 3, observables: ['x'] }
             );
 
@@ -211,7 +211,7 @@ describe('transform - binding', () => {
 
         it('combine', () => {
             const binder = getBinder(
-                { ast: (() => x + y).toExpr(), target: block, sigil: STAR },
+                { ast: (() => x + y).toExpr(), target: block, sigil: MAP_SIGIL },
                 { module: 1, element: 3, observables: ['x', 'y'] }
             );
 
@@ -228,11 +228,11 @@ describe('transform - binding', () => {
 
         it('component with value prop', () => {
             const binder = getBinder(
-                { ast: (() => Component()).toExpr(), target: component, sigil: ELEMENT },
+                { ast: (() => Component()).toExpr(), target: component, sigil: ELEMENT_SIGIL },
                 { module: 0, element: 1 }
             );
             const prop = getBinder(
-                { ast: (() => foo).toExpr(), target: property, sigil: NONE },
+                { ast: (() => foo).toExpr(), target: property, sigil: NO_SIGIL },
                 { module: 1, name: 'foo' }
             );
             binder.properties = [prop];
@@ -247,11 +247,11 @@ describe('transform - binding', () => {
         
         it('component with MAP prop', () => {
             const binder = getBinder(
-                { ast: (() => Component()).toExpr(), target: component, sigil: ELEMENT },
+                { ast: (() => Component()).toExpr(), target: component, sigil: ELEMENT_SIGIL },
                 { module: 0, element: 1 }
             );
             const prop = getBinder(
-                { ast: (() => foo).toExpr(), target: property, sigil: STAR },
+                { ast: (() => foo).toExpr(), target: property, sigil: MAP_SIGIL },
                 { module: 1, name: 'foo', observables: ['foo'] }
             );
 
@@ -267,11 +267,11 @@ describe('transform - binding', () => {
         
         it('component with SUBSCRIBE prop', () => {
             const binder = getBinder(
-                { ast: (() => Component()).toExpr(), target: component, sigil: ELEMENT },
+                { ast: (() => Component()).toExpr(), target: component, sigil: ELEMENT_SIGIL },
                 { module: 0, element: 1 }
             );
             const prop = getBinder(
-                { ast: (() => foo.map(Foo)).toExpr(), target: property, sigil: AT },
+                { ast: (() => foo.map(Foo)).toExpr(), target: property, sigil: SUBSCRIBE_SIGIL },
                 { module: 1, name: 'foo', observables: ['foo'] }
             );
 

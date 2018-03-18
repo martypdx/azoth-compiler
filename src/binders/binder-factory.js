@@ -1,10 +1,10 @@
 import Binder from './binder';
-import { ELEMENT } from '../parse/sigil-types';
+import { ELEMENT_SIGIL } from '../parse/sigil-types';
 import { text, block, attribute, property, component } from './targets';
     
 export default function getBinder(options) {
 
-    if(options.sigil === ELEMENT) {
+    if(options.sigil === ELEMENT_SIGIL) {
         options.target = component;
     }
     else if(options.inAttributes) {

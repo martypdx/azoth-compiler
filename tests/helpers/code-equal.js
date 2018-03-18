@@ -14,7 +14,7 @@ const tryParse = (name, code) => {
     }
     catch (err) {
         console.log('FAILED PARSE:', name, '\nERROR:', err, '\nCODE:\n', code);
-        throw err;
+        // throw err;
     }
 };
 

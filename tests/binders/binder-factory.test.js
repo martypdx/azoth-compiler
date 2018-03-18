@@ -1,6 +1,6 @@
 import getBinder from '../../src/binders/binder-factory';
 import { text, block, attribute, property, component } from '../../src/binders/targets';
-import { ELEMENT } from '../../src/parse/sigil-types';
+import { ELEMENT_SIGIL } from '../../src/parse/sigil-types';
 import { assert } from 'chai';
 
 describe('binder factory', () => {
@@ -24,7 +24,7 @@ describe('binder factory', () => {
         });
 
         it('component binder', () => {
-            const binder = getBinder({ sigil: ELEMENT });
+            const binder = getBinder({ sigil: ELEMENT_SIGIL });
             assert.equal(binder.target, component);
         });
     });  

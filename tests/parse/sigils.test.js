@@ -1,7 +1,7 @@
 import chai from 'chai';
 const assert = chai.assert;
 import { getBindingType, getBlock } from '../../src/parse/sigil';
-import { AT, DOLLAR, NONE, STAR, ELEMENT } from '../../src/parse/sigil-types';
+import { SUBSCRIBE_SIGIL, ONCE_SIGIL, NO_SIGIL, MAP_SIGIL, ELEMENT_SIGIL } from '../../src/parse/sigil-types';
 
 
 describe('sigils', () => {
@@ -14,43 +14,43 @@ describe('sigils', () => {
 
 
         it('empty string okay', () => {
-            test('', { sigil: NONE, text: ''});
+            test('', { sigil: NO_SIGIL, text: ''});
         });
 
-        it('NONE', () => {
-            test('text', { sigil: NONE, text: 'text' });
+        it('NO_SIGIL', () => {
+            test('text', { sigil: NO_SIGIL, text: 'text' });
         });
 
-        it('STAR', () => {
-            test('text*', { sigil: STAR, text: 'text'});
+        it('MAP_SIGIL', () => {
+            test('text*', { sigil: MAP_SIGIL, text: 'text'});
         });
 
-        it('AT', () => {
-            test('text@', { sigil: AT, text: 'text'});
+        it('SUBSCRIBE_SIGIL', () => {
+            test('text^', { sigil: SUBSCRIBE_SIGIL, text: 'text'});
         });
 
-        it('DOLLAR', () => {
-            test('text$', { sigil: DOLLAR, text: 'text'});
+        it('ONCE_SIGIL', () => {
+            test('text$', { sigil: ONCE_SIGIL, text: 'text'});
         });
 
         it('is end of string', () => {
-            test('* ', { sigil: NONE, text: '* '});
+            test('* ', { sigil: NO_SIGIL, text: '* '});
         });
 
         it('escaped *', () => {
-            test('text\\*', { sigil: NONE, text: 'text*' });
+            test('text\\*', { sigil: NO_SIGIL, text: 'text*' });
         });
 
-        it('escaped @', () => {
-            test('text\\@', { sigil: NONE, text: 'text@' });
+        it('escaped ^', () => {
+            test('text\\^', { sigil: NO_SIGIL, text: 'text^' });
         });
 
         it('escaped $', () => {
-            test('text\\$', { sigil: NONE, text: 'text$' });
+            test('text\\$', { sigil: NO_SIGIL, text: 'text$' });
         });
 
         it('component element', () => {
-            test('text<#:', { sigil: ELEMENT, text: 'text' });
+            test('text<#:', { sigil: ELEMENT_SIGIL, text: 'text' });
         });
     });
 

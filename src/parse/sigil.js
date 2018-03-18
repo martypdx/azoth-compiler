@@ -1,10 +1,10 @@
-import { NONE, typeMap } from './sigil-types';
+import { NO_SIGIL, typeMap } from './sigil-types';
 
 // TODO: get the values from sigil types.
 // TODO: make regex and escape version from base string
-const escapedBindingMatch = /\\(\*|\@|\$|<#:)$/;
-const errorBindingMatch = /<#:(\*|\@|\$)$/;
-const bindingMatch = /(\*|\@|\$|<#:)$/;
+const escapedBindingMatch = /\\(\*|\^|\$|<#:)$/;
+const errorBindingMatch = /<#:(\*|\^|\$)$/;
+const bindingMatch = /(\*|\^|\$|<#:)$/;
 
 export function getBindingType(text) {
 
@@ -21,7 +21,7 @@ export function getBindingType(text) {
         return escaped;
     };
 
-    let sigil = NONE;
+    let sigil = NO_SIGIL;
 
     if(tryEscaped()) return { sigil, text };
 

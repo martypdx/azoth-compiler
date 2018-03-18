@@ -6,34 +6,20 @@ import {
     literal, 
     memberExpression,
     returnStatement } from './common';
-
 import { 
     FRAGMENT, 
     SUB, 
-    RENDER,
-    RENDERER_IMPORT, 
-    MAKE_FRAGMENT_IMPORT } from './identifiers';
+    RENDER } from './identifiers';
 import { VALUE } from '../binders/binding-types';
 
-// const __render${index} = __renderer(__makeTemplate(`${html}`));
-export const renderer = (html, index) =>{
-    
-    const makeFragment = callExpression({
-        name: MAKE_FRAGMENT_IMPORT,
-        args: [literal({
-            value: html,
-            raw: `\`${html}\``
-        })]
-    });
-
-    return declareConst({ 
-        name: `${RENDER}${index}`, 
-        init: callExpression({ 
-            name: RENDERER_IMPORT,
-            args: [ makeFragment ]
-        })
-    });  
-};
+// const __renderer${suffix} = __${importName}(${arg});
+export const declareRender = (suffix, importName, arg) => declareConst({ 
+    name: `${RENDER}${suffix}`, 
+    init: callExpression({ 
+        name: importName,
+        args: [ literal(arg) ]
+    })
+});  
 
 // return __fragment;
 const RETURN_FRAGMENT = returnStatement({ arg: identifier(FRAGMENT) });
@@ -82,7 +68,7 @@ const fragmentUnsubscribe = unsubscribes => {
     };
 };
 
-export default binders => {
+export const unsubscribeBinders = binders => {
     const unsubs = unsubscribes(binders);
     if(!unsubs.length) return [RETURN_FRAGMENT];
     return [

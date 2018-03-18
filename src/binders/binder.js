@@ -1,11 +1,11 @@
-import { AT, DOLLAR, NONE, STAR } from '../parse/sigil-types';
+import { SUBSCRIBE_SIGIL, ONCE_SIGIL, NO_SIGIL, MAP_SIGIL } from '../parse/sigil-types';
 import { text } from './targets';
 import { COMBINE, COMBINE_FIRST, FIRST, MAP, MAP_FIRST, SUBSCRIBE, VALUE } from './binding-types';
 import matchObservables from './match-observables';
 
 export default class Binder {
 
-    constructor({ sigil = NONE, ast = null, target = text, name = '', childTemplate = null } = {}) {        
+    constructor({ sigil = NO_SIGIL, ast = null, target = text, name = '', childTemplate = null } = {}) {        
         this.sigil = sigil;
         this.ast = ast;
         this.target = target;
@@ -63,13 +63,13 @@ export default class Binder {
         const isIdentifier = ast.type === 'Identifier';
         const count = observables.length;
 
-        if(sigil === AT) return SUBSCRIBE;
-        if(sigil === NONE || count === 0) return VALUE;
-        if(sigil === DOLLAR) {
+        if(sigil === SUBSCRIBE_SIGIL) return SUBSCRIBE;
+        if(sigil === NO_SIGIL || count === 0) return VALUE;
+        if(sigil === ONCE_SIGIL) {
             if(isIdentifier) return FIRST;
             return (count === 1) ? MAP_FIRST : COMBINE_FIRST;
         }
-        if(sigil === STAR) {
+        if(sigil === MAP_SIGIL) {
             if(isIdentifier) return SUBSCRIBE;
             return (count === 1) ? MAP : COMBINE;
         }

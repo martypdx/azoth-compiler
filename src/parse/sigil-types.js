@@ -1,13 +1,13 @@
-export const AT = Symbol('@');
-export const DOLLAR = Symbol('$');
-export const NONE = Symbol('none');
-export const STAR = Symbol('*');
-export const ELEMENT = Symbol('<#:');
+export const SUBSCRIBE_SIGIL = Symbol('^');
+export const ONCE_SIGIL = Symbol('$');
+export const NO_SIGIL = Symbol('none');
+export const MAP_SIGIL = Symbol('*');
+export const ELEMENT_SIGIL = Symbol('<#:');
 
 export const typeMap = {
-    '@': AT,
-    '$': DOLLAR,
-    '': NONE,
-    '*': STAR,
-    '<#:': ELEMENT,
+    '^': SUBSCRIBE_SIGIL,
+    '$': ONCE_SIGIL,
+    '': NO_SIGIL,
+    '*': MAP_SIGIL,
+    '<#:': ELEMENT_SIGIL,
 };

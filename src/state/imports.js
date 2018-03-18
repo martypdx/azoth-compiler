@@ -15,8 +15,6 @@ import { specifier } from '../transformers/common';
 
 const TEMPLATE_SPECIFIER_NAME = /^html$|^_$/;
 const OBSERVABLE_SPECIFIER_NAME = /^\$$/;
-const baseNames = [RENDERER_IMPORT, MAKE_FRAGMENT_IMPORT];
-const baseSpecifiers = baseNames.map(specifier);
 
 const bindingTypeImportMap = {
     [COMBINE]: COMBINE_IMPORT,
@@ -47,7 +45,7 @@ const azothModule = /^azoth$|\/azoth$/;
 export class Imports {
     constructor(ast) {
         this.specifiers = [];
-        this.names = new Set(baseNames);
+        this.names = new Set();
         this.templateTag = DEFAULT_TEMPLATE_TAG;
         this.observableTag = DEFAULT_OBSERVABLE_TAG;
 
@@ -60,7 +58,6 @@ export class Imports {
             this.specifiers = specifiers;
             this.templateTag = addTemplateSpecifier(specifiers);
             this.observableTag = addObservableSpecifier(specifiers);
-            specifiers.push(...baseSpecifiers.slice());
         }
     }
 

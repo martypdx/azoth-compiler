@@ -6,7 +6,7 @@ import {
     memberExpression,
     property,
     returnStatement } from './common';
-import fragment from './fragment';
+import { unsubscribeBinders } from './fragment';
 import { binding, childNode, nodeInits } from './binding';
 import { NODES, RENDER, FRAGMENT } from './identifiers';
 
@@ -68,6 +68,6 @@ export const makeTemplateStatements = ({ binders, index }) => {
         ...childNodes,
         ...bindings,
         ...oninits,
-        ...fragment(binders)
+        ...unsubscribeBinders(binders)
     ];
 };
