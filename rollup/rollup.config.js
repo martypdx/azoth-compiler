@@ -5,7 +5,8 @@ export default {
         'acorn',
         'acorn/dist/walk.es',
         'astring',
+        'estraverse',
         'htmlparser2',
-        'estraverse'
+        'rev-hash'
     ]
 };

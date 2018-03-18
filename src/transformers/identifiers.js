@@ -11,5 +11,3 @@ export const COMBINE_IMPORT = '__combine';
 
 export const MAKE_RENDERER_IMPORT = '__makeRenderer';
 export const GET_RENDERER_IMPORT = '__getRenderer';
-export const MAKE_FRAGMENT_IMPORT = '__makeTemplate';
-

@@ -5,6 +5,9 @@ import {
     MAKE_RENDERER_IMPORT,
     GET_RENDERER_IMPORT } from '../transformers/identifiers';
 
+// rollup bug. TODO: try upgrade
+revHash('ftw');
+
 export class InlineRenderer {
     constructor() {
         this.map = new Map();

@@ -1,13 +1,11 @@
 import { 
-    RENDERER_IMPORT, 
-    MAKE_FRAGMENT_IMPORT,
     FIRST_IMPORT,
     MAP_IMPORT,
     COMBINE_IMPORT
 } from '../transformers/identifiers';
 import { 
     COMBINE, COMBINE_FIRST, 
-    FIRST, 
+    FIRST, // FIRST VALUE
     MAP, MAP_FIRST, 
     SUBSCRIBE, 
     VALUE } from '../binders/binding-types';
