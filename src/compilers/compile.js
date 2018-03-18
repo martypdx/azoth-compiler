@@ -1,7 +1,7 @@
 import { recursive } from 'acorn/dist/walk.es';
 import { Module } from '../state/module';
 import { Imports } from '../state/imports';
-import { InlineRenderer } from '../state/fragment-renderers';
+import { InlineRenderer, ByIdRenderer } from '../state/fragment-renderers';
 import { parse, generate } from '../ast';
 import * as templates from './templates';
 import createHandler from './observables';
@@ -12,6 +12,8 @@ export default function compile(source, options = {}) {
     astTransform(ast, options.htmlRenderer || InlineRenderer);
     return generate(ast);
 }
+
+export { ByIdRenderer as HtmlRenderer };
 
 export function astTransform(ast, htmlRenderer) {
     const imports = new Imports(ast);
