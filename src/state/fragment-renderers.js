@@ -52,6 +52,7 @@ export class ByIdRenderer {
 
 class ModuleByIdRenderer {
     constructor(map) {
+        // TODO: why did I use both a map and set? could be 1?
         this.map = map;
         this.set = new Set();
     }
