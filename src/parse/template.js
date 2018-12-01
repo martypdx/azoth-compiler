@@ -75,7 +75,8 @@ export default function parseTemplate({ expressions, quasis }) {
         },
         onattribute(name, value) {
             template.currentAttr = name;
-            if(name==='oninit') return;
+            // if(name==='oninit') return;
+            if(name !== 'one' && name.startsWith('on')) return;
             template.currentEl.attributes[name] = value;
         },
         onopentag(name) {
